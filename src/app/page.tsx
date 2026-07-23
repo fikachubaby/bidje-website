@@ -1,5 +1,4 @@
 import { Hero } from "@/components/home/Hero";
-import { SearchBar } from "@/components/home/SearchBar";
 import { Categories } from "@/components/home/Categories";
 import { FeaturedProperties } from "@/components/home/FeaturedProperties";
 import { LatestListings } from "@/components/home/LatestListings";
@@ -13,11 +12,12 @@ export default async function HomePage() {
 
   return (
     <>
-      <Hero />
-      <SearchBar />
-      <Categories />
-      <FeaturedProperties properties={featured} />
-      <LatestListings properties={latest} />
+      <Hero featuredProperty={featured[0]} />
+      <div className="bg-white pt-20 sm:pt-24">
+        <Categories />
+        <FeaturedProperties properties={featured} />
+        <LatestListings properties={latest} />
+      </div>
     </>
   );
 }

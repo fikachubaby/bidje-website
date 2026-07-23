@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Playfair_Display } from "next/font/google";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import "./globals.css";
@@ -9,10 +9,15 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair",
+});
+
 export const metadata: Metadata = {
-  title: "Bidje — Malaysia's Property Marketplace",
+  title: "BIDJE.com — A happier way to find your next property",
   description:
-    "Find land, landed homes, high-rise units, commercial spaces, and auction properties across Malaysia.",
+    "Browse verified properties across Malaysia. Connect directly and move forward with confidence.",
 };
 
 export default function RootLayout({
@@ -22,7 +27,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body
+        className={`${inter.variable} ${playfair.variable} font-sans antialiased`}
+      >
         <Navbar />
         <main>{children}</main>
         <Footer />

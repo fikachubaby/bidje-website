@@ -1,10 +1,14 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand: #ff6b00;
-  --color-brand-dark: #e55f00;
-  --color-brand-light: #ff8533;
+  --color-brand: #ffd000;
+  --color-brand-dark: #e6bb00;
+  --color-brand-light: #ffe566;
+  --color-brand-muted: #fff3b0;
+  --color-gold: #c9a227;
+  --color-gold-dark: #a8841a;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
 }
 
 :root {

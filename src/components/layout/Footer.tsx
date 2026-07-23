@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Facebook, Instagram, Linkedin, Mail, MapPin, Phone } from "lucide-react";
+import { Logo } from "@/components/layout/Logo";
 
 const footerLinks = {
   explore: [
@@ -27,12 +28,7 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
           <div>
-            <Link href="/" className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-sm font-bold text-white">
-                B
-              </span>
-              <span className="text-xl font-bold text-white">Bidje</span>
-            </Link>
+            <Logo variant="dark" />
             <p className="mt-4 text-sm leading-relaxed text-neutral-400">
               Malaysia&apos;s modern property marketplace. Find your dream home,
               land, or commercial space with confidence.

@@ -66,9 +66,9 @@ export function Categories() {
             <Link
               key={cat.id}
               href={`/properties?category=${cat.id}`}
-              className="group flex flex-col items-center rounded-2xl border border-neutral-200 bg-white p-6 text-center transition-all hover:border-brand hover:shadow-lg hover:shadow-brand/5"
+              className="group flex flex-col items-center rounded-2xl border-2 border-black bg-white p-6 text-center shadow-[4px_4px_0_0_#000] transition-all hover:-translate-y-0.5 hover:bg-brand-muted"
             >
-              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-neutral-100 text-neutral-700 transition-colors group-hover:bg-brand group-hover:text-white">
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl border-2 border-black bg-brand-muted text-black transition-colors group-hover:bg-brand">
                 <Icon className="h-6 w-6" />
               </div>
               <h3 className="mt-4 text-base font-semibold text-neutral-900">
