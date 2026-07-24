@@ -13,7 +13,7 @@ export default async function HomePage() {
   return (
     <>
       <Hero featuredProperty={featured[0]} />
-      <div className="bg-white pt-20 sm:pt-24">
+      <div className="bg-white pt-56 sm:pt-64">
         <Categories />
         <FeaturedProperties properties={featured} />
         <LatestListings properties={latest} />

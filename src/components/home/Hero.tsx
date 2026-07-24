@@ -14,7 +14,7 @@ export function Hero({ featuredProperty }: HeroProps) {
   const heroImage = featuredProperty?.imageUrl ?? HERO_IMAGE_URL;
 
   return (
-    <section className="relative overflow-hidden bg-brand pb-28 pt-10 sm:pb-32 sm:pt-14 lg:pb-36">
+    <section className="relative bg-brand pb-28 pt-10 sm:pb-32 sm:pt-14 lg:pb-36">
       <div
         className="pointer-events-none absolute -left-24 top-8 h-72 w-72 rounded-full border-[3px] border-black/10"
         aria-hidden="true"
@@ -94,7 +94,7 @@ export function Hero({ featuredProperty }: HeroProps) {
         </div>
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 translate-y-1/2">
+      <div className="absolute inset-x-0 bottom-0 z-30 translate-y-1/2">
         <SearchBar />
       </div>
     </section>
