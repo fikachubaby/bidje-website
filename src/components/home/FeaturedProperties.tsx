@@ -1,39 +1,29 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import { PropertyCard } from "@/components/properties/PropertyCard";
-import type { Property } from "@/types/property";
+import { properties } from "./data";
+import PropertyCard from "./PropertyCard";
 
-interface FeaturedPropertiesProps {
-  properties: Property[];
-}
-
-export function FeaturedProperties({ properties }: FeaturedPropertiesProps) {
+export default function FeaturedProperties() {
   return (
-    <section className="bg-neutral-50 py-20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-wider text-brand">
-              Handpicked for you
-            </p>
-            <h2 className="mt-2 text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
-              Featured Properties
-            </h2>
-            <p className="mt-3 max-w-lg text-neutral-600">
-              Premium listings selected by our team — exceptional value and
-              prime locations.
-            </p>
-          </div>
+    <section className="bg-neutral-50">
+      <div className="mx-auto max-w-7xl px-6 py-16">
+        <p className="text-sm font-black uppercase tracking-[0.22em] text-[#9c7c00]">
+          Selected opportunities
+        </p>
+
+        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
+          <h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
+            Featured Properties
+          </h2>
+
           <Link
-            href="/properties?featured=true"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand transition-colors hover:text-brand-dark"
+            href="/properties"
+            className="font-black underline decoration-[#ffd400] decoration-4 underline-offset-4"
           >
-            View all featured
-            <ArrowRight className="h-4 w-4" />
+            View all properties
           </Link>
         </div>
 
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-8 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
           {properties.map((property) => (
             <PropertyCard key={property.id} property={property} />
           ))}
