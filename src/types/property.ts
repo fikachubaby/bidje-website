@@ -19,6 +19,13 @@ export interface Property {
   imageUrl: string;
   featured: boolean;
   createdAt: string;
+  images?: string[];
+  urgentSale?: boolean;
+  landSize?: string;
+  tenure?: string;
+  bumiStatus?: string;
+  bidjeScore?: number;
+  verifiedOfferCount?: number;
 }
 
 export interface CategoryInfo {
