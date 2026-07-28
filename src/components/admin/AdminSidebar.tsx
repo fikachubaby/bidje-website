@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Upload,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,6 +16,7 @@ const navItems: { id: AdminView; label: string; icon: typeof LayoutDashboard }[]
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "properties", label: "Properties", icon: Building2 },
   { id: "offers", label: "Buyer Offers", icon: HandCoins },
+  { id: "imports", label: "Telegram Import", icon: Upload },
 ];
 
 interface AdminSidebarProps {

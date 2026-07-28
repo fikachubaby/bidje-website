@@ -54,4 +54,4 @@ export interface BuyerOffer {
   createdAt: string;
 }
 
-export type AdminView = "dashboard" | "properties" | "offers";
+export type AdminView = "dashboard" | "properties" | "offers" | "imports";

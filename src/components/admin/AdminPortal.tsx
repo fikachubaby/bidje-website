@@ -8,6 +8,7 @@ import { LoginForm } from "@/components/admin/LoginForm";
 import { OffersView } from "@/components/admin/OffersView";
 import { PropertiesView } from "@/components/admin/PropertiesView";
 import { PropertyFormModal } from "@/components/admin/PropertyFormModal";
+import { TelegramImportView } from "@/components/admin/TelegramImportView";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import { isAuthenticated, login, logout } from "@/lib/admin-auth";
 import {
@@ -40,6 +41,11 @@ const viewMeta: Record<AdminView, { title: string; subtitle: string }> = {
   offers: {
     title: "Buyer offers",
     subtitle: "Review incoming offers and update their status.",
+  },
+  imports: {
+    title: "Telegram Import",
+    subtitle:
+      "Upload a Telegram Desktop JSON export and review property listings before importing.",
   },
 };
 
@@ -217,6 +223,8 @@ export default function AdminPortal() {
               onUpdateStatus={handleUpdateOffer}
             />
           ) : null}
+
+          {activeView === "imports" ? <TelegramImportView /> : null}
         </section>
       </div>
 
