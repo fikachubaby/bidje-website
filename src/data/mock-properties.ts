@@ -30,6 +30,8 @@ export const mockProperties: Property[] = [
       "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&q=80",
     featured: true,
     createdAt: "2026-07-18T14:30:00Z",
+    marketValue: 3500000,
+    maxLoanApplicable: 2800000,
   },
   {
     id: "3",
@@ -76,6 +78,7 @@ export const mockProperties: Property[] = [
       "https://images.unsplash.com/photo-1564013838969-155d6032a0b4?w=800&q=80",
     featured: false,
     createdAt: "2026-07-22T08:00:00Z",
+    marketValue: 520000,
   },
   {
     id: "6",

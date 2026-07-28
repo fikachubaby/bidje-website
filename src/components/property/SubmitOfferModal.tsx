@@ -111,8 +111,8 @@ export function SubmitOfferModal({
     onClose();
   }
 
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
     const validationErrors = validateForm(form);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);

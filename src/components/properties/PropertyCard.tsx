@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Bath, Bed, MapPin, Maximize } from "lucide-react";
+import { FavouriteButton } from "@/components/property/FavouriteButton";
+import { PropertyFinancialEstimates } from "@/components/property/PropertyFinancialEstimates";
 import type { Property } from "@/types/property";
 import { formatArea, formatCategory, formatPrice } from "@/lib/utils";
 
@@ -10,32 +12,48 @@ interface PropertyCardProps {
 
 export function PropertyCard({ property }: PropertyCardProps) {
   return (
-    <Link
-      href={`/properties/${property.id}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white transition-all hover:border-brand/30 hover:shadow-xl hover:shadow-neutral-900/5"
-    >
-      <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
-        <Image
-          src={property.imageUrl}
-          alt={property.title}
-          fill
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+    <article className="group flex flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white transition-all hover:border-brand/30 hover:shadow-xl hover:shadow-neutral-900/5">
+      <div className="relative">
+        <Link href={`/properties/${property.id}`} className="block">
+          <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
+            <Image
+              src={property.imageUrl}
+              alt={property.title}
+              fill
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+            />
+            <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-neutral-800 backdrop-blur-sm">
+              {formatCategory(property.category)}
+            </span>
+            {property.category === "auction" && (
+              <span className="absolute left-3 top-12 rounded-full bg-brand px-3 py-1 text-xs font-semibold text-white">
+                Auction
+              </span>
+            )}
+          </div>
+        </Link>
+        <FavouriteButton
+          propertyId={property.id}
+          className="absolute right-3 top-3 z-10"
         />
-        <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-neutral-800 backdrop-blur-sm">
-          {formatCategory(property.category)}
-        </span>
-        {property.category === "auction" && (
-          <span className="absolute right-3 top-3 rounded-full bg-brand px-3 py-1 text-xs font-semibold text-white">
-            Auction
-          </span>
-        )}
       </div>
 
-      <div className="flex flex-1 flex-col p-5">
+      <Link
+        href={`/properties/${property.id}`}
+        className="flex flex-1 flex-col p-5 pb-3"
+      >
         <p className="text-xl font-bold text-neutral-900">
           {formatPrice(property.price, property.currency)}
         </p>
+
+        <PropertyFinancialEstimates
+          marketValue={property.marketValue}
+          maxLoanApplicable={property.maxLoanApplicable}
+          currency={property.currency}
+          className="mt-2"
+        />
+
         <h3 className="mt-1 line-clamp-1 text-base font-semibold text-neutral-800 group-hover:text-brand">
           {property.title}
         </h3>
@@ -62,7 +80,16 @@ export function PropertyCard({ property }: PropertyCardProps) {
             {formatArea(property.areaSqft)}
           </span>
         </div>
+      </Link>
+
+      <div className="border-t border-neutral-100 px-5 pb-5 pt-3">
+        <Link
+          href={`/properties/${property.id}/make-offer`}
+          className="block rounded-xl bg-brand py-3 text-center text-sm font-bold text-black transition-colors hover:bg-brand-dark"
+        >
+          Submit Offer
+        </Link>
       </div>
-    </Link>
+    </article>
   );
 }

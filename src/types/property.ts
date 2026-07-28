@@ -26,6 +26,8 @@ export interface Property {
   bumiStatus?: string;
   bidjeScore?: number;
   verifiedOfferCount?: number;
+  marketValue?: number;
+  maxLoanApplicable?: number;
 }
 
 export interface CategoryInfo {

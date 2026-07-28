@@ -10,6 +10,7 @@ import {
   Ruler,
 } from "lucide-react";
 import { BidjeRatingCard } from "@/components/property/BidjeRatingCard";
+import { PropertyFinancialEstimates } from "@/components/property/PropertyFinancialEstimates";
 import { PropertyGallery } from "@/components/property/PropertyGallery";
 import { PropertyOfferSection } from "@/components/property/PropertyOfferSection";
 import { getPropertyById } from "@/lib/properties";
@@ -95,6 +96,13 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
               <p className="mt-1 text-3xl font-extrabold text-black sm:text-4xl">
                 {formatPrice(property.price, property.currency)}
               </p>
+
+              <PropertyFinancialEstimates
+                marketValue={property.marketValue}
+                maxLoanApplicable={property.maxLoanApplicable}
+                currency={property.currency}
+                className="mt-4 rounded-xl border border-neutral-100 bg-neutral-50/50 p-4"
+              />
 
               <h1 className="mt-4 text-2xl font-bold leading-tight text-black sm:text-3xl">
                 {property.title}
@@ -194,10 +202,13 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
           {/* Sidebar — ~1/3 width */}
           <div className="lg:col-span-1">
             <PropertyOfferSection
+              propertyId={property.id}
               title={property.title}
               price={property.price}
               currency={property.currency}
               verifiedOfferCount={property.verifiedOfferCount}
+              marketValue={property.marketValue}
+              maxLoanApplicable={property.maxLoanApplicable}
             />
           </div>
         </div>
