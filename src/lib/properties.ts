@@ -1,27 +1,81 @@
-import { mockProperties } from "@/data/mock-properties";
+import { supabase } from "@/lib/supabase";
+import {
+  mapPropertyRowsToProperties,
+  mapPropertyRowToProperty,
+  type PropertyRow,
+} from "@/lib/property-mapper";
 import type { Property, PropertyCategory } from "@/types/property";
 
+const PROPERTY_SELECT = "*, property_images(image_url, is_cover)";
+
 export async function getFeaturedProperties(): Promise<Property[]> {
-  return mockProperties.filter((p) => p.featured).slice(0, 4);
+  const { data, error } = await supabase
+    .from("properties")
+    .select(PROPERTY_SELECT)
+    .eq("status", "Published")
+    .eq("is_featured", true)
+    .order("created_at", { ascending: false })
+    .limit(4);
+
+  if (error) {
+    console.error("getFeaturedProperties error:", error.message);
+    return [];
+  }
+
+  return mapPropertyRowsToProperties(data as PropertyRow[]);
 }
 
 export async function getLatestListings(limit = 6): Promise<Property[]> {
-  return [...mockProperties]
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
-    .slice(0, limit);
+  const { data, error } = await supabase
+    .from("properties")
+    .select(PROPERTY_SELECT)
+    .eq("status", "Published")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("getLatestListings error:", error.message);
+    return [];
+  }
+
+  return mapPropertyRowsToProperties(data as PropertyRow[]);
 }
 
 export async function getPropertiesByCategory(
   category: PropertyCategory
 ): Promise<Property[]> {
-  return mockProperties.filter((p) => p.category === category);
+  const { data, error } = await supabase
+    .from("properties")
+    .select(PROPERTY_SELECT)
+    .eq("status", "Published")
+    .ilike("property_type", category)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("getPropertiesByCategory error:", error.message);
+    return [];
+  }
+
+  return mapPropertyRowsToProperties(data as PropertyRow[]);
 }
 
-export async function getPropertyById(id: string): Promise<Property | undefined> {
-  return mockProperties.find((p) => p.id === id);
+export async function getPropertyById(
+  id: string
+): Promise<Property | undefined> {
+  const { data, error } = await supabase
+    .from("properties")
+    .select(PROPERTY_SELECT)
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    console.error("getPropertyById error:", error.message);
+    return undefined;
+  }
+
+  if (!data) return undefined;
+
+  return mapPropertyRowToProperty(data as PropertyRow);
 }
 
 export async function searchProperties(query: {
@@ -30,22 +84,38 @@ export async function searchProperties(query: {
   minPrice?: number;
   maxPrice?: number;
 }): Promise<Property[]> {
-  return mockProperties.filter((p) => {
-    if (
-      query.location &&
-      !p.location.toLowerCase().includes(query.location.toLowerCase())
-    ) {
-      return false;
-    }
-    if (query.category && p.category !== query.category) {
-      return false;
-    }
-    if (query.minPrice && p.price < query.minPrice) {
-      return false;
-    }
-    if (query.maxPrice && p.price > query.maxPrice) {
-      return false;
-    }
-    return true;
+  let builder = supabase
+    .from("properties")
+    .select(PROPERTY_SELECT)
+    .eq("status", "Published");
+
+  if (query.location) {
+    // Matches against state, district, or full_address
+    builder = builder.or(
+      `state.ilike.%${query.location}%,district.ilike.%${query.location}%,full_address.ilike.%${query.location}%`
+    );
+  }
+
+  if (query.category) {
+    builder = builder.ilike("property_type", query.category);
+  }
+
+  if (query.minPrice !== undefined) {
+    builder = builder.gte("asking_price", query.minPrice);
+  }
+
+  if (query.maxPrice !== undefined) {
+    builder = builder.lte("asking_price", query.maxPrice);
+  }
+
+  const { data, error } = await builder.order("created_at", {
+    ascending: false,
   });
+
+  if (error) {
+    console.error("searchProperties error:", error.message);
+    return [];
+  }
+
+  return mapPropertyRowsToProperties(data as PropertyRow[]);
 }
