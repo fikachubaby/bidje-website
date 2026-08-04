@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 export default async function TestDbPage() {
     let connectionStatus = "Connecting...";
     let rowCount = 0;
-    let sampleData: any = null;
+    let sampleData: Array<Record<string, unknown>> | null = null;
     let errorMessage: string | null = null;
 
     try {
@@ -20,9 +20,9 @@ export default async function TestDbPage() {
             rowCount = count || 0;
             sampleData = data;
         }
-    } catch (err: any) {
+    } catch (err: unknown) {
         connectionStatus = "Exception thrown during connection";
-        errorMessage = err.message || String(err);
+        errorMessage = err instanceof Error ? err.message : String(err);
     }
 
     return (
