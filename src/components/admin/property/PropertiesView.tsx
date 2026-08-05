@@ -54,7 +54,7 @@ export function PropertiesView({
       <div className="flex flex-wrap items-center justify-end gap-3">
         <AdminButton onClick={onAdd}>
           <Plus className="h-5 w-5" />
-          Add property
+          Add property LOLO
         </AdminButton>
       </div>
 

@@ -191,10 +191,12 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
                                                         {property.bathrooms} Bath
                                                     </span>
                                                 )}
-                                                <span className="flex items-center gap-1">
-                                                    <Maximize className="h-3.5 w-3.5 text-neutral-400" />
-                                                    {formatArea(property.areaSqft)}
-                                                </span>
+                                                {property.areaSqft !== undefined && (
+                                                    <span className="flex items-center gap-1">
+                                                        <Maximize className="h-3.5 w-3.5 text-neutral-400" />
+                                                        {formatArea(property.areaSqft)}
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
                                     </Link>
@@ -202,7 +204,6 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
                             })}
                         </div>
                     )}
-
                 </div>
             </div>
         </main>

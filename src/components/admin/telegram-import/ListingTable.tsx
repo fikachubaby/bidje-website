@@ -31,6 +31,7 @@ interface ListingTableProps {
     onDeselectAll: () => void;
     onToggleSelect: (key: string) => void;
     onOpenReview: (index: number) => void;
+    onImportSelected: (selectedItems: TelegramParsedProperty[]) => Promise<void>;
 }
 
 export function ListingTable({
@@ -52,6 +53,7 @@ export function ListingTable({
     onDeselectAll,
     onToggleSelect,
     onOpenReview,
+    onImportSelected,
 }: ListingTableProps) {
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const currentPage = Math.min(page, totalPages);
@@ -100,8 +102,28 @@ export function ListingTable({
                     {selected.size} selected
                 </p>
                 <div className="ml-auto flex flex-col items-end gap-1">
-                    <AdminButton type="button" disabled title="Coming in a later phase">
-                        Import Selected to Supabase
+                    <AdminButton
+                        type="button"
+                        disabled={selected.size === 0}
+                        onClick={() => {
+                            const selectedListings = Array.from(selected)
+                                .map((key) => {
+                                    // Extract numeric index whether key is "0", "key-0", or "item-0"
+                                    const match = key.match(/\d+/);
+                                    if (!match) return null;
+                                    const index = parseInt(match[0], 10);
+                                    return properties[index];
+                                })
+                                .filter((item): item is TelegramParsedProperty => Boolean(item));
+
+                            if (selectedListings.length === 0) {
+                                alert("Please select at least one listing from the checkbox selection.");
+                                return;
+                            }
+                            onImportSelected(selectedListings);
+                        }}
+                    >
+                        Import Selected ({selected.size}) to Supabase
                     </AdminButton>
                     <p className="max-w-sm text-right text-xs text-neutral-500">
                         Supabase import and permanent photo storage will be connected after the

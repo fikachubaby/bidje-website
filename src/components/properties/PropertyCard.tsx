@@ -75,10 +75,12 @@ export function PropertyCard({ property }: PropertyCardProps) {
               {property.bathrooms}
             </span>
           )}
-          <span className="flex items-center gap-1">
-            <Maximize className="h-4 w-4" />
-            {formatArea(property.areaSqft)}
-          </span>
+          {property.areaSqft !== undefined && (
+            <span className="flex items-center gap-1">
+              <Maximize className="h-3.5 w-3.5 text-neutral-400" />
+              {formatArea(property.areaSqft)}
+            </span>
+          )}
         </div>
       </Link>
 
