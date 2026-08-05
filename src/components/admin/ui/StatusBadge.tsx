@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import type { OfferStatus, PropertyStatus } from "@/types/admin";
+import type { OfferStatus, PropertyStatus } from "@/types/property";
 
 type BadgeStatus = PropertyStatus | OfferStatus;
 

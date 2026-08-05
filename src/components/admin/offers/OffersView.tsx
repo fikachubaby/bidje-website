@@ -4,7 +4,7 @@ import { CheckCircle2, Mail, Phone, XCircle } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import { StatusBadge } from "@/components/admin/ui/StatusBadge";
-import type { AdminProperty, BuyerOffer, OfferStatus } from "@/types/admin";
+import type { AdminProperty, BuyerOffer, OfferStatus } from "@/types/property";
 
 interface OffersViewProps {
   offers: BuyerOffer[];
