@@ -1,6 +1,3 @@
-import Link from "next/link";
-// import { categories } from "./data";
-
 export default function Categories() {
   return (
     <section className="mx-auto max-w-7xl px-6 py-16">

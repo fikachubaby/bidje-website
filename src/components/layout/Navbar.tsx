@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import { Logo } from "@/components/layout/Logo";
 import { Heart } from "lucide-react";
 
 export function Navbar() {

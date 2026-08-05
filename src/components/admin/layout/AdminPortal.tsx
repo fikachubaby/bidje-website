@@ -1,6 +1,5 @@
 "use client";
 
-import { Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { AdminHeader, AdminSidebar } from "@/components/admin/layout/AdminSidebar";
 import { DashboardView } from "@/components/admin/dashboard/DashboardView";
