@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { categories } from "./data";
+// import { categories } from "./data";
 
 export default function Categories() {
   return (
@@ -13,7 +13,7 @@ export default function Categories() {
       </h2>
 
       <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {categories.map((category) => {
+        {/* {categories.map((category) => {
           const Icon = category.icon;
 
           return (
@@ -35,7 +35,7 @@ export default function Categories() {
               </p>
             </Link>
           );
-        })}
+        })} */}
       </div>
     </section>
   );

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Check } from "lucide-react";
-import { SearchBar } from "@/components/home/SearchBar";
+import { SearchBar } from "@/components/ui/SearchBar";
 import type { Property } from "@/types/property";
 
 const HERO_IMAGE_URL =

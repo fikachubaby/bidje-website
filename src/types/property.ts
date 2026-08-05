@@ -5,6 +5,82 @@ export type PropertyCategory =
   | "commercial"
   | "auction";
 
+export type TenureType = "Freehold" | "Leasehold";
+export type BumiStatusType = "Bumi" | "Non Bumi" | "Unknown";
+
+export type OfferStatus = "Pending" | "Accepted" | "Rejected";
+export type AdminView = "dashboard" | "properties" | "offers" | "imports";
+
+export const PROPERTY_TYPES = [
+  "Terrace",
+  "Semi-D",
+  "Bungalow",
+  "Apartment",
+  "Condominium",
+  "Shop Lot",
+  "Land",
+] as const;
+
+export type PropertyType = (typeof PROPERTY_TYPES)[number];
+
+export const PROPERTY_STATUSES = [
+  "Draft",
+  "Published",
+  "Under Offer",
+  "Sold",
+  "Active",
+  "Archived"
+] as const;
+
+export type PropertyStatus = (typeof PROPERTY_STATUSES)[number];
+
+// Strict database record matching public.properties
+export interface DBProperty {
+  id: string;
+  title: string;
+  asking_price: number;
+  full_address: string;
+  state: string;
+  district?: string | null;
+  property_type: string;
+  tenure: TenureType;
+  bumi_status: BumiStatusType;
+  land_size?: string | null;
+  built_up_size?: string | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  description?: string | null;
+  google_maps_url?: string | null;
+  created_by?: string | null;
+  status: PropertyStatus;
+  created_at: string;
+  updated_at: string;
+  slug?: string | null;
+  meta_title?: string | null;
+  meta_description?: string | null;
+  tags?: string[] | null;
+  category?: PropertyCategory | string | null;
+  is_featured: boolean;
+  internal_notes?: string | null;
+  currency: string;
+  urgent_sale: boolean;
+  bidje_score?: number | null;
+  verified_offer_count: number;
+  market_value?: number | null;
+  max_loan_applicable?: number | null;
+  area_sqft?: number | null;
+}
+
+// Database record definition for public.property_images
+export interface DBPropertyImage {
+  id: string;
+  property_id: string;
+  image_url: string;
+  is_cover: boolean;
+  display_order: number;
+  created_at: string;
+}
+
 export interface Property {
   id: string;
   title: string;
@@ -15,7 +91,7 @@ export interface Property {
   category: PropertyCategory;
   bedrooms?: number;
   bathrooms?: number;
-  areaSqft: number;
+  areaSqft?: number;
   imageUrl: string;
   featured: boolean;
   createdAt: string;
@@ -35,4 +111,43 @@ export interface CategoryInfo {
   label: string;
   description: string;
   icon: string;
+}
+
+export interface AdminProperty {
+  id: string;
+  name: string;
+  price: number;
+  address: string;
+  state: string;
+  district: string;
+  propertyType: PropertyType;
+  tenure: TenureType;
+  bumiStatus: BumiStatusType;
+  landSize: string;
+  builtUp: string;
+  bedrooms: number;
+  bathrooms: number;
+  description: string;
+  mapsUrl: string;
+  images: string[];
+  status: PropertyStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AdminPropertyInput = Omit<
+  AdminProperty,
+  "id" | "createdAt" | "updatedAt"
+>;
+
+export interface BuyerOffer {
+  id: string;
+  propertyId: string;
+  buyerName: string;
+  buyerPhone: string;
+  buyerEmail: string;
+  amount: number;
+  message: string;
+  status: OfferStatus;
+  createdAt: string;
 }
