@@ -5,7 +5,7 @@ import { formatPrice } from "@/lib/utils";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import { StatCard } from "@/components/admin/ui/StatCard";
 import { StatusBadge } from "@/components/admin/ui/StatusBadge";
-import type { AdminProperty, BuyerOffer } from "@/types/admin";
+import type { AdminProperty, BuyerOffer } from "@/types/property";
 
 interface DashboardViewProps {
   properties: AdminProperty[];
