@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { ImagePlus, Trash2 } from "lucide-react";
-import { emptyPropertyInput, toPropertyInput } from "@/lib/admin-storage";
+import { emptyPropertyInput, toPropertyInput } from "@/lib/auth/admin-storage";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import {
   FormField,

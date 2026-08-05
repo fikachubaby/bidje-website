@@ -2,15 +2,15 @@
 
 import { Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { AdminHeader, AdminSidebar } from "@/components/admin/AdminSidebar";
-import { DashboardView } from "@/components/admin/DashboardView";
-import { LoginForm } from "@/components/admin/LoginForm";
-import { OffersView } from "@/components/admin/OffersView";
-import { PropertiesView } from "@/components/admin/PropertiesView";
-import { PropertyFormModal } from "@/components/admin/PropertyFormModal";
-import { TelegramImportView } from "@/components/admin/TelegramImportView";
+import { AdminHeader, AdminSidebar } from "@/components/admin/layout/AdminSidebar";
+import { DashboardView } from "@/components/admin/dashboard/DashboardView";
+import { LoginForm } from "@/components/admin/auth/LoginForm";
+import { OffersView } from "@/components/admin/offers/OffersView";
+import { PropertiesView } from "@/components/admin/property/PropertiesView";
+import { PropertyFormModal } from "@/components/admin/property/PropertyFormModal";
+import { TelegramImportView } from "@/components/admin/telegram-import/TelegramImportView";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
-import { isAuthenticated, login, logout } from "@/lib/admin-auth";
+import { isAuthenticated, login, logout } from "@/lib/auth/admin-auth";
 import {
   createProperty,
   loadOffers,
@@ -19,7 +19,7 @@ import {
   saveProperties,
   toPropertyInput,
   updateProperty,
-} from "@/lib/admin-storage";
+} from "@/lib/auth/admin-storage";
 import type {
   AdminProperty,
   AdminPropertyInput,

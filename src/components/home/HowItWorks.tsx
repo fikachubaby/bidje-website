@@ -1,4 +1,4 @@
-import { steps } from "./data";
+// import { steps } from "./data";
 
 export default function HowItWorks() {
   return (
@@ -18,7 +18,7 @@ export default function HowItWorks() {
         </p>
 
         <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {steps.map((step) => (
+          {/* {steps.map((step) => (
             <div key={step.number}>
               <span className="text-sm font-black text-[#ffd400]">
                 {step.number}
@@ -30,7 +30,7 @@ export default function HowItWorks() {
                 {step.description}
               </p>
             </div>
-          ))}
+          ))} */}
         </div>
 
         <div className="mt-10 rounded-2xl border border-white/15 bg-white/5 p-5 text-sm leading-6 text-white/70">

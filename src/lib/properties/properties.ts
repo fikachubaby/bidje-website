@@ -1,9 +1,9 @@
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/supabase";
 import {
   mapPropertyRowsToProperties,
   mapPropertyRowToProperty,
   type PropertyRow,
-} from "@/lib/property-mapper";
+} from "@/lib/properties/property-mapper";
 import type { Property, PropertyCategory } from "@/types/property";
 
 const PROPERTY_SELECT = "*, property_images(image_url, is_cover)";

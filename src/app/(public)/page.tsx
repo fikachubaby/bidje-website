@@ -1,9 +1,7 @@
 import Categories from "@/components/home/Categories";
-import FeaturedProperties from "@/components/home/FeaturedProperties";
-import Footer from "@/components/home/Footer";
-import HeroSearch from "@/components/home/HeroSearch";
+import HeroSearch from "@/components/ui/HeroSearch";
 import HowItWorks from "@/components/home/HowItWorks";
-import Navbar from "@/components/home/Navbar";
+import { Navbar } from "@/components/layout/Navbar";
 import Statistics from "@/components/home/Statistics";
 
 export default function HomePage() {
@@ -13,9 +11,7 @@ export default function HomePage() {
       <HeroSearch />
       <Statistics />
       <Categories />
-      <FeaturedProperties />
       <HowItWorks />
-      <Footer />
     </main>
   );
 }

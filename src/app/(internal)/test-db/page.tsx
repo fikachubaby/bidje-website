@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase/supabase";
 
 export default async function TestDbPage() {
     let connectionStatus = "Connecting...";

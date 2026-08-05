@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { ADMIN_EMAIL } from "@/lib/admin-auth";
+import { ADMIN_EMAIL } from "@/lib/auth/admin-auth";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import { FormField, FormInput } from "@/components/admin/ui/FormField";
 
