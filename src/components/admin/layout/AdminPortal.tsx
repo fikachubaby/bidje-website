@@ -9,17 +9,7 @@ import { OffersView } from "@/components/admin/offers/OffersView";
 import { PropertiesView } from "@/components/admin/property/PropertiesView";
 import { PropertyFormModal } from "@/components/admin/property/PropertyFormModal";
 import { TelegramImportView } from "@/components/admin/telegram-import/TelegramImportView";
-import { AdminButton } from "@/components/admin/ui/AdminButton";
 import { isAuthenticated, login, logout } from "@/lib/auth/admin-auth";
-import {
-  createProperty,
-  loadOffers,
-  loadProperties,
-  saveOffers,
-  saveProperties,
-  toPropertyInput,
-  updateProperty,
-} from "@/lib/auth/admin-storage";
 import type {
   AdminProperty,
   AdminPropertyInput,
@@ -27,7 +17,7 @@ import type {
   BuyerOffer,
   OfferStatus,
   PropertyStatus,
-} from "@/types/admin";
+} from "@/types/property";
 
 const viewMeta: Record<AdminView, { title: string; subtitle: string }> = {
   dashboard: {
@@ -59,28 +49,50 @@ export default function AdminPortal() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingProperty, setEditingProperty] = useState<AdminProperty | null>(null);
 
-  useEffect(() => {
-    setAuthenticated(isAuthenticated());
-    setProperties(loadProperties());
-    setOffers(loadOffers());
-    setHydrated(true);
+  // Fetch properties from Supabase API
+  const fetchProperties = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/properties");
+      const data = await res.json();
+      if (res.ok) {
+        setProperties(data.properties || []);
+      }
+    } catch (err) {
+      console.error("Error loading properties:", err);
+    }
+  }, []);
+
+  // Fetch offers from Supabase API (Replace with your actual offers endpoint if path differs)
+  const fetchOffers = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/offers");
+      if (res.ok) {
+        const data = await res.json();
+        setOffers(data.offers || []);
+      }
+    } catch (err) {
+      console.error("Error loading offers:", err);
+    }
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
-    saveProperties(properties);
-  }, [properties, hydrated]);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    saveOffers(offers);
-  }, [offers, hydrated]);
+    setAuthenticated(isAuthenticated());
+    if (isAuthenticated()) {
+      fetchProperties();
+      fetchOffers();
+    }
+    setHydrated(true);
+  }, [fetchProperties, fetchOffers]);
 
   const handleLogin = useCallback((email: string, password: string) => {
     const success = login(email, password);
-    if (success) setAuthenticated(true);
+    if (success) {
+      setAuthenticated(true);
+      fetchProperties();
+      fetchOffers();
+    }
     return success;
-  }, []);
+  }, [fetchProperties, fetchOffers]);
 
   const handleSignOut = useCallback(() => {
     logout();
@@ -103,59 +115,132 @@ export default function AdminPortal() {
     setEditingProperty(null);
   }, []);
 
+  // Save (Create or Update)
   const handleSaveProperty = useCallback(
-    (input: AdminPropertyInput) => {
-      if (editingProperty) {
-        setProperties((items) =>
-          items.map((item) =>
-            item.id === editingProperty.id ? updateProperty(item, input) : item
-          )
-        );
-      } else {
-        setProperties((items) => [createProperty(input), ...items]);
+    async (input: AdminPropertyInput) => {
+      try {
+        const isEdit = Boolean(editingProperty);
+        const endpoint = isEdit
+          ? `/api/admin/properties/${editingProperty?.id}`
+          : "/api/admin/properties";
+        const method = isEdit ? "PUT" : "POST";
+
+        const res = await fetch(endpoint, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(input),
+        });
+
+        if (!res.ok) throw new Error("Failed to save property");
+
+        await fetchProperties();
+        closeEditor();
+      } catch (err) {
+        console.error("Save error:", err);
+        alert("Failed to save property");
       }
-      closeEditor();
     },
-    [editingProperty, closeEditor]
+    [editingProperty, closeEditor, fetchProperties]
   );
 
-  const handleDeleteProperty = useCallback((id: string) => {
-    if (window.confirm("Delete this property listing? This cannot be undone.")) {
-      setProperties((items) => items.filter((item) => item.id !== id));
-    }
-  }, []);
+  // Delete
+  const handleDeleteProperty = useCallback(
+    async (id: string) => {
+      if (!window.confirm("Delete this property listing? This cannot be undone.")) return;
 
-  const handleDuplicateProperty = useCallback((property: AdminProperty) => {
-    setProperties((items) => [
-      createProperty({
-        ...toPropertyInput(property),
-        name: `${property.name} (Copy)`,
-        status: "Draft",
-      }),
-      ...items,
-    ]);
-  }, []);
-
-  const handleStatusChange = useCallback((id: string, status: PropertyStatus) => {
-    setProperties((items) =>
-      items.map((item) => (item.id === id ? { ...item, status } : item))
-    );
-  }, []);
-
-  const handleUpdateOffer = useCallback((id: string, status: OfferStatus) => {
-    setOffers((items) => items.map((item) => (item.id === id ? { ...item, status } : item)));
-
-    if (status === "Accepted") {
-      const offer = offers.find((item) => item.id === id);
-      if (offer) {
-        setProperties((items) =>
-          items.map((item) =>
-            item.id === offer.propertyId ? { ...item, status: "Under Offer" } : item
-          )
-        );
+      try {
+        const res = await fetch(`/api/admin/properties/${id}`, { method: "DELETE" });
+        if (!res.ok) throw new Error("Failed to delete property");
+        await fetchProperties();
+      } catch (err) {
+        console.error("Delete error:", err);
+        alert("Failed to delete property");
       }
+    },
+    [fetchProperties]
+  );
+
+  // Status Change API helper
+  const handleStatusChange = useCallback(
+    async (id: string, status: PropertyStatus) => {
+      try {
+        const res = await fetch(`/api/admin/properties/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        });
+
+        if (!res.ok) throw new Error("Failed to update status");
+        await fetchProperties();
+      } catch (err) {
+        console.error("Status update error:", err);
+      }
+    },
+    [fetchProperties]
+  );
+
+  // Duplicate Property
+  const handleDuplicateProperty = useCallback(
+    async (property: AdminProperty) => {
+      try {
+        const duplicateInput: AdminPropertyInput = {
+          name: `${property.name} (Copy)`,
+          price: property.price,
+          address: property.address,
+          state: property.state,
+          district: property.district,
+          propertyType: property.propertyType,
+          tenure: property.tenure,
+          bumiStatus: property.bumiStatus,
+          landSize: property.landSize,
+          builtUp: property.builtUp,
+          bedrooms: property.bedrooms,
+          bathrooms: property.bathrooms,
+          description: property.description,
+          mapsUrl: property.mapsUrl,
+          images: property.images || [],
+          status: "Draft" as PropertyStatus,
+        };
+
+        const res = await fetch("/api/admin/properties", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(duplicateInput),
+        });
+
+        if (!res.ok) throw new Error("Failed to duplicate property");
+        await fetchProperties();
+      } catch (err) {
+        console.error("Duplicate error:", err);
+      }
+    },
+    [fetchProperties]
+  );
+
+  // Update Offer Status (Sync with backend API if available)
+  const handleUpdateOffer = useCallback(async (id: string, status: OfferStatus) => {
+    try {
+      // Optional: Add backend API call here if you have an /api/admin/offers/[id] endpoint
+      /*
+      await fetch(`/api/admin/offers/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      */
+
+      setOffers((items) => items.map((item) => (item.id === id ? { ...item, status } : item)));
+
+      if (status === "Accepted") {
+        const offer = offers.find((item) => item.id === id);
+        if (offer) {
+          await handleStatusChange(offer.propertyId, "Under Offer");
+        }
+      }
+    } catch (err) {
+      console.error("Error updating offer:", err);
     }
-  }, [offers]);
+  }, [offers, handleStatusChange]);
 
   if (!hydrated) {
     return (
@@ -186,14 +271,6 @@ export default function AdminPortal() {
           title={meta.title}
           subtitle={meta.subtitle}
           onMenuClick={() => setMobileNav(true)}
-          actions={
-            activeView === "properties" ? (
-              <AdminButton onClick={openCreate}>
-                <Plus className="h-5 w-5" />
-                Add property
-              </AdminButton>
-            ) : null
-          }
         />
 
         <section className="flex-1 p-5 lg:p-8">

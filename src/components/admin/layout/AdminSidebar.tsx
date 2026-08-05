@@ -10,7 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { AdminView } from "@/types/admin";
+import type { AdminView } from "@/types/property";
 
 const navItems: { id: AdminView; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },

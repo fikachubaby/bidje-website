@@ -7,9 +7,34 @@ export type PropertyCategory =
 
 export type TenureType = "Freehold" | "Leasehold";
 export type BumiStatusType = "Bumi" | "Non Bumi" | "Unknown";
-export type PropertyStatus = "Draft" | "Active" | "Sold" | "Archived";
 
-// Strict database record definition matching public.properties
+export type OfferStatus = "Pending" | "Accepted" | "Rejected";
+export type AdminView = "dashboard" | "properties" | "offers" | "imports";
+
+export const PROPERTY_TYPES = [
+  "Terrace",
+  "Semi-D",
+  "Bungalow",
+  "Apartment",
+  "Condominium",
+  "Shop Lot",
+  "Land",
+] as const;
+
+export type PropertyType = (typeof PROPERTY_TYPES)[number];
+
+export const PROPERTY_STATUSES = [
+  "Draft",
+  "Published",
+  "Under Offer",
+  "Sold",
+  "Active",
+  "Archived"
+] as const;
+
+export type PropertyStatus = (typeof PROPERTY_STATUSES)[number];
+
+// Strict database record matching public.properties
 export interface DBProperty {
   id: string;
   title: string;
@@ -56,7 +81,6 @@ export interface DBPropertyImage {
   created_at: string;
 }
 
-// Existing combined UI model for frontend rendering
 export interface Property {
   id: string;
   title: string;
@@ -87,4 +111,43 @@ export interface CategoryInfo {
   label: string;
   description: string;
   icon: string;
+}
+
+export interface AdminProperty {
+  id: string;
+  name: string;
+  price: number;
+  address: string;
+  state: string;
+  district: string;
+  propertyType: PropertyType;
+  tenure: TenureType;
+  bumiStatus: BumiStatusType;
+  landSize: string;
+  builtUp: string;
+  bedrooms: number;
+  bathrooms: number;
+  description: string;
+  mapsUrl: string;
+  images: string[];
+  status: PropertyStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AdminPropertyInput = Omit<
+  AdminProperty,
+  "id" | "createdAt" | "updatedAt"
+>;
+
+export interface BuyerOffer {
+  id: string;
+  propertyId: string;
+  buyerName: string;
+  buyerPhone: string;
+  buyerEmail: string;
+  amount: number;
+  message: string;
+  status: OfferStatus;
+  createdAt: string;
 }

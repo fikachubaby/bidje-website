@@ -6,7 +6,7 @@ import { formatPrice } from "@/lib/utils";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import { FormInput, FormSelect } from "@/components/admin/ui/FormField";
 import { StatusBadge } from "@/components/admin/ui/StatusBadge";
-import type { AdminProperty, PropertyStatus } from "@/types/admin";
+import { PROPERTY_STATUSES, type AdminProperty, type PropertyStatus } from "@/types/property";
 
 interface PropertiesViewProps {
   properties: AdminProperty[];
@@ -54,7 +54,7 @@ export function PropertiesView({
       <div className="flex flex-wrap items-center justify-end gap-3">
         <AdminButton onClick={onAdd}>
           <Plus className="h-5 w-5" />
-          Add property LOLO
+          Add property
         </AdminButton>
       </div>
 
@@ -74,10 +74,11 @@ export function PropertiesView({
           className="mt-0 sm:w-48"
         >
           <option value="All">All statuses</option>
-          <option value="Draft">Draft</option>
-          <option value="Published">Published</option>
-          <option value="Under Offer">Under Offer</option>
-          <option value="Sold">Sold</option>
+          {PROPERTY_STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {status}
+            </option>
+          ))}
         </FormSelect>
       </div>
 
@@ -128,10 +129,11 @@ export function PropertiesView({
                           }
                           className="mt-0 py-2 text-xs"
                         >
-                          <option value="Draft">Draft</option>
-                          <option value="Published">Published</option>
-                          <option value="Under Offer">Under Offer</option>
-                          <option value="Sold">Sold</option>
+                          {PROPERTY_STATUSES.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
                         </FormSelect>
                       </div>
                     </td>

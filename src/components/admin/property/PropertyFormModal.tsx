@@ -2,7 +2,6 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { ImagePlus, Trash2 } from "lucide-react";
-import { emptyPropertyInput, toPropertyInput } from "@/lib/auth/admin-storage";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import {
   FormField,
@@ -11,19 +10,33 @@ import {
   FormTextarea,
 } from "@/components/admin/ui/FormField";
 import { Modal } from "@/components/admin/ui/Modal";
-import type { AdminProperty, AdminPropertyInput, PropertyStatus } from "@/types/admin";
+import {
+  PROPERTY_TYPES,
+  PROPERTY_STATUSES,
+  type AdminProperty,
+  type AdminPropertyInput,
+  type PropertyStatus,
+  type PropertyType
+} from "@/types/property";
 
-const propertyTypes = [
-  "Terrace",
-  "Semi-D",
-  "Bungalow",
-  "Apartment",
-  "Condominium",
-  "Shop Lot",
-  "Land",
-] as const;
-
-const statuses: PropertyStatus[] = ["Draft", "Published", "Under Offer", "Sold"];
+const defaultFormState: AdminPropertyInput = {
+  name: "",
+  price: 0,
+  address: "",
+  state: "",
+  district: "",
+  propertyType: "Terrace",
+  tenure: "Freehold",
+  bumiStatus: "Non Bumi",
+  landSize: "",
+  builtUp: "",
+  bedrooms: 3,
+  bathrooms: 2,
+  description: "",
+  mapsUrl: "",
+  images: [],
+  status: "Draft",
+};
 
 interface PropertyFormModalProps {
   open: boolean;
@@ -38,7 +51,7 @@ export function PropertyFormModal({
   onClose,
   onSave,
 }: PropertyFormModalProps) {
-  const [form, setForm] = useState<AdminPropertyInput>(emptyPropertyInput);
+  const [form, setForm] = useState<AdminPropertyInput>(defaultFormState);
   const [imageInput, setImageInput] = useState("");
   const [error, setError] = useState("");
 
@@ -46,9 +59,26 @@ export function PropertyFormModal({
     if (!open) return;
 
     if (editingProperty) {
-      setForm(toPropertyInput(editingProperty));
+      setForm({
+        name: editingProperty.name || "",
+        price: editingProperty.price || 0,
+        address: editingProperty.address || "",
+        state: editingProperty.state || "",
+        district: editingProperty.district || "",
+        propertyType: editingProperty.propertyType || "Terrace",
+        tenure: editingProperty.tenure || "Freehold",
+        bumiStatus: editingProperty.bumiStatus || "Non Bumi",
+        landSize: editingProperty.landSize || "",
+        builtUp: editingProperty.builtUp || "",
+        bedrooms: editingProperty.bedrooms || 0,
+        bathrooms: editingProperty.bathrooms || 0,
+        description: editingProperty.description || "",
+        mapsUrl: editingProperty.mapsUrl || "",
+        images: Array.isArray(editingProperty.images) ? editingProperty.images : [],
+        status: editingProperty.status || "Draft",
+      });
     } else {
-      setForm(emptyPropertyInput);
+      setForm(defaultFormState);
     }
 
     setImageInput("");
@@ -59,17 +89,22 @@ export function PropertyFormModal({
     onClose();
   }
 
-  function addImage() {
+  function addImage(e?: React.MouseEvent | React.KeyboardEvent) {
+    if (e) e.preventDefault();
     const url = imageInput.trim();
     if (!url) return;
-    setForm((prev) => ({ ...prev, images: [...prev.images, url] }));
+
+    setForm((prev) => ({
+      ...prev,
+      images: [...(prev.images || []), url],
+    }));
     setImageInput("");
   }
 
   function removeImage(index: number) {
     setForm((prev) => ({
       ...prev,
-      images: prev.images.filter((_, i) => i !== index),
+      images: (prev.images || []).filter((_, i) => i !== index),
     }));
   }
 
@@ -89,10 +124,11 @@ export function PropertyFormModal({
       return;
     }
 
-    onSave(form);
+    onSave({ ...form, images: form.images || [] });
   }
 
   const isEditing = Boolean(editingProperty);
+  const currentImages = form.images || [];
 
   return (
     <Modal
@@ -127,10 +163,10 @@ export function PropertyFormModal({
             id="propertyType"
             value={form.propertyType}
             onChange={(e) =>
-              setForm({ ...form, propertyType: e.target.value as AdminPropertyInput["propertyType"] })
+              setForm({ ...form, propertyType: e.target.value as PropertyType })
             }
           >
-            {propertyTypes.map((type) => (
+            {PROPERTY_TYPES.map((type) => (
               <option key={type} value={type}>
                 {type}
               </option>
@@ -146,7 +182,7 @@ export function PropertyFormModal({
               setForm({ ...form, status: e.target.value as PropertyStatus })
             }
           >
-            {statuses.map((status) => (
+            {PROPERTY_STATUSES.map((status) => (
               <option key={status} value={status}>
                 {status}
               </option>
@@ -258,12 +294,18 @@ export function PropertyFormModal({
         <FormField
           label="Images"
           wide
-          hint="Add image URLs one at a time. Stored locally in your browser."
+          hint="Add image URLs one at a time."
         >
           <div className="mt-2 flex gap-2">
             <FormInput
               value={imageInput}
               onChange={(e) => setImageInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addImage();
+                }
+              }}
               placeholder="https://example.com/image.jpg"
               className="mt-0"
             />
@@ -272,9 +314,9 @@ export function PropertyFormModal({
               Add
             </AdminButton>
           </div>
-          {form.images.length > 0 ? (
+          {currentImages.length > 0 ? (
             <ul className="mt-3 space-y-2">
-              {form.images.map((url, index) => (
+              {currentImages.map((url, index) => (
                 <li
                   key={`${url}-${index}`}
                   className="flex items-center gap-3 rounded-xl border border-neutral-200 px-3 py-2 text-sm"
