@@ -234,6 +234,23 @@ function buildWarnings(property: Omit<TelegramParsedProperty, "warnings">): stri
   return warnings;
 }
 
+export interface ExtractedFields {
+  address: string;
+  propertyType: string;
+  tenure: string;
+  bumiStatus: string;
+  builtUp: string;
+  landSize: string;
+  state: string;
+  district: string;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  price: number | null;
+  mapsUrl: string;
+  description: string;
+  title: string;
+}
+
 interface PropertyDraft {
   telegramCode: string;
   textParts: string[];
@@ -241,11 +258,12 @@ interface PropertyDraft {
   messageIds: number[];
 }
 
-function finalizeProperty(
-  draft: PropertyDraft,
-  zipPhotoLookup: Map<string, string>
-): TelegramParsedProperty {
-  const rawText = draft.textParts.join("\n\n").trim();
+/** Extract structured fields from a single block of listing text. Used by both
+ *  the ZIP importer (finalizeProperty) and the live Telegram webhook. */
+export function extractFieldsFromText(
+  rawText: string,
+  telegramCode: string
+): ExtractedFields {
   const address = extractLabeledValue(rawText, FIELD_LABELS.address);
   const propertyType = extractLabeledValue(rawText, FIELD_LABELS.propertyType);
   const tenure = extractLabeledValue(rawText, FIELD_LABELS.tenure);
@@ -259,7 +277,20 @@ function finalizeProperty(
   const price = parsePrice(extractLabeledValue(rawText, FIELD_LABELS.price));
   const mapsUrl = extractMapsUrl(rawText);
   const description = cleanDescription(rawText);
-  const title = generateTitle(propertyType, district, address, draft.telegramCode);
+  const title = generateTitle(propertyType, district, address, telegramCode);
+
+  return {
+    address, propertyType, tenure, bumiStatus, builtUp, landSize,
+    state, district, bedrooms, bathrooms, price, mapsUrl, description, title,
+  };
+}
+
+function finalizeProperty(
+  draft: PropertyDraft,
+  zipPhotoLookup: Map<string, string>
+): TelegramParsedProperty {
+  const rawText = draft.textParts.join("\n\n").trim();
+  const fields = extractFieldsFromText(rawText, draft.telegramCode);
 
   const uniquePhotos: string[] = [];
   const seen = new Set<string>();
@@ -280,20 +311,20 @@ function finalizeProperty(
 
   const base: Omit<TelegramParsedProperty, "warnings"> = {
     telegramCode: draft.telegramCode,
-    title,
-    address,
-    state,
-    district,
-    propertyType,
-    tenure,
-    bumiStatus,
-    landSize,
-    builtUp,
-    bedrooms,
-    bathrooms,
-    price,
-    mapsUrl,
-    description,
+    title: fields.title,
+    address: fields.address,
+    state: fields.state,
+    district: fields.district,
+    propertyType: fields.propertyType,
+    tenure: fields.tenure,
+    bumiStatus: fields.bumiStatus,
+    landSize: fields.landSize,
+    builtUp: fields.builtUp,
+    bedrooms: fields.bedrooms,
+    bathrooms: fields.bathrooms,
+    price: fields.price,
+    mapsUrl: fields.mapsUrl,
+    description: fields.description,
     rawText,
     photoPaths: uniquePhotos,
     photoCount: uniquePhotos.length,

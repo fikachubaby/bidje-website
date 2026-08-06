@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
+import { syncPropertyToTelegram } from "@/lib/telegram/telegram-bot";
 
 // GET /api/admin/properties
 export async function GET() {
@@ -64,6 +65,28 @@ export async function POST(request: Request) {
             .single();
 
         if (error) throw error;
+
+        // Fire-and-forget: sync to Telegram, don't block the response on it
+        syncPropertyToTelegram(
+            {
+                id: property.id,
+                telegramCode: null,
+                telegramChatId: null,
+                telegramMessageIds: null,
+                telegramHasCaption: null,
+                title: property.title,
+                fullAddress: property.full_address,
+                mapsUrl: property.google_maps_url,
+                propertyType: property.property_type,
+                tenure: property.tenure,
+                bedrooms: property.bedrooms,
+                bathrooms: property.bathrooms,
+                builtUpSize: property.built_up_size,
+                landSize: property.land_size,
+                askingPrice: Number(property.asking_price),
+            },
+            body.images ?? []
+        );
 
         return NextResponse.json({ success: true, property }, { status: 201 });
     } catch (err: unknown) {

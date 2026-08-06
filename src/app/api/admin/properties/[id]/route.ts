@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
+import { syncPropertyToTelegram } from "@/lib/telegram/telegram-bot";
 
-// PUT /api/admin/properties/[id]
 export async function PUT(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
@@ -34,6 +34,27 @@ export async function PUT(
             .single();
 
         if (error) throw error;
+
+        syncPropertyToTelegram(
+            {
+                id: property.id,
+                telegramCode: property.telegram_code,
+                telegramChatId: property.telegram_chat_id,
+                telegramMessageIds: property.telegram_message_ids,
+                telegramHasCaption: property.telegram_has_caption,
+                title: property.title,
+                fullAddress: property.full_address,
+                mapsUrl: property.google_maps_url,
+                propertyType: property.property_type,
+                tenure: property.tenure,
+                bedrooms: property.bedrooms,
+                bathrooms: property.bathrooms,
+                builtUpSize: property.built_up_size,
+                landSize: property.land_size,
+                askingPrice: Number(property.asking_price),
+            },
+            body.images ?? []
+        );
 
         return NextResponse.json({ success: true, property });
     } catch (err: unknown) {
