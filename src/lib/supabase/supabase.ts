@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -10,6 +10,5 @@ if (!supabaseUrl || !supabaseAnonKey) {
     );
 }
 
-// Client-side / browser-safe client: uses the anon key, respects RLS.
-// Safe to import in client components ("use client").
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Client-side / browser-safe client: manages cookies automatically for Next.js SSR middleware.
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);

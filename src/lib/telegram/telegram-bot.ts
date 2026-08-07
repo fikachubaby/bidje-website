@@ -15,6 +15,9 @@ async function tgFetch(method: string, body: Record<string, unknown>) {
     });
     const data = await res.json();
     if (!data.ok) {
+        if (data.description?.includes("message is not modified")) {
+            return null;
+        }
         throw new Error(`Telegram API ${method} failed: ${data.description}`);
     }
     return data.result;
@@ -161,9 +164,16 @@ export async function syncPropertyToTelegram(
         let messageIds = property.telegramMessageIds;
         let hasCaption = property.telegramHasCaption ?? photoUrls.length > 0;
 
-        if (messageIds && messageIds.length > 0) {
-            // Already posted once — edit in place instead of duplicating
+        const previousPhotoCount = property.telegramHasCaption ? (messageIds?.length ?? 0) : 0;
+        const photosChanged = previousPhotoCount !== photoUrls.length;
+
+        if (messageIds && messageIds.length > 0 && !photosChanged) {
             await editListingCaption(messageIds[0], caption, hasCaption);
+        } else if (messageIds && messageIds.length > 0 && photosChanged) {
+            await deleteMessages(messageIds);
+            const result = await postNewListing(caption, photoUrls);
+            messageIds = result.messageIds;
+            hasCaption = result.hasCaption;
         } else {
             const result = await postNewListing(caption, photoUrls);
             messageIds = result.messageIds;
@@ -183,5 +193,17 @@ export async function syncPropertyToTelegram(
             .eq("id", property.id);
     } catch (err) {
         console.error(`Telegram sync failed for property ${property.id}:`, err);
+    }
+}
+
+/** Delete one or more messages (used when reposting a listing whose photos changed). */
+export async function deleteMessages(messageIds: number[]): Promise<void> {
+    const chatId = process.env.TELEGRAM_GROUP_CHAT_ID;
+    for (const messageId of messageIds) {
+        try {
+            await tgFetch("deleteMessage", { chat_id: chatId, message_id: messageId });
+        } catch (err) {
+            console.error(`Failed to delete Telegram message ${messageId}:`, err);
+        }
     }
 }
