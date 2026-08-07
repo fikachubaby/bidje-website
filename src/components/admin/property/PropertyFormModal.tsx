@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { ImagePlus, Trash2 } from "lucide-react";
+import { ImagePlus, Trash2, Loader2, Upload } from "lucide-react";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import {
   FormField,
@@ -54,6 +54,8 @@ export function PropertyFormModal({
   const [form, setForm] = useState<AdminPropertyInput>(defaultFormState);
   const [imageInput, setImageInput] = useState("");
   const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -106,6 +108,48 @@ export function PropertyFormModal({
       ...prev,
       images: (prev.images || []).filter((_, i) => i !== index),
     }));
+  }
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    setUploadError("");
+
+    const uploadedUrls: string[] = [];
+
+    for (const file of Array.from(files)) {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await fetch("/api/admin/upload", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          setUploadError(data.error || `Failed to upload ${file.name}`);
+          continue;
+        }
+
+        uploadedUrls.push(data.url);
+      } catch {
+        setUploadError(`Failed to upload ${file.name}`);
+      }
+    }
+
+    if (uploadedUrls.length > 0) {
+      setForm((prev) => ({
+        ...prev,
+        images: [...(prev.images || []), ...uploadedUrls],
+      }));
+    }
+
+    setUploading(false);
+    e.target.value = "";
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -294,9 +338,31 @@ export function PropertyFormModal({
         <FormField
           label="Images"
           wide
-          hint="Add image URLs one at a time."
+          hint="Upload photos, or paste an image URL. First image becomes the cover photo."
         >
-          <div className="mt-2 flex gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <label
+              className={`flex cursor-pointer items-center gap-2 rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 ${uploading ? "pointer-events-none opacity-60" : ""
+                }`}
+            >
+              {uploading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4" />
+              )}
+              {uploading ? "Uploading…" : "Upload photos"}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                multiple
+                className="hidden"
+                onChange={handleFileUpload}
+                disabled={uploading}
+              />
+            </label>
+
+            <span className="text-xs text-neutral-400">or</span>
+
             <FormInput
               value={imageInput}
               onChange={(e) => setImageInput(e.target.value)}
@@ -306,29 +372,44 @@ export function PropertyFormModal({
                   addImage();
                 }
               }}
-              placeholder="https://example.com/image.jpg"
-              className="mt-0"
+              placeholder="Paste an image URL"
+              className="mt-0 flex-1 min-w-[200px]"
             />
             <AdminButton type="button" variant="secondary" onClick={addImage}>
               <ImagePlus className="h-4 w-4" />
               Add
             </AdminButton>
           </div>
+
+          {uploadError ? (
+            <p className="mt-2 text-sm text-red-600">{uploadError}</p>
+          ) : null}
+
           {currentImages.length > 0 ? (
-            <ul className="mt-3 space-y-2">
+            <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {currentImages.map((url, index) => (
                 <li
                   key={`${url}-${index}`}
-                  className="flex items-center gap-3 rounded-xl border border-neutral-200 px-3 py-2 text-sm"
+                  className="group relative overflow-hidden rounded-xl border border-neutral-200"
                 >
-                  <span className="min-w-0 flex-1 truncate text-neutral-600">{url}</span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={url}
+                    alt={`Property photo ${index + 1}`}
+                    className="h-24 w-full object-cover"
+                  />
+                  {index === 0 ? (
+                    <span className="absolute left-1 top-1 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                      Cover
+                    </span>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() => removeImage(index)}
-                    className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-100 hover:text-red-600"
+                    className="absolute right-1 top-1 rounded-lg bg-black/60 p-1 text-white opacity-0 transition-opacity hover:bg-red-600 group-hover:opacity-100"
                     aria-label="Remove image"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </li>
               ))}

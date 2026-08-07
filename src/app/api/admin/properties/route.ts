@@ -66,8 +66,10 @@ export async function POST(request: Request) {
 
         if (error) throw error;
 
-        // Fire-and-forget: sync to Telegram, don't block the response on it
-        syncPropertyToTelegram(
+        // Must be awaited Vercel serverless kills the function once the
+        // response is sent, so a fire-and-forget call here would silently
+        // never complete.
+        await syncPropertyToTelegram(
             {
                 id: property.id,
                 telegramCode: null,

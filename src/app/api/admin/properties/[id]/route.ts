@@ -35,7 +35,7 @@ export async function PUT(
 
         if (error) throw error;
 
-        syncPropertyToTelegram(
+        await syncPropertyToTelegram(
             {
                 id: property.id,
                 telegramCode: property.telegram_code,
