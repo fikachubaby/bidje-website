@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { PropertyCard } from "@/components/properties/PropertyCard";
+import { PropertyCard } from "@/components/property/PropertyCard";
 import type { Property } from "@/types/property";
 
 interface LatestListingsProps {
