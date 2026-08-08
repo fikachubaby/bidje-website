@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import type { AdminProperty, AdminPropertyInput, PropertyStatus } from "@/types/property";
+import type { 
+    AdminProperty,
+    AdminPropertyInput,
+    PropertyStatus,
+    OfferStatus,
+    BuyerOffer,
+} from "@/types/property";
 
 export function useAdminProperties(isAuthenticated: boolean) {
     const [properties, setProperties] = useState<AdminProperty[]>([]);
@@ -110,4 +116,41 @@ export function useAdminProperties(isAuthenticated: boolean) {
         updateStatus,
         duplicateProperty,
     };
+}
+
+export function useAdminOffers(isAuthenticated: boolean) {
+    const [offers, setOffers] = useState<BuyerOffer[]>([]);
+    const [loading, setLoading] = useState(false);
+
+    const fetchOffers = useCallback(async () => {
+        try {
+            setLoading(true);
+            const res = await fetch("/api/admin/offers");
+            const data = await res.json();
+            if (res.ok) setOffers(data.offers || []);
+        } catch (err) {
+            console.error("Error loading offers:", err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isAuthenticated) fetchOffers();
+    }, [isAuthenticated, fetchOffers]);
+
+    const updateOfferStatus = useCallback(
+        async (id: string, status: OfferStatus) => {
+            const res = await fetch(`/api/admin/offers/${id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status }),
+            });
+            if (!res.ok) throw new Error("Failed to update offer status");
+            await fetchOffers();
+        },
+        [fetchOffers]
+    );
+
+    return { offers, loading, fetchOffers, updateOfferStatus };
 }

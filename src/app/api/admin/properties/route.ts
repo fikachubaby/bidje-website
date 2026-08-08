@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
 import { syncPropertyToTelegram } from "@/lib/telegram/telegram-bot";
+import { requireStaffSession } from "@/lib/auth/requireStaffSession";
 
 // GET /api/admin/properties
 export async function GET() {
+    const check = await requireStaffSession();
+    if (check.error) return check.error;
+
     try {
         const { data: properties, error } = await supabaseAdmin
             .from("properties")
@@ -29,6 +33,8 @@ export async function GET() {
             description: p.description || "",
             status: p.status,
             createdAt: p.created_at,
+            outstandingDebt: Number(p.outstanding_debt ?? 0),
+            minimumPrice: p.minimum_acceptable_price != null ? Number(p.minimum_acceptable_price) : 0,
         }));
 
         return NextResponse.json({ properties: formatted });
@@ -40,6 +46,9 @@ export async function GET() {
 
 // POST /api/admin/properties
 export async function POST(request: Request) {
+    const check = await requireStaffSession();
+    if (check.error) return check.error;
+
     try {
         const body = await request.json();
 
@@ -60,15 +69,14 @@ export async function POST(request: Request) {
                 bathrooms: body.bathrooms ? Number(body.bathrooms) : null,
                 description: body.description || null,
                 status: body.status || "Draft",
+                outstanding_debt: body.outstandingDebt ?? 0,
+                minimum_acceptable_price: body.minimumPrice ?? null,
             })
             .select()
             .single();
 
         if (error) throw error;
 
-        // Must be awaited Vercel serverless kills the function once the
-        // response is sent, so a fire-and-forget call here would silently
-        // never complete.
         await syncPropertyToTelegram(
             {
                 id: property.id,

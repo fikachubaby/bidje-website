@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
 import type { TelegramParsedProperty } from "@/types/telegram-import";
+import { requireStaffSession } from "@/lib/auth/requireStaffSession";
 
 export async function POST(request: Request) {
+    const { error: authError } = await requireStaffSession();
+    if (authError) return authError;
+    
     try {
         const { listings }: { listings: TelegramParsedProperty[] } = await request.json();
 

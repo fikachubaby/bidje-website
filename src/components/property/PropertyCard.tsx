@@ -1,41 +1,43 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Bath, BedDouble, MapPin } from "lucide-react";
+
 import { FavouriteButton } from "@/components/property/FavouriteButton";
+import type { Property } from "@/types/property";
+import { formatArea, formatCategory, formatPrice } from "@/lib/utils";
 
-type Property = {
-  id: string;
-  badge: string;
-  title: string;
-  location: string;
-  price: string;
-  bedrooms: string;
-  bathrooms: string;
-  size: string;
-  offers: string;
-  score: number;
-  rating: string;
-  image: string;
-};
+interface PropertyCardProps {
+  property: Property;
+}
 
-export default function PropertyCard({ property }: { property: Property }) {
+function getRatingLabel(score: number): string {
+  if (score >= 80) return "Good Buy";
+  if (score >= 65) return "Fair Value";
+  return "Review Carefully";
+}
+
+export function PropertyCard({ property }: PropertyCardProps) {
+  const image = property.imageUrl || property.images?.[0] || "/placeholder-property.jpg";
+  const score = property.bidjeScore ?? 85;
+  const ratingLabel = getRatingLabel(score);
+
   return (
-    <article className="group overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-[0_10px_35px_rgba(0,0,0,0.07)] transition duration-300 hover:-translate-y-2 hover:border-[#ffd400] hover:shadow-[0_24px_55px_rgba(0,0,0,0.14)]">
+    <article className="group flex flex-col overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-[0_10px_35px_rgba(0,0,0,0.07)] transition duration-300 hover:-translate-y-1.5 hover:border-[#ffd400] hover:shadow-[0_20px_45px_rgba(0,0,0,0.12)]">
       <div className="relative">
         <Link href={`/properties/${property.id}`} className="block">
-          <div className="relative aspect-[4/3] overflow-hidden">
+          <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
             <Image
-              src={property.image}
+              src={image}
               alt={property.title}
               fill
               className="object-cover transition duration-700 group-hover:scale-105"
-              sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
+              sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
             />
 
             <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/70 to-transparent" />
 
-            <span className="absolute left-4 top-4 rounded-full bg-[#ffd400] px-3 py-1.5 text-[11px] font-black uppercase tracking-wide">
-              {property.badge}
+            <span className="absolute left-4 top-4 rounded-full bg-[#ffd400] px-3 py-1.5 text-[11px] font-black uppercase tracking-wide text-black">
+              {formatCategory(property.category)}
             </span>
 
             <span className="absolute bottom-4 left-4 rounded-xl border border-white/20 bg-black/70 px-3 py-2 text-white backdrop-blur">
@@ -43,7 +45,7 @@ export default function PropertyCard({ property }: { property: Property }) {
                 Investment Score
               </span>
               <span className="text-lg font-black text-[#ffd400]">
-                {property.score}/100
+                {score}/100
               </span>
             </span>
           </div>
@@ -55,72 +57,81 @@ export default function PropertyCard({ property }: { property: Property }) {
         />
       </div>
 
-      <Link href={`/properties/${property.id}`} className="block p-5 pb-0">
-        <p className="text-sm font-semibold text-neutral-500">Asking Price</p>
-        <p className="mt-1 text-2xl font-black tracking-tight">{property.price}</p>
+      <div className="flex flex-1 flex-col justify-between p-5">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Asking Price</p>
+          <p className="mt-1 text-2xl font-black tracking-tight text-black">
+            {formatPrice(property.price, property.currency)}
+          </p>
 
-        <h3 className="mt-4 text-lg font-black">{property.title}</h3>
+          <Link href={`/properties/${property.id}`} className="block">
+            <h3 className="mt-3 line-clamp-1 text-lg font-black text-black transition-colors group-hover:text-neutral-800">
+              {property.title}
+            </h3>
+          </Link>
 
-        <p className="mt-1 flex items-center gap-1 text-sm text-neutral-600">
-          <MapPin className="h-4 w-4 shrink-0" />
-          {property.location}
-        </p>
+          <p className="mt-1 flex items-center gap-1 text-sm font-medium text-neutral-600">
+            <MapPin className="h-4 w-4 shrink-0 text-neutral-400" />
+            <span className="line-clamp-1">{property.location}</span>
+          </p>
 
-        <div className="mt-4 grid grid-cols-3 divide-x divide-neutral-200 rounded-xl border border-neutral-200 bg-neutral-50 py-3 text-center text-sm">
-          <span className="flex items-center justify-center gap-1">
-            <BedDouble className="h-4 w-4" />
-            {property.bedrooms}
-          </span>
+          {/* Key Specs */}
+          <div className="mt-4 grid grid-cols-3 divide-x divide-neutral-200 rounded-xl border border-neutral-200 bg-neutral-50 py-2.5 text-center text-xs font-bold text-neutral-700">
+            <span className="flex items-center justify-center gap-1">
+              <BedDouble className="h-4 w-4 text-neutral-500" />
+              {property.bedrooms ?? "-"} Bed
+            </span>
 
-          <span className="flex items-center justify-center gap-1">
-            <Bath className="h-4 w-4" />
-            {property.bathrooms}
-          </span>
+            <span className="flex items-center justify-center gap-1">
+              <Bath className="h-4 w-4 text-neutral-500" />
+              {property.bathrooms ?? "-"} Bath
+            </span>
 
-          <span>{property.size}</span>
-        </div>
-
-        <div className="mt-4 rounded-2xl border border-[#f0dda0] bg-[#fff9dc] p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-wide text-neutral-500">
-                Bidje Rating
-              </p>
-              <p className="mt-1 font-black text-green-700">{property.rating}</p>
-            </div>
-
-            <div className="text-right">
-              <p className="text-[10px] font-black uppercase tracking-wide text-neutral-500">
-                Score
-              </p>
-              <p className="mt-1 text-xl font-black">{property.score}</p>
-            </div>
+            <span className="flex items-center justify-center">
+              {property.areaSqft ? formatArea(property.areaSqft) : "N/A"}
+            </span>
           </div>
 
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-black/10">
-            <div
-              className="h-full rounded-full bg-[#ffd400]"
-              style={{ width: `${property.score}%` }}
-            />
+          {/* Investment Rating Box */}
+          <div className="mt-4 rounded-2xl border border-[#f0dda0] bg-[#fff9dc] p-3.5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wide text-neutral-500">
+                  Bidje Rating
+                </p>
+                <p className="mt-0.5 text-xs font-black text-green-700">{ratingLabel}</p>
+              </div>
+
+              <div className="text-right">
+                <p className="text-[10px] font-black uppercase tracking-wide text-neutral-500">
+                  Score
+                </p>
+                <p className="mt-0.5 text-base font-black text-black">{score}</p>
+              </div>
+            </div>
+
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/10">
+              <div
+                className="h-full rounded-full bg-[#ffd400]"
+                style={{ width: `${Math.min(score, 100)}%` }}
+              />
+            </div>
           </div>
         </div>
 
-        <p className="mt-4 text-sm font-semibold text-neutral-600">
-          {property.offers}
-        </p>
-      </Link>
+        {/* Action Button */}
+        <div className="mt-5">
+          <Link
+            href={`/properties/${property.id}/make-offer`}
+            className="block w-full rounded-xl border-2 border-black bg-[#ffd400] py-3 text-center text-sm font-black shadow-[3px_3px_0_0_#000] transition hover:-translate-y-0.5 hover:bg-[#ffe24b]"
+          >
+            Submit Offer
+          </Link>
 
-      <div className="p-5 pt-4">
-        <Link
-          href={`/properties/${property.id}/make-offer`}
-          className="block rounded-xl border-2 border-black bg-[#ffd400] px-4 py-3.5 text-center text-sm font-black shadow-[3px_3px_0_0_#000] transition hover:-translate-y-0.5 hover:bg-[#ffe24b]"
-        >
-          Submit Offer
-        </Link>
-
-        <p className="mt-2 text-center text-[11px] font-semibold text-neutral-500">
-          RM500 commitment fee applies
-        </p>
+          <p className="mt-2 text-center text-[11px] font-semibold text-neutral-500">
+            RM500 commitment fee applies
+          </p>
+        </div>
       </div>
     </article>
   );

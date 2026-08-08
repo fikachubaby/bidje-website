@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
 import { syncPropertyToTelegram } from "@/lib/telegram/telegram-bot";
+import { requireStaffSession } from "@/lib/auth/requireStaffSession";
 
 export async function PUT(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const check = await requireStaffSession();
+    if (check.error) return check.error;
+
     try {
         const { id } = await params;
         const body = await request.json();
@@ -68,6 +72,9 @@ export async function PATCH(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const check = await requireStaffSession();
+    if (check.error) return check.error;
+
     try {
         const { id } = await params;
         const { status } = await request.json();
@@ -93,6 +100,9 @@ export async function DELETE(
     _request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const check = await requireStaffSession();
+    if (check.error) return check.error;
+    
     try {
         const { id } = await params;
 

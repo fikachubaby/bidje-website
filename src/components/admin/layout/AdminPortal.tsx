@@ -11,14 +11,13 @@ import { PropertyFormModal } from "@/components/admin/property/PropertyFormModal
 import { TelegramImportView } from "@/components/admin/telegram-import/TelegramImportView";
 
 import { useSession } from "@/lib/auth/useSession";
-import { useAdminProperties } from "@/lib/hooks/useAdminProperties";
+import { useAdminProperties, useAdminOffers } from "@/lib/hooks/useAdminProperties";
 import { supabase } from "@/lib/supabase/supabase";
 
 import type {
   AdminProperty,
   AdminPropertyInput,
   AdminView,
-  BuyerOffer,
   OfferStatus,
 } from "@/types/property";
 
@@ -54,7 +53,7 @@ export default function AdminPortal() {
     duplicateProperty,
   } = useAdminProperties(Boolean(user));
 
-  const [offers, setOffers] = useState<BuyerOffer[]>([]);
+  const { offers, updateOfferStatus } = useAdminOffers(Boolean(user));
   const [activeView, setActiveView] = useState<AdminView>("dashboard");
   const [mobileNav, setMobileNav] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -93,13 +92,17 @@ export default function AdminPortal() {
 
   const handleUpdateOffer = useCallback(
     async (id: string, status: OfferStatus) => {
-      setOffers((items) => items.map((item) => (item.id === id ? { ...item, status } : item)));
-      if (status === "Accepted") {
-        const offer = offers.find((item) => item.id === id);
-        if (offer) await updateStatus(offer.propertyId, "Under Offer");
+      try {
+        await updateOfferStatus(id, status);
+        if (status === "Accepted") {
+          const offer = offers.find((item) => item.id === id);
+          if (offer) await updateStatus(offer.propertyId, "Under Offer");
+        }
+      } catch {
+        alert("Failed to update offer status");
       }
     },
-    [offers, updateStatus]
+    [offers, updateStatus, updateOfferStatus]
   );
 
   if (sessionLoading) {

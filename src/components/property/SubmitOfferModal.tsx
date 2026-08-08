@@ -9,6 +9,7 @@ import {
   savePendingOffer,
   clearPendingOffer,
 } from "@/lib/offers/pendingOffer";
+import { submitOfferToSupabase } from "@/lib/offers/submitOffer";
 import type { FormData, FormErrors } from "@/lib/offers/pendingOffer";
 
 import { SubmitOfferModalProps } from "./SubmitOfferModal.types";
@@ -36,11 +37,22 @@ export function SubmitOfferModal({
   const [redirecting, setRedirecting] = useState(false);
 
   const submitOffer = useCallback(async (data: FormData) => {
-    void data;
-    void propertyId;
+    if (!user) return;
+
+    const result = await submitOfferToSupabase({
+      propertyId,
+      userId: user.id,
+      data,
+    });
+
+    if (!result.success) {
+      setErrors({ offerAmount: result.error });
+      return;
+    }
+
     clearPendingOffer();
     setSubmitted(true);
-  }, [propertyId]);
+  }, [propertyId, user]);
 
   useEffect(() => {
     if (!open || !prefill) return;

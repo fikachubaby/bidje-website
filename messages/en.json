@@ -4,7 +4,7 @@
         "closeAriaLabel": "Close",
         "redirectingMessage": "Almost there — create an account to submit your offer.",
         "redirectingSubtext": "We've saved your offer details. Redirecting you to sign up…",
-        "successMessage": "Your offer has been prepared successfully. Database submission will be connected next.",
+        "successMessage": "Your offer has been submitted successfully. Our team will review it and contact you soon.",
         "successCloseButton": "Close",
         "cancelButton": "Cancel",
         "submitButton": "Submit Offer",
@@ -51,6 +51,26 @@
                 "label": "I confirm that the information provided is accurate and I agree to be contacted regarding this offer.",
                 "errorRequired": "You must confirm the accuracy of your information"
             }
+        }
+    },
+    "Authentication": {
+        "loginTitle": "Welcome back. Sign in to manage your offers.",
+        "noAccount": "Don't t have an account?",
+        "haveAccount": "Already have an account?",
+        "createOne": "Create one",
+        "signIn": "Sign in",
+        "registerTitle": "Create your account",
+        "registerSubtitle": "Register to submit offers on properties you like."
+    },
+    "Properties": {
+        "propertyListing": "Property Listing",
+        "search": {
+            "filterSearch": "Filter & Search"
+        },
+        "fields": {
+            "location": "Location",
+            "category": "Category",
+            "allCategory": "All Category"
         }
     }
 }

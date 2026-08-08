@@ -47,26 +47,42 @@ export function VisitorLoginForm() {
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
             {justConfirmed ? (
                 <p className="rounded-xl bg-green-50 px-4 py-3 text-sm font-medium text-green-700">
                     Email confirmed — you can sign in now.
                 </p>
             ) : null}
 
-            <FormField label="Email" htmlFor="email">
-                <FormInput id="email" name="email" type="email" required autoComplete="email" />
-            </FormField>
+            {/* Email Field Segment */}
+            <div className="rounded-xl border border-neutral-200 bg-neutral-50/50 p-3 transition-colors focus-within:border-black focus-within:bg-white">
+                <FormField label="Email" htmlFor="email" className="text-xs uppercase tracking-wider text-neutral-500 font-bold">
+                    <FormInput
+                        id="email"
+                        name="email"
+                        type="email"
+                        required
+                        autoComplete="email"
+                        placeholder="name@example.com"
+                        className="mt-1 border-none bg-transparent p-0 shadow-none focus:ring-0 text-neutral-900"
+                    />
+                </FormField>
+            </div>
 
-            <FormField label="Password" htmlFor="password">
-                <FormInput
-                    id="password"
-                    name="password"
-                    type="password"
-                    required
-                    autoComplete="current-password"
-                />
-            </FormField>
+            {/* Password Field Segment */}
+            <div className="rounded-xl border border-neutral-200 bg-neutral-50/50 p-3 transition-colors focus-within:border-black focus-within:bg-white">
+                <FormField label="Password" htmlFor="password" className="text-xs uppercase tracking-wider text-neutral-500 font-bold">
+                    <FormInput
+                        id="password"
+                        name="password"
+                        type="password"
+                        required
+                        autoComplete="current-password"
+                        placeholder="••••••••"
+                        className="mt-1 border-none bg-transparent p-0 shadow-none focus:ring-0 text-neutral-900"
+                    />
+                </FormField>
+            </div>
 
             {error ? (
                 <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
@@ -74,10 +90,11 @@ export function VisitorLoginForm() {
                 </p>
             ) : null}
 
+            {/* Stable Button (No Hover Drop/Shift) */}
             <button
                 type="submit"
                 disabled={loading}
-                className="w-full rounded-xl border-2 border-[#ffd400] bg-[#ffd400] px-4 py-3 text-sm font-black text-black transition hover:bg-[#ffe24b] disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-2 w-full rounded-xl border-2 border-[#ffd400] bg-[#ffd400] px-4 py-3 text-sm font-black text-black transition-colors hover:bg-[#ffe24b] disabled:cursor-not-allowed disabled:opacity-60"
             >
                 {loading ? "Signing in…" : "Sign in"}
             </button>

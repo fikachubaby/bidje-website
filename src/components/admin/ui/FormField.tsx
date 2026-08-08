@@ -36,7 +36,7 @@ export function FormInput({
   return (
     <input
       className={cn(
-        "mt-2 w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none transition-colors focus:border-black",
+        "mt-2 w-full rounded-xl border border-neutral-400 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition-all duration-200 hover:border-neutral-500 focus:border-black focus:ring-2 focus:ring-black/5",
         className
       )}
       {...props}
@@ -52,7 +52,7 @@ export function FormSelect({
   return (
     <select
       className={cn(
-        "mt-2 w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-black",
+        "mt-2 w-full rounded-xl border border-neutral-400 bg-white px-4 py-3 text-sm text-neutral-900 outline-none transition-all duration-200 hover:border-neutral-500 focus:border-black focus:ring-2 focus:ring-black/5",
         className
       )}
       {...props}
@@ -69,7 +69,7 @@ export function FormTextarea({
   return (
     <textarea
       className={cn(
-        "mt-2 w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm outline-none transition-colors focus:border-black",
+        "mt-2 w-full rounded-xl border border-neutral-400 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none transition-all duration-200 hover:border-neutral-500 focus:border-black focus:ring-2 focus:ring-black/5",
         className
       )}
       {...props}
