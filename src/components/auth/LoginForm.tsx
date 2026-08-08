@@ -40,7 +40,8 @@ export function VisitorLoginForm() {
         setLoading(false);
 
         const isAdminOrStaff = profile?.role === "admin" || profile?.role === "staff";
-        const redirectPath = isAdminOrStaff ? "/admin" : "/";
+        const next = searchParams.get("next");
+        const redirectPath = isAdminOrStaff ? "/admin" : next || "/";
 
         window.location.href = redirectPath;
     }

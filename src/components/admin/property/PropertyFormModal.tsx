@@ -22,6 +22,8 @@ import {
 const defaultFormState: AdminPropertyInput = {
   name: "",
   price: 0,
+  outstandingDebt: 0,
+  minimumPrice: 0,
   address: "",
   state: "",
   district: "",
@@ -56,6 +58,7 @@ export function PropertyFormModal({
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [minPriceTouched, setMinPriceTouched] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -78,6 +81,8 @@ export function PropertyFormModal({
         mapsUrl: editingProperty.mapsUrl || "",
         images: Array.isArray(editingProperty.images) ? editingProperty.images : [],
         status: editingProperty.status || "Draft",
+        outstandingDebt: editingProperty.outstandingDebt || 0,
+        minimumPrice: editingProperty.minimumPrice || 0,
       });
     } else {
       setForm(defaultFormState);
@@ -85,8 +90,17 @@ export function PropertyFormModal({
 
     setImageInput("");
     setError("");
+    setMinPriceTouched(false);
   }, [open, editingProperty]);
 
+  useEffect(() => {
+    if (!minPriceTouched) {
+      const computed = Math.max(0, (form.price || 0) - (form.outstandingDebt || 0));
+      setForm((prev) => ({ ...prev, minimumPrice: computed }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.price, form.outstandingDebt]);
+  
   function handleClose() {
     onClose();
   }
@@ -163,6 +177,10 @@ export function PropertyFormModal({
       setError("Please enter a valid price.");
       return;
     }
+    if (form.minimumPrice > form.price) {
+      setError("Minimum acceptable price cannot exceed the asking price.");
+      return;
+    }
     if (!form.address.trim() || !form.state.trim() || !form.district.trim()) {
       setError("Address, state, and district are required.");
       return;
@@ -199,6 +217,35 @@ export function PropertyFormModal({
             min={0}
             value={form.price || ""}
             onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+          />
+        </FormField>
+
+        <FormField label="Outstanding debt / loan balance (RM)" htmlFor="outstandingDebt">
+          <FormInput
+            id="outstandingDebt"
+            type="number"
+            min={0}
+            value={form.outstandingDebt || ""}
+            onChange={(e) =>
+              setForm({ ...form, outstandingDebt: Number(e.target.value) })
+            }
+          />
+        </FormField>
+
+        <FormField
+          label="Minimum acceptable price (RM)"
+          htmlFor="minimumPrice"
+          hint="Auto-calculated as Price − Outstanding debt. Edit manually to override."
+        >
+          <FormInput
+            id="minimumPrice"
+            type="number"
+            min={0}
+            value={form.minimumPrice || ""}
+            onChange={(e) => {
+              setMinPriceTouched(true);
+              setForm({ ...form, minimumPrice: Number(e.target.value) });
+            }}
           />
         </FormField>
 

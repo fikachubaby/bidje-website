@@ -23,6 +23,7 @@ export interface PropertyRow {
     verified_offer_count: number;
     market_value: number | null;
     max_loan_applicable: number | null;
+    minimum_acceptable_price: number | null;
     created_at: string;
     property_images?: { image_url: string; is_cover: boolean }[];
 }
@@ -69,6 +70,7 @@ export function mapPropertyRowToProperty(row: PropertyRow): Property {
         verifiedOfferCount: row.verified_offer_count,
         marketValue: row.market_value ?? undefined,
         maxLoanApplicable: row.max_loan_applicable ?? undefined,
+        minimumPrice: row.minimum_acceptable_price ?? undefined,
     };
 }
 

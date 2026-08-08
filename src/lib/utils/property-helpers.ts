@@ -18,6 +18,8 @@ export const emptyPropertyInput: AdminPropertyInput = {
     description: "",
     status: "Draft",
     images: [],
+    outstandingDebt: 0,
+    minimumPrice: 0,
 };
 
 export function toPropertyInput(property: AdminProperty): AdminPropertyInput {
@@ -38,5 +40,7 @@ export function toPropertyInput(property: AdminProperty): AdminPropertyInput {
         description: property.description || "",
         status: property.status || "Draft",
         images: Array.isArray(property.images) ? property.images : [],
+        outstandingDebt: property.outstandingDebt || 0,
+        minimumPrice: property.minimumPrice || 0,
     };
 }

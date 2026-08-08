@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, ShieldCheck } from "lucide-react";
 import { SubmitOfferModal } from "@/components/property/SubmitOfferModal";
 import { PropertyFinancialEstimates } from "@/components/property/PropertyFinancialEstimates";
+import { useSession } from "@/lib/auth/useSession";
+import { loadPendingOffer, type PendingOfferDraft } from "@/lib/offers/pendingOffer";
 import { formatPrice } from "@/lib/utils";
 
 interface MakeOfferClientProps {
@@ -15,6 +17,7 @@ interface MakeOfferClientProps {
     location: string;
     marketValue?: number;
     maxLoanApplicable?: number;
+    minimumPrice?: number;
   };
 }
 
@@ -65,9 +68,22 @@ const RISK_POINTS = [
 ] as const;
 
 export function MakeOfferClient({ property }: MakeOfferClientProps) {
+  const { user, loading: sessionLoading } = useSession();
   const [ackProcess, setAckProcess] = useState(false);
   const [ackRisk, setAckRisk] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [resumedDraft, setResumedDraft] = useState<PendingOfferDraft | null>(null);
+
+  useEffect(() => {
+    if (sessionLoading || !user) return;
+    const draft = loadPendingOffer(property.id);
+    if (draft) {
+      setResumedDraft(draft);
+      setAckProcess(true);
+      setAckRisk(true);
+      setModalOpen(true);
+    }
+  }, [sessionLoading, user, property.id]);
 
   const canContinue = ackProcess && ackRisk;
 
@@ -214,8 +230,15 @@ export function MakeOfferClient({ property }: MakeOfferClientProps) {
 
       <SubmitOfferModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => {
+          setModalOpen(false);
+          setResumedDraft(null);
+        }}
+        propertyId={property.id}
         propertyTitle={property.title}
+        minimumPrice={property.minimumPrice}
+        prefill={resumedDraft}
+        autoSubmit={Boolean(resumedDraft)}
       />
     </>
   );

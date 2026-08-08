@@ -85,6 +85,8 @@ export function useAdminProperties(isAuthenticated: boolean) {
                 mapsUrl: property.mapsUrl,
                 images: property.images || [],
                 status: "Draft" as PropertyStatus,
+                outstandingDebt: property.outstandingDebt,
+                minimumPrice: property.minimumPrice,
             };
 
             const res = await fetch("/api/admin/properties", {

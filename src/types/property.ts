@@ -104,6 +104,7 @@ export interface Property {
   verifiedOfferCount?: number;
   marketValue?: number;
   maxLoanApplicable?: number;
+  minimumPrice?: number;
 }
 
 export interface CategoryInfo {
@@ -133,6 +134,8 @@ export interface AdminProperty {
   status: PropertyStatus;
   createdAt: string;
   updatedAt: string;
+  outstandingDebt: number;
+  minimumPrice: number;
 }
 
 export type AdminPropertyInput = Omit<

@@ -1,0 +1,56 @@
+{
+    "SubmitOfferModal": {
+        "title": "Submit Offer",
+        "closeAriaLabel": "Close",
+        "redirectingMessage": "Almost there — create an account to submit your offer.",
+        "redirectingSubtext": "We've saved your offer details. Redirecting you to sign up…",
+        "successMessage": "Your offer has been prepared successfully. Database submission will be connected next.",
+        "successCloseButton": "Close",
+        "cancelButton": "Cancel",
+        "submitButton": "Submit Offer",
+        "fields": {
+            "fullName": {
+                "label": "Full name",
+                "placeholder": "Enter your full name",
+                "errorRequired": "Full name is required"
+            },
+            "phone": {
+                "label": "Malaysian phone number",
+                "placeholder": "e.g. 012-345 6789",
+                "errorRequired": "Phone number is required",
+                "errorInvalid": "Enter a valid Malaysian phone number"
+            },
+            "email": {
+                "label": "Email address",
+                "placeholder": "you@example.com",
+                "errorRequired": "Email address is required",
+                "errorInvalid": "Enter a valid email address"
+            },
+            "offerAmount": {
+                "label": "Offer amount (RM)",
+                "placeholder": "0",
+                "currencyPrefix": "RM",
+                "errorRequired": "Offer amount is required",
+                "errorZero": "Offer amount must be greater than zero"
+            },
+            "purchaseMethod": {
+                "label": "Purchase method",
+                "errorRequired": "Please select a purchase method",
+                "options": {
+                    "default": "Select purchase method",
+                    "cash": "Cash",
+                    "bankFinancing": "Bank financing",
+                    "other": "Other"
+                }
+            },
+            "message": {
+                "label": "Message (optional)",
+                "placeholder": "Any additional details for the seller..."
+            },
+            "confirmed": {
+                "label": "I confirm that the information provided is accurate and I agree to be contacted regarding this offer.",
+                "errorRequired": "You must confirm the accuracy of your information"
+            }
+        }
+    }
+}
