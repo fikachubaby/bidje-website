@@ -105,6 +105,7 @@ export interface Property {
   marketValue?: number;
   maxLoanApplicable?: number;
   minimumPrice?: number;
+  tags?: string[];
 }
 
 export interface CategoryInfo {

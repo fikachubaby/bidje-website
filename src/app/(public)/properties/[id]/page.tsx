@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import {
     BedDouble,
     Bath,
@@ -22,6 +23,43 @@ interface PropertyDetailPageProps {
     params: Promise<{ id: string }>;
 }
 
+export async function generateMetadata({ params }: PropertyDetailPageProps): Promise<Metadata> {
+    const { id } = await params;
+    const property = await getPropertyById(id);
+
+    if (!property) {
+        return {
+            title: "Property Not Found | Bidje",
+        };
+    }
+
+    const title = `${property.title} | For Sale in ${property.location}`;
+    const description = property.description
+        ? property.description.slice(0, 160)
+        : `Check out ${property.title} located in ${property.location}. Price: ${formatPrice(property.price, property.currency)}.`;
+
+    const images = property.images && property.images.length > 0
+        ? property.images
+        : [property.imageUrl || "/placeholder-property.jpg"];
+
+    return {
+        title,
+        description,
+        openGraph: {
+            title,
+            description,
+            type: "article",
+            images: images.map((url) => ({ url })),
+        },
+        twitter: {
+            card: "summary_large_image",
+            title,
+            description,
+            images: [images[0]],
+        },
+    };
+}
+
 export default async function PropertyDetailPage({ params }: PropertyDetailPageProps) {
     const { id } = await params;
     const property = await getPropertyById(id);
@@ -36,8 +74,50 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
 
     const bidjeScore = property.bidjeScore ?? 85;
 
+    const jsonLd = {
+        "@context": "https://schema.org",
+        "@type": "RealEstateListing",
+        "name": property.title,
+        "description": property.description,
+        "url": `https://bidje.com/properties/${property.id}`,
+        "datePosted": property.createdAt,
+        "price": property.price,
+        "priceCurrency": property.currency || "MYR",
+        "mainEntity": {
+            "@type": "SingleFamilyResidence",
+            "name": property.title,
+            "description": property.description,
+            "image": images,
+            "address": {
+                "@type": "PostalAddress",
+                "addressLocality": property.location,
+                "addressCountry": "MY"
+            },
+            "floorSize": property.areaSqft ? {
+                "@type": "QuantitativeValue",
+                "value": property.areaSqft,
+                "unitCode": "FTK"
+            } : undefined,
+            "numberOfRooms": property.bedrooms,
+            "numberOfBathroomsTotal": property.bathrooms,
+            "offers": {
+                "@type": "Offer",
+                "price": property.price,
+                "priceCurrency": property.currency || "MYR",
+                "availability": "https://schema.org/InStock",
+                "validFrom": property.createdAt
+            }
+        }
+    };
+
     return (
         <main className="min-h-screen bg-neutral-50 text-black">
+            {/* Inject JSON-LD Schema */}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
+
             <Navbar />
 
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -257,10 +337,8 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                                     </div>
                                 </div>
                             )}
-
                         </div>
                     </div>
-
                 </div>
             </div>
         </main>

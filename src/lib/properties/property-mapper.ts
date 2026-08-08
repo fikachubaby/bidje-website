@@ -10,6 +10,8 @@ export interface PropertyRow {
     district: string | null;
     full_address: string;
     property_type: string;
+    category?: string | null;
+    tags?: string[] | null;
     bedrooms: number | null;
     bathrooms: number | null;
     area_sqft: number | null;
@@ -28,8 +30,8 @@ export interface PropertyRow {
     property_images?: { image_url: string; is_cover: boolean }[];
 }
 
-function mapPropertyType(dbType: string): PropertyCategory {
-    const normalized = dbType.toLowerCase().trim();
+function mapPropertyType(dbType: string, category?: string | null): PropertyCategory {
+    const target = (category || dbType).toLowerCase().trim();
     const known: Record<string, PropertyCategory> = {
         land: "land",
         landed: "landed",
@@ -40,7 +42,7 @@ function mapPropertyType(dbType: string): PropertyCategory {
         commercial: "commercial",
         auction: "auction",
     };
-    return known[normalized] ?? "landed";
+    return known[target] ?? "landed";
 }
 
 export function mapPropertyRowToProperty(row: PropertyRow): Property {
@@ -52,9 +54,9 @@ export function mapPropertyRowToProperty(row: PropertyRow): Property {
         title: row.title,
         description: row.description ?? "",
         price: row.asking_price,
-        currency: row.currency,
+        currency: row.currency || "MYR",
         location: [row.district, row.state].filter(Boolean).join(", "),
-        category: mapPropertyType(row.property_type),
+        category: mapPropertyType(row.property_type, row.category),
         bedrooms: row.bedrooms ?? undefined,
         bathrooms: row.bathrooms ?? undefined,
         areaSqft: row.area_sqft ?? 0,
@@ -67,10 +69,10 @@ export function mapPropertyRowToProperty(row: PropertyRow): Property {
         tenure: row.tenure ?? undefined,
         bumiStatus: row.bumi_status ?? undefined,
         bidjeScore: row.bidje_score ?? undefined,
-        verifiedOfferCount: row.verified_offer_count,
+        verifiedOfferCount: row.verified_offer_count ?? 0,
         marketValue: row.market_value ?? undefined,
         maxLoanApplicable: row.max_loan_applicable ?? undefined,
-        minimumPrice: row.minimum_acceptable_price ?? undefined,
+        tags: row.tags ?? [],
     };
 }
 
