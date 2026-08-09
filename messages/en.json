@@ -139,5 +139,12 @@
         "settings": "Settings",
         "admin": "Admin",
         "profile": "Profile"
+    },
+    "HowItWorks": {
+        "title": "Malaysia's Premier Property Marketplace",
+        "heading1": "How Bidje Works for Buyers, Investors & Owners",
+        "info": "Bidje connects property seekers with exclusive off-market listings and direct owners through a transparent subscription ecosystem and a streamlined Offer to Purchase process. Buyers remain responsible for arranging their own financing.",
+        "terms1": "Transparent Terms:",
+        "terms2": "The full commitment-fee, document verification, withdrawal, and refund policies are displayed transparently to buyers before any payment is finalized."
     }
 }
