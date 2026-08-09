@@ -8,12 +8,13 @@ import type {
     OfferStatus,
     BuyerOffer,
 } from "@/types/property";
+import { buildQueryString } from "@/lib/utils";
 
 export function useAdminProperties(isAuthenticated: boolean) {
     const [properties, setProperties] = useState<AdminProperty[]>([]);
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
-    const [limit] = useState(10); // Items per page
+    const [limit] = useState(10);
     const [totalPages, setTotalPages] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const [search, setSearch] = useState("");
@@ -22,14 +23,14 @@ export function useAdminProperties(isAuthenticated: boolean) {
     const fetchProperties = useCallback(async () => {
         try {
             setLoading(true);
-            const params = new URLSearchParams({
-                page: page.toString(),
-                limit: limit.toString(),
+            const queryString = buildQueryString({
+                page,
+                limit,
                 search,
                 status: statusFilter,
             });
 
-            const res = await fetch(`/api/admin/properties?${params.toString()}`);
+            const res = await fetch(`/api/admin/properties?${queryString}`);
             const data = await res.json();
 
             if (res.ok) {

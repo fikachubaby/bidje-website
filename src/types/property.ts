@@ -22,7 +22,7 @@ export type BumiStatusType = "Bumi" | "Non Bumi" | "Unknown";
 export type OfferStatus = "Pending" | "Accepted" | "Rejected";
 
 export type AdminView =
-  | "dashboard" | "properties" | "subscribers" | "offers"
+  | "dashboard" | "properties" | "subscribers" | "offers" | "subscribers"
   | "ads" | "imports" | "users" | "audit-logs" | "profile";
 
 export const PROPERTY_TYPES = [

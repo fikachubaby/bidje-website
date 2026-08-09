@@ -13,6 +13,7 @@ import { TelegramImportView } from "@/components/admin/telegram-import/TelegramI
 import { UsersManagementView } from "@/components/admin/settings/UsersManagementView";
 import { AuditLogsView } from "@/components/admin/settings/AuditLogsView";
 import { ProfileView } from "@/components/admin/settings/ProfileView";
+import { SubscriberManagement } from "@/components/admin/subscriber/SubscriberManagement";
 
 import { useSession } from "@/lib/auth/useSession";
 import { useAdminProperties, useAdminOffers } from "@/lib/hooks/useAdminProperties";
@@ -47,7 +48,7 @@ export default function AdminPortal() {
     duplicateProperty,
   } = useAdminProperties(Boolean(user));
 
-  const { offers, updateOfferStatus } = useAdminOffers(Boolean(user));
+  const {offers, updateOfferStatus } = useAdminOffers(Boolean(user));
   const [activeView, setActiveView] = useState<AdminView>("dashboard");
   const [mobileNav, setMobileNav] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -183,6 +184,7 @@ export default function AdminPortal() {
             />
           )}
 
+          {activeView === "subscribers" && <SubscriberManagement />}
           {activeView === "imports" && <TelegramImportView />}
 
           {/* New Settings & Profile View Components */}
