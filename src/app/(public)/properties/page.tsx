@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
 import { SlidersHorizontal, Search, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { PropertyCard } from "@/components/property/PropertyCard";
-import { searchProperties } from "@/lib/properties/properties";
+import { searchProperties } from "@/lib/properties/property-service";
 
 interface PropertiesPageProps {
     searchParams: Promise<{

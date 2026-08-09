@@ -8,6 +8,7 @@
         "successCloseButton": "Close",
         "cancelButton": "Cancel",
         "submitButton": "Submit Offer",
+        "verifyOffer": "Verrified Offers",
         "fields": {
             "fullName": {
                 "label": "Full name",
@@ -59,18 +60,83 @@
         "haveAccount": "Already have an account?",
         "createOne": "Create one",
         "signIn": "Sign in",
+        "logout": "Logout",
         "registerTitle": "Create your account",
         "registerSubtitle": "Register to submit offers on properties you like."
     },
     "Properties": {
         "propertyListing": "Property Listing",
+        "backtoProperty": "Back to Properties",
+        "overview": "Property Overview",
+        "keySpecs": "Key Specifications",
+        "propertyType": "Property Type",
+        "bumiStatus": "Bumi Status",
         "search": {
-            "filterSearch": "Filter & Search"
+            "filterSearch": "Filter & Search",
+            "browse": "Browse Properties",
+            "notFound": "No properties match your search.",
+            "showing": "Showing"
         },
         "fields": {
             "location": "Location",
+            "locations": "Locations",
+            "targetLocation": "Target Location",
             "category": "Category",
-            "allCategory": "All Category"
+            "allCategory": "All Category",
+            "bedrooms": "Bedrooms",
+            "beds": "Beds",
+            "bathrooms": "Bathrooms",
+            "baths": "Baths",
+            "buildSize": "Build-Up size",
+            "tenure": "Tenure",
+            "landSize": "Land Size",
+            "prices": "Price"
         }
+    },
+    "Main": {
+        "title": "BIDJE",
+        "heading1": "A happier way to find",
+        "heading2": "your next property",
+        "heading3": "Sign in to manage property listings and buyer offers.",
+        "heading4": "Signed in as",
+        "menu": {
+            "menu1": "Bidje Score",
+            "menu2": "How It Works",
+            "menu3": "List Property",
+            "menu4": "Home",
+            "menu5": "Properties"
+        },
+        "subHeading": {
+            "subH1": "Urgent Sale",
+            "subH2": "Asking Price",
+            "subH3": "Additional photos coming soon",
+            "subH4": "Make an Offer",
+            "subH5": "Submit a formal offer directly to the seller. Offers are verified and reviewed promptly.",
+            "subH6": "Make Offer Now",
+            "subH7": "RM500 commitment fee applies upon offer submission",
+            "subH8": "Financial Insights",
+            "subH9": "Est. Market Value",
+            "subH10": "Max Loan Eligibility"
+        },
+        "status": {
+            "title": "Status",
+            "active": "active",
+            "deactive": "Deactived",
+            "draft": "Draft",
+            "published": "Published",
+            "update": "Update",
+            "add": "Add",
+            "deleted": "Delete",
+            "edit": "Edit",
+            "view": "View",
+            "actions": "Actions",
+            "loadingInfo": "Loading admin portal…"
+        }
+    },
+    "AdminManagement": {
+        "staff": " Staff",
+        "settings": "Settings",
+        "admin": "Admin",
+        "profile": "Profile"
     }
 }

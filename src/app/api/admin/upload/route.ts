@@ -3,12 +3,18 @@ import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
 import { requireStaffSession } from "@/lib/auth/requireStaffSession";
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8MB
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ALLOWED_TYPES = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+    "application/pdf",
+];
 
 export async function POST(request: Request) {
     const { error: authError } = await requireStaffSession();
     if (authError) return authError;
-    
+
     try {
         const formData = await request.formData();
         const file = formData.get("file") as File | null;
@@ -26,14 +32,17 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "File too large (max 8MB)" }, { status: 400 });
         }
 
-        const ext = file.name.split(".").pop() || "jpg";
+        const isPdf = file.type === "application/pdf";
+        const bucketName = isPdf ? "property-documents" : "property-images";
+
+        const ext = file.name.split(".").pop() || (isPdf ? "pdf" : "jpg");
         const fileName = `${crypto.randomUUID()}.${ext}`;
         const filePath = `properties/${fileName}`;
 
         const arrayBuffer = await file.arrayBuffer();
 
         const { error: uploadError } = await supabaseAdmin.storage
-            .from("property-images")
+            .from(bucketName)
             .upload(filePath, arrayBuffer, {
                 contentType: file.type,
                 cacheControl: "3600",
@@ -43,7 +52,7 @@ export async function POST(request: Request) {
         if (uploadError) throw uploadError;
 
         const { data: publicUrlData } = supabaseAdmin.storage
-            .from("property-images")
+            .from(bucketName)
             .getPublicUrl(filePath);
 
         return NextResponse.json({ success: true, url: publicUrlData.publicUrl });

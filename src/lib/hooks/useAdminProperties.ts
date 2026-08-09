@@ -93,6 +93,11 @@ export function useAdminProperties(isAuthenticated: boolean) {
                 status: "Draft" as PropertyStatus,
                 outstandingDebt: property.outstandingDebt,
                 minimumPrice: property.minimumPrice,
+                internalNotes: property.internalNotes || "",
+                isAddressHidden: property.isAddressHidden || false,
+                documents: property.documents || [],
+                furnishing: property.furnishing || "Unfurnished",
+                tags: property.tags || [],
             };
 
             const res = await fetch("/api/admin/properties", {

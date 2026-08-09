@@ -3,7 +3,7 @@ import Image from 'next/image';
 import type { Metadata } from "next";
 import { MapPin, ArrowLeft } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
-import { getFilteredProperties } from "@/lib/properties/properties";
+import { getFilteredProperties } from "@/lib/properties/property-service";
 
 interface DistrictCategoryPageProps {
     params: Promise<{ state: string; district: string; category: string }>;

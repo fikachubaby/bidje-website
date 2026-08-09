@@ -17,7 +17,8 @@ import { Navbar } from "@/components/layout/Navbar";
 import { BidjeRatingCard } from "@/components/property/BidjeRatingCard";
 import { FavouriteButton } from "@/components/property/FavouriteButton";
 import { formatPrice } from "@/lib/utils";
-import { getPropertyById } from "@/lib/properties/properties";
+import { getPropertyById } from "@/lib/properties/property-service";
+import { translate as t } from "@/lib/i18n/getTranslation";
 
 interface PropertyDetailPageProps {
     params: Promise<{ id: string }>;
@@ -112,7 +113,6 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
 
     return (
         <main className="min-h-screen bg-neutral-50 text-black">
-            {/* Inject JSON-LD Schema */}
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -129,13 +129,13 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                         className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-sm font-bold text-neutral-700 shadow-sm transition-all hover:bg-neutral-100 hover:text-black"
                     >
                         <ArrowLeft className="h-4 w-4" />
-                        Back to Properties
+                        {t("Properties.backtoProperty")}
                     </Link>
 
                     <div className="hidden items-center gap-2 text-xs font-semibold text-neutral-500 sm:flex">
-                        <Link href="/" className="hover:underline">Home</Link>
+                        <Link href="/" className="hover:underline">{t("Main.menu.menu4")}</Link>
                         <ChevronRight className="h-3 w-3 text-neutral-400" />
-                        <Link href="/properties" className="hover:underline">Properties</Link>
+                        <Link href="/properties" className="hover:underline">{t("Main.menu.menu5")}</Link>
                         <ChevronRight className="h-3 w-3 text-neutral-400" />
                         <span className="max-w-[200px] truncate text-black">{property.title}</span>
                     </div>
@@ -150,7 +150,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                             </span>
                             {property.urgentSale && (
                                 <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-600">
-                                    Urgent Sale
+                                    {t("Main.subHeading.subH1")}
                                 </span>
                             )}
                         </div>
@@ -163,7 +163,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
 
                     <div className="flex items-center justify-between gap-4 md:justify-end">
                         <div>
-                            <p className="text-xs font-semibold text-neutral-500">Asking Price</p>
+                            <p className="text-xs font-semibold text-neutral-500">{t("Main.subHeading.subH2")}</p>
                             <p className="text-3xl font-black text-black">
                                 {formatPrice(property.price, property.currency)}
                             </p>
@@ -199,7 +199,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                         ))}
                         {images.length < 2 && (
                             <div className="flex aspect-[16/10] items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-100 p-4 text-center text-xs font-medium text-neutral-500">
-                                Additional photos coming soon
+                                {t("Main.subHeading.subH3")}
                             </div>
                         )}
                     </div>
@@ -207,7 +207,6 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
 
                 {/* Main Content Layout */}
                 <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
-
                     {/* Left Column: Details & Overview */}
                     <div className="space-y-8 lg:col-span-2">
 
@@ -218,8 +217,8 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                                     <BedDouble className="h-5 w-5 text-neutral-700" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-neutral-500">Bedrooms</p>
-                                    <p className="text-base font-bold">{property.bedrooms ?? "-"} Beds</p>
+                                    <p className="text-xs text-neutral-500">{t("Properties.fields.bedrooms")}</p>
+                                    <p className="text-base font-bold">{property.bedrooms ?? "-"} {t("Properties.fields.beds")}</p>
                                 </div>
                             </div>
 
@@ -228,8 +227,8 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                                     <Bath className="h-5 w-5 text-neutral-700" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-neutral-500">Bathrooms</p>
-                                    <p className="text-base font-bold">{property.bathrooms ?? "-"} Baths</p>
+                                    <p className="text-xs text-neutral-500">{t("Properties.fields.bathrooms")}</p>
+                                    <p className="text-base font-bold">{property.bathrooms ?? "-"} {t("Properties.fields.baths")}</p>
                                 </div>
                             </div>
 
@@ -238,7 +237,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                                     <Maximize2 className="h-5 w-5 text-neutral-700" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-neutral-500">Built-Up Size</p>
+                                    <p className="text-xs text-neutral-500">{t("Properties.fields.buildSize")}</p>
                                     <p className="text-base font-bold">{property.areaSqft ? `${property.areaSqft} sqft` : "-"}</p>
                                 </div>
                             </div>
@@ -248,7 +247,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                                     <ShieldCheck className="h-5 w-5 text-neutral-700" />
                                 </div>
                                 <div>
-                                    <p className="text-xs text-neutral-500">Tenure</p>
+                                    <p className="text-xs text-neutral-500">{t("Properties.fields.tenure")}</p>
                                     <p className="text-base font-bold">{property.tenure || "Freehold"}</p>
                                 </div>
                             </div>
@@ -256,7 +255,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
 
                         {/* Description */}
                         <div className="rounded-2xl border border-neutral-200 bg-white p-6">
-                            <h2 className="text-lg font-bold">Property Overview</h2>
+                            <h2 className="text-lg font-bold">{t("Properties.overview")}</h2>
                             <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-neutral-700">
                                 {property.description || "No description provided for this listing."}
                             </p>
@@ -264,23 +263,23 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
 
                         {/* Additional Specifications */}
                         <div className="rounded-2xl border border-neutral-200 bg-white p-6">
-                            <h2 className="text-lg font-bold">Key Specifications</h2>
+                            <h2 className="text-lg font-bold">{t("Properties.keySpecs")}</h2>
                             <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
                                 <div className="flex justify-between border-b border-neutral-100 py-2">
-                                    <dt className="text-neutral-500">Property Type</dt>
+                                    <dt className="text-neutral-500">{t("Properties.propertyType")}</dt>
                                     <dd className="font-semibold">{property.category}</dd>
                                 </div>
                                 <div className="flex justify-between border-b border-neutral-100 py-2">
-                                    <dt className="text-neutral-500">Bumi Status</dt>
+                                    <dt className="text-neutral-500">{t("Properties.bumiStatus")}</dt>
                                     <dd className="font-semibold">{property.bumiStatus || "Non-Bumi"}</dd>
                                 </div>
                                 <div className="flex justify-between border-b border-neutral-100 py-2">
-                                    <dt className="text-neutral-500">Land Size</dt>
+                                    <dt className="text-neutral-500">{t("Properties.fields.landSize")}</dt>
                                     <dd className="font-semibold">{property.landSize || "N/A"}</dd>
                                 </div>
                                 <div className="flex justify-between border-b border-neutral-100 py-2">
-                                    <dt className="text-neutral-500">Verified Offers</dt>
-                                    <dd className="font-semibold">{property.verifiedOfferCount ?? 0} active</dd>
+                                    <dt className="text-neutral-500">{t("SubmitOfferModal.verifyOffer")}</dt>
+                                    <dd className="font-semibold">{property.verifiedOfferCount ?? 0} {t("Main.status.active")}</dd>
                                 </div>
                             </dl>
                         </div>
@@ -293,20 +292,20 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                             {/* Make Offer Call-to-Action Box */}
                             <div className="rounded-2xl border-2 border-black bg-white p-6 shadow-[4px_4px_0_0_#000]">
                                 <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">Ready to buy?</p>
-                                <p className="mt-1 text-2xl font-black">Make an Offer</p>
+                                <p className="mt-1 text-2xl font-black">{t("Main.subHeading.subH4")}</p>
                                 <p className="mt-2 text-xs leading-relaxed text-neutral-600">
-                                    Submit a formal offer directly to the seller. Offers are verified and reviewed promptly.
+                                    {t("Main.subHeading.subH5")}
                                 </p>
 
                                 <Link
                                     href={`/properties/${property.id}/make-offer`}
                                     className="mt-5 block w-full rounded-xl border-2 border-black bg-[#ffd400] py-3.5 text-center text-sm font-black shadow-[3px_3px_0_0_#000] transition hover:-translate-y-0.5 hover:bg-[#ffe24b]"
                                 >
-                                    Make Offer Now
+                                    {t("Main.subHeading.subH6")}
                                 </Link>
 
                                 <p className="mt-3 text-center text-[11px] font-semibold text-neutral-500">
-                                    RM500 commitment fee applies upon offer submission
+                                    {t("Main.subHeading.subH7")}
                                 </p>
                             </div>
 
@@ -318,19 +317,19 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                                 <div className="rounded-2xl border border-neutral-200 bg-white p-6">
                                     <div className="flex items-center gap-2">
                                         <TrendingUp className="h-5 w-5 text-neutral-700" />
-                                        <h3 className="font-bold text-black">Financial Insights</h3>
+                                        <h3 className="font-bold text-black">{t("Main.subHeading.subH8")}</h3>
                                     </div>
 
                                     <div className="mt-4 space-y-3 text-sm">
                                         {property.marketValue && (
                                             <div className="flex justify-between">
-                                                <span className="text-neutral-500">Est. Market Value</span>
+                                                <span className="text-neutral-500">{t("Main.subHeading.subH9")}</span>
                                                 <span className="font-bold">{formatPrice(property.marketValue)}</span>
                                             </div>
                                         )}
                                         {property.maxLoanApplicable && (
                                             <div className="flex justify-between">
-                                                <span className="text-neutral-500">Max Loan Eligibility</span>
+                                                <span className="text-neutral-500">{t("Main.subHeading.subH10")}</span>
                                                 <span className="font-bold">{formatPrice(property.maxLoanApplicable)}</span>
                                             </div>
                                         )}

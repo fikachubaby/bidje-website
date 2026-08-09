@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
-import { getFeaturedProperties } from "@/lib/properties/properties";
+import { getFeaturedProperties } from "@/lib/properties/property-service";
 import { PropertyCard } from "@/components/property/PropertyCard";
 
 export async function FeaturedListings() {

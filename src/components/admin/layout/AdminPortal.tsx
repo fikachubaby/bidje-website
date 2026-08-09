@@ -2,17 +2,22 @@
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
+import { translate as t } from "@/lib/i18n/getTranslation";
 import { AdminHeader, AdminSidebar } from "@/components/admin/layout/AdminSidebar";
 import { DashboardView } from "@/components/admin/dashboard/DashboardView";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { OffersView } from "@/components/admin/offers/OffersView";
-import { PropertiesView } from "@/components/admin/property/PropertiesView";
+import { PropertiesList } from "@/components/admin/property/PropertiesList";
 import { PropertyFormModal } from "@/components/admin/property/PropertyFormModal";
 import { TelegramImportView } from "@/components/admin/telegram-import/TelegramImportView";
+import { UsersManagementView } from "@/components/admin/settings/UsersManagementView";
+import { AuditLogsView } from "@/components/admin/settings/AuditLogsView";
+import { ProfileView } from "@/components/admin/settings/ProfileView";
 
 import { useSession } from "@/lib/auth/useSession";
 import { useAdminProperties, useAdminOffers } from "@/lib/hooks/useAdminProperties";
 import { supabase } from "@/lib/supabase/supabase";
+import { VIEW_META } from "@/config/adminMeta";
 
 import type {
   AdminProperty,
@@ -21,30 +26,10 @@ import type {
   OfferStatus,
 } from "@/types/property";
 
-const VIEW_META: Record<AdminView, { title: string; subtitle: string }> = {
-  dashboard: {
-    title: "Dashboard",
-    subtitle: "Overview of your property listings and buyer activity.",
-  },
-  properties: {
-    title: "Property management",
-    subtitle: "Add, edit, publish, duplicate, or delete listings.",
-  },
-  offers: {
-    title: "Buyer offers",
-    subtitle: "Review incoming offers and update their status.",
-  },
-  imports: {
-    title: "Telegram Import",
-    subtitle: "Upload a Telegram Desktop JSON export and review property listings.",
-  },
-};
-
 export default function AdminPortal() {
   const router = useRouter();
   const { user, loading: sessionLoading } = useSession();
 
-  // Custom Hook for isolated business logic
   const {
     properties,
     saveProperty,
@@ -59,7 +44,6 @@ export default function AdminPortal() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingProperty, setEditingProperty] = useState<AdminProperty | null>(null);
 
-  // Modal Handlers
   const handleOpenCreate = useCallback(() => {
     setEditingProperty(null);
     setEditorOpen(true);
@@ -108,7 +92,7 @@ export default function AdminPortal() {
   if (sessionLoading) {
     return (
       <main className="grid min-h-screen place-items-center bg-neutral-100">
-        <p className="text-sm font-medium text-neutral-500">Loading admin portal…</p>
+        <p className="text-sm font-medium text-neutral-500">{t("Main.status.loadingInfo")}</p>
       </main>
     );
   }
@@ -118,11 +102,11 @@ export default function AdminPortal() {
       <main className="grid min-h-screen place-items-center bg-neutral-950 px-5 py-10">
         <section className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
           <p className="text-3xl font-black tracking-tight">
-            BIDJE<span className="text-yellow-400">.</span>
+            {t("Main.title")}<span className="text-yellow-400">.</span>
           </p>
-          <h1 className="mt-6 text-2xl font-black text-neutral-900">Staff login</h1>
+          <h1 className="mt-6 text-2xl font-black text-neutral-900">{t("AdminManagement.staff")} {t("Authentication.signIn")}</h1>
           <p className="mt-2 text-sm text-neutral-500">
-            Sign in to manage property listings and buyer offers.
+            {t("Main.heading3")}
           </p>
           <div className="mt-8">
             <LoginForm />
@@ -132,7 +116,7 @@ export default function AdminPortal() {
     );
   }
 
-  const meta = VIEW_META[activeView];
+  const meta = VIEW_META[activeView] || VIEW_META.dashboard;
 
   return (
     <div className="flex min-h-screen bg-neutral-100">
@@ -141,14 +125,16 @@ export default function AdminPortal() {
         onNavigate={setActiveView}
         mobileOpen={mobileNav}
         onCloseMobile={() => setMobileNav(false)}
-        onSignOut={handleSignOut}
       />
 
       <div className="flex min-w-0 flex-1 flex-col lg:ml-0">
         <AdminHeader
           title={meta.title}
           subtitle={meta.subtitle}
+          userEmail={user.email}
           onMenuClick={() => setMobileNav(true)}
+          onNavigate={setActiveView}
+          onSignOut={handleSignOut}
         />
 
         <section className="flex-1 p-5 lg:p-8">
@@ -161,7 +147,7 @@ export default function AdminPortal() {
           )}
 
           {activeView === "properties" && (
-            <PropertiesView
+            <PropertiesList
               properties={properties}
               onAdd={handleOpenCreate}
               onEdit={handleOpenEdit}
@@ -180,6 +166,11 @@ export default function AdminPortal() {
           )}
 
           {activeView === "imports" && <TelegramImportView />}
+
+          {/* New Settings & Profile View Components */}
+          {activeView === "users" && <UsersManagementView />}
+          {activeView === "audit-logs" && <AuditLogsView />}
+          {activeView === "profile" && <ProfileView user={user} />}
         </section>
       </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Edit3, Plus, Search, Trash2 } from "lucide-react";
+import { Copy, Edit3, Plus, Search, Trash2} from "lucide-react";
 import { useMemo, useState } from "react";
 import { formatPrice } from "@/lib/utils";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
@@ -8,7 +8,7 @@ import { FormInput, FormSelect } from "@/components/admin/ui/FormField";
 import { StatusBadge } from "@/components/admin/ui/StatusBadge";
 import { PROPERTY_STATUSES, type AdminProperty, type PropertyStatus } from "@/types/property";
 
-interface PropertiesViewProps {
+interface PropertiesListProps {
   properties: AdminProperty[];
   onAdd: () => void;
   onEdit: (property: AdminProperty) => void;
@@ -17,14 +17,13 @@ interface PropertiesViewProps {
   onStatusChange: (id: string, status: PropertyStatus) => void;
 }
 
-export function PropertiesView({
+export function PropertiesList({
   properties,
   onAdd,
   onEdit,
   onDelete,
   onDuplicate,
-  onStatusChange,
-}: PropertiesViewProps) {
+}: PropertiesListProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<PropertyStatus | "All">("All");
 
@@ -122,19 +121,6 @@ export function PropertiesView({
                     <td className="px-5 py-4">
                       <div className="space-y-2">
                         <StatusBadge status={property.status} />
-                        <FormSelect
-                          value={property.status}
-                          onChange={(e) =>
-                            onStatusChange(property.id, e.target.value as PropertyStatus)
-                          }
-                          className="mt-0 py-2 text-xs"
-                        >
-                          {PROPERTY_STATUSES.map((status) => (
-                            <option key={status} value={status}>
-                              {status}
-                            </option>
-                          ))}
-                        </FormSelect>
                       </div>
                     </td>
                     <td className="px-5 py-4">

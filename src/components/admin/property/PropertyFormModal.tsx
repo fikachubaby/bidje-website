@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { ImagePlus, Trash2, Loader2, Upload } from "lucide-react";
+import { ImagePlus, Trash2, Loader2, Upload, FileText } from "lucide-react";
 import { AdminButton } from "@/components/admin/ui/AdminButton";
 import {
   FormField,
@@ -18,27 +18,11 @@ import {
   type PropertyStatus,
   type PropertyType
 } from "@/types/property";
-
-const defaultFormState: AdminPropertyInput = {
-  name: "",
-  price: 0,
-  outstandingDebt: 0,
-  minimumPrice: 0,
-  address: "",
-  state: "",
-  district: "",
-  propertyType: "Terrace",
-  tenure: "Freehold",
-  bumiStatus: "Non Bumi",
-  landSize: "",
-  builtUp: "",
-  bedrooms: 3,
-  bathrooms: 2,
-  description: "",
-  mapsUrl: "",
-  images: [],
-  status: "Draft",
-};
+import {
+  formatWithCommas,
+  parseCommaNumber,
+  emptyPropertyInput,
+} from "@/lib/utils/property-utils";
 
 interface PropertyFormModalProps {
   open: boolean;
@@ -53,43 +37,49 @@ export function PropertyFormModal({
   onClose,
   onSave,
 }: PropertyFormModalProps) {
-  const [form, setForm] = useState<AdminPropertyInput>(defaultFormState);
+  const [form, setForm] = useState<AdminPropertyInput>(emptyPropertyInput);
+  const [priceInput, setPriceInput] = useState("");
+  const [debtInput, setDebtInput] = useState("");
+  const [minPriceInput, setMinPriceInput] = useState("");
   const [imageInput, setImageInput] = useState("");
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [docUploading, setDocUploading] = useState(false);
+  const [docUploadError, setDocUploadError] = useState("");
   const [minPriceTouched, setMinPriceTouched] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) return;
 
     if (editingProperty) {
+      const p = editingProperty.price || 0;
+      const d = editingProperty.outstandingDebt || 0;
+      const mp = editingProperty.minimumPrice || 0;
+
       setForm({
-        name: editingProperty.name || "",
-        price: editingProperty.price || 0,
-        address: editingProperty.address || "",
-        state: editingProperty.state || "",
-        district: editingProperty.district || "",
-        propertyType: editingProperty.propertyType || "Terrace",
-        tenure: editingProperty.tenure || "Freehold",
-        bumiStatus: editingProperty.bumiStatus || "Non Bumi",
-        landSize: editingProperty.landSize || "",
-        builtUp: editingProperty.builtUp || "",
-        bedrooms: editingProperty.bedrooms || 0,
-        bathrooms: editingProperty.bathrooms || 0,
-        description: editingProperty.description || "",
-        mapsUrl: editingProperty.mapsUrl || "",
+        ...emptyPropertyInput,
+        ...editingProperty,
         images: Array.isArray(editingProperty.images) ? editingProperty.images : [],
-        status: editingProperty.status || "Draft",
-        outstandingDebt: editingProperty.outstandingDebt || 0,
-        minimumPrice: editingProperty.minimumPrice || 0,
+        documents: Array.isArray(editingProperty.documents) ? editingProperty.documents : [],
+        tags: Array.isArray(editingProperty.tags) ? editingProperty.tags : [],
       });
+
+      setPriceInput(formatWithCommas(p));
+      setDebtInput(formatWithCommas(d));
+      setMinPriceInput(formatWithCommas(mp));
     } else {
-      setForm(defaultFormState);
+      setForm(emptyPropertyInput);
+      setPriceInput("");
+      setDebtInput("");
+      setMinPriceInput("");
     }
 
     setImageInput("");
     setError("");
+    setUploadError("");
+    setDocUploadError("");
     setMinPriceTouched(false);
   }, [open, editingProperty]);
 
@@ -97,10 +87,10 @@ export function PropertyFormModal({
     if (!minPriceTouched) {
       const computed = Math.max(0, (form.price || 0) - (form.outstandingDebt || 0));
       setForm((prev) => ({ ...prev, minimumPrice: computed }));
+      setMinPriceInput(formatWithCommas(computed));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.price, form.outstandingDebt]);
-  
+  }, [form.price, form.outstandingDebt, minPriceTouched]);
+
   function handleClose() {
     onClose();
   }
@@ -121,6 +111,13 @@ export function PropertyFormModal({
     setForm((prev) => ({
       ...prev,
       images: (prev.images || []).filter((_, i) => i !== index),
+    }));
+  }
+
+  function removeDocument(index: number) {
+    setForm((prev) => ({
+      ...prev,
+      documents: (prev.documents || []).filter((_, i) => i !== index),
     }));
   }
 
@@ -166,8 +163,56 @@ export function PropertyFormModal({
     e.target.value = "";
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleDocumentUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setDocUploading(true);
+    setDocUploadError("");
+
+    const uploadedUrls: string[] = [];
+
+    for (const file of Array.from(files)) {
+      if (file.type !== "application/pdf") {
+        setDocUploadError("Only PDF files are allowed for property documents.");
+        continue;
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await fetch("/api/admin/upload", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          setDocUploadError(data.error || `Failed to upload ${file.name}`);
+          continue;
+        }
+
+        uploadedUrls.push(data.url);
+      } catch {
+        setDocUploadError(`Failed to upload ${file.name}`);
+      }
+    }
+
+    if (uploadedUrls.length > 0) {
+      setForm((prev) => ({
+        ...prev,
+        documents: [...(prev.documents || []), ...uploadedUrls],
+      }));
+    }
+
+    setDocUploading(false);
+    e.target.value = "";
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saving) return;
 
     if (!form.name.trim()) {
       setError("Property name is required.");
@@ -177,20 +222,31 @@ export function PropertyFormModal({
       setError("Please enter a valid price.");
       return;
     }
-    if (form.minimumPrice > form.price) {
+    if ((form.minimumPrice ?? 0) > form.price) {
       setError("Minimum acceptable price cannot exceed the asking price.");
       return;
     }
-    if (!form.address.trim() || !form.state.trim() || !form.district.trim()) {
+    if (!form.address.trim() || !form.state.trim() || !(form.district ?? "").trim()) {
       setError("Address, state, and district are required.");
       return;
     }
 
-    onSave({ ...form, images: form.images || [] });
+    try {
+      setSaving(true);
+      await onSave({
+        ...form,
+        images: form.images || [],
+        documents: form.documents || [],
+        tags: form.tags || [],
+      });
+    } finally {
+      setSaving(false);
+    }
   }
 
   const isEditing = Boolean(editingProperty);
   const currentImages = form.images || [];
+  const currentDocuments = form.documents || [];
 
   return (
     <Modal
@@ -210,28 +266,43 @@ export function PropertyFormModal({
           />
         </FormField>
 
+        {/* PRICE FIELD WITH COMMA FORMATTING */}
         <FormField label="Price (RM)" htmlFor="price">
           <FormInput
             id="price"
-            type="number"
-            min={0}
-            value={form.price || ""}
-            onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+            type="text"
+            value={priceInput}
+            onChange={(e) => {
+              const rawVal = e.target.value;
+              setPriceInput(rawVal);
+              setForm({ ...form, price: parseCommaNumber(rawVal) });
+            }}
+            onBlur={() => {
+              setPriceInput(formatWithCommas(form.price));
+            }}
+            placeholder="e.g. 400,000"
           />
         </FormField>
 
+        {/* OUTSTANDING DEBT FIELD WITH COMMA FORMATTING */}
         <FormField label="Outstanding debt / loan balance (RM)" htmlFor="outstandingDebt">
           <FormInput
             id="outstandingDebt"
-            type="number"
-            min={0}
-            value={form.outstandingDebt || ""}
-            onChange={(e) =>
-              setForm({ ...form, outstandingDebt: Number(e.target.value) })
-            }
+            type="text"
+            value={debtInput}
+            onChange={(e) => {
+              const rawVal = e.target.value;
+              setDebtInput(rawVal);
+              setForm({ ...form, outstandingDebt: parseCommaNumber(rawVal) });
+            }}
+            onBlur={() => {
+              setDebtInput(formatWithCommas(form.outstandingDebt));
+            }}
+            placeholder="e.g. 20,000"
           />
         </FormField>
 
+        {/* MINIMUM PRICE FIELD WITH COMMA FORMATTING */}
         <FormField
           label="Minimum acceptable price (RM)"
           htmlFor="minimumPrice"
@@ -239,13 +310,18 @@ export function PropertyFormModal({
         >
           <FormInput
             id="minimumPrice"
-            type="number"
-            min={0}
-            value={form.minimumPrice || ""}
+            type="text"
+            value={minPriceInput}
             onChange={(e) => {
+              const rawVal = e.target.value;
               setMinPriceTouched(true);
-              setForm({ ...form, minimumPrice: Number(e.target.value) });
+              setMinPriceInput(rawVal);
+              setForm({ ...form, minimumPrice: parseCommaNumber(rawVal) });
             }}
+            onBlur={() => {
+              setMinPriceInput(formatWithCommas(form.minimumPrice));
+            }}
+            placeholder="e.g. 380,000"
           />
         </FormField>
 
@@ -302,7 +378,7 @@ export function PropertyFormModal({
         <FormField label="District" htmlFor="district">
           <FormInput
             id="district"
-            value={form.district}
+            value={form.district || ""}
             onChange={(e) => setForm({ ...form, district: e.target.value })}
             placeholder="e.g. Kajang"
           />
@@ -337,7 +413,7 @@ export function PropertyFormModal({
         <FormField label="Land size" htmlFor="landSize">
           <FormInput
             id="landSize"
-            value={form.landSize}
+            value={form.landSize || ""}
             onChange={(e) => setForm({ ...form, landSize: e.target.value })}
             placeholder="e.g. 20 x 70 ft"
           />
@@ -346,7 +422,7 @@ export function PropertyFormModal({
         <FormField label="Built up" htmlFor="builtUp">
           <FormInput
             id="builtUp"
-            value={form.builtUp}
+            value={form.builtUp || ""}
             onChange={(e) => setForm({ ...form, builtUp: e.target.value })}
             placeholder="e.g. 1,650 sqft"
           />
@@ -357,7 +433,7 @@ export function PropertyFormModal({
             id="bedrooms"
             type="number"
             min={0}
-            value={form.bedrooms}
+            value={form.bedrooms ?? 0}
             onChange={(e) => setForm({ ...form, bedrooms: Number(e.target.value) })}
           />
         </FormField>
@@ -367,8 +443,27 @@ export function PropertyFormModal({
             id="bathrooms"
             type="number"
             min={0}
-            value={form.bathrooms}
+            value={form.bathrooms ?? 0}
             onChange={(e) => setForm({ ...form, bathrooms: Number(e.target.value) })}
+          />
+        </FormField>
+
+        <FormField
+          label="Tags (Comma separated)"
+          wide
+          htmlFor="tags"
+          hint="e.g. Corner Lot, Renovated, Near LRT"
+        >
+          <FormInput
+            id="tags"
+            value={form.tags ? form.tags.join(", ") : ""}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                tags: e.target.value.split(",").map((t) => t.trim()).filter(Boolean),
+              })
+            }
+            placeholder="Corner Lot, High Floor, Swimming Pool"
           />
         </FormField>
 
@@ -376,12 +471,13 @@ export function PropertyFormModal({
           <FormInput
             id="mapsUrl"
             type="url"
-            value={form.mapsUrl}
+            value={form.mapsUrl || ""}
             onChange={(e) => setForm({ ...form, mapsUrl: e.target.value })}
             placeholder="https://maps.google.com/..."
           />
         </FormField>
 
+        {/* IMAGES SECTION */}
         <FormField
           label="Images"
           wide
@@ -464,11 +560,76 @@ export function PropertyFormModal({
           ) : null}
         </FormField>
 
+        {/* DOCUMENTS (PDF) SECTION */}
+        <FormField
+          label="Property Documents (PDF)"
+          wide
+          hint="Upload multiple PDF documents for staff reference (e.g., floor plans, titles, agreements)."
+        >
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <label
+              className={`flex cursor-pointer items-center gap-2 rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 ${docUploading ? "pointer-events-none opacity-60" : ""
+                }`}
+            >
+              {docUploading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="h-4 w-4" />
+              )}
+              {docUploading ? "Uploading PDFs…" : "Upload PDF Documents"}
+              <input
+                type="file"
+                accept="application/pdf"
+                multiple
+                className="hidden"
+                onChange={handleDocumentUpload}
+                disabled={docUploading}
+              />
+            </label>
+          </div>
+
+          {docUploadError ? (
+            <p className="mt-2 text-sm text-red-600">{docUploadError}</p>
+          ) : null}
+
+          {currentDocuments.length > 0 ? (
+            <ul className="mt-3 flex flex-col gap-2">
+              {currentDocuments.map((url, index) => {
+                const fileName = url.split("/").pop() || `Document ${index + 1}`;
+                return (
+                  <li
+                    key={`${url}-${index}`}
+                    className="flex items-center justify-between rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm"
+                  >
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="truncate font-medium text-blue-600 hover:underline flex items-center gap-2"
+                    >
+                      <FileText className="h-4 w-4 text-neutral-500" />
+                      {fileName}
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => removeDocument(index)}
+                      className="ml-2 rounded-lg p-1 text-neutral-400 hover:bg-red-100 hover:text-red-600 transition-colors"
+                      aria-label="Remove document"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+        </FormField>
+
         <FormField label="Description" wide htmlFor="description">
           <FormTextarea
             id="description"
             rows={5}
-            value={form.description}
+            value={form.description || ""}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             placeholder="Describe the property, nearby amenities, and key selling points."
           />
@@ -480,12 +641,29 @@ export function PropertyFormModal({
           </p>
         ) : null}
 
+        {/* internal staff notes */}
+        <FormField
+          label="Internal Notes (Staff Only)"
+          wide
+          htmlFor="internalNotes"
+          hint="Private notes visible only to admins and agents."
+        >
+          <FormTextarea
+            id="internalNotes"
+            rows={3}
+            value={form.internalNotes || ""}
+            onChange={(e) => setForm({ ...form, internalNotes: e.target.value })}
+            placeholder="Add remarks about vendor urgency, commission terms, etc."
+          />
+        </FormField>
+
         <div className="flex justify-end gap-3 md:col-span-2">
           <AdminButton type="button" variant="secondary" onClick={handleClose}>
             Cancel
           </AdminButton>
-          <AdminButton type="submit">
-            {isEditing ? "Save changes" : "Create property"}
+          <AdminButton type="submit" disabled={saving}>
+            {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            {saving ? "Saving..." : isEditing ? "Save changes" : "Create property"}
           </AdminButton>
         </div>
       </form>

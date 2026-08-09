@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { MakeOfferClient } from "@/components/property/MakeOfferClient";
-import { getPropertyById } from "@/lib/properties/properties";
+import { getPropertyById } from "@/lib/properties/property-service";
 import { Navbar } from "@/components/layout/Navbar";
 
 interface MakeOfferPageProps {

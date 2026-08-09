@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { getFilteredProperties } from '@/lib/properties/properties';
+import { getFilteredProperties } from '@/lib/properties/property-service';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://bidje.com';
 

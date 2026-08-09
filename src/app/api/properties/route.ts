@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { searchProperties, getPropertyById } from "@/lib/properties/properties";
+import { searchProperties, getPropertyById } from "@/lib/properties/property-service";
 import type { PropertyCategory } from "@/types/property";
 
 export async function GET(
