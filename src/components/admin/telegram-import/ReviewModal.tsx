@@ -1,7 +1,7 @@
 "use client";
 
 import { ImageIcon } from "lucide-react";
-import { AdminButton } from "@/components/admin/ui/AdminButton";
+import { Button } from "@/components/ui/ButtonProps";
 import {
     FormField,
     FormInput,
@@ -224,12 +224,12 @@ export function ReviewModal({
                     </div>
 
                     <div className="flex flex-wrap justify-end gap-3">
-                        <AdminButton type="button" variant="secondary" onClick={onClose}>
+                        <Button type="button" variant="secondary" onClick={onClose}>
                             Cancel
-                        </AdminButton>
-                        <AdminButton type="button" onClick={onSave}>
+                        </Button>
+                        <Button type="button" onClick={onSave}>
                             Save changes
-                        </AdminButton>
+                        </Button>
                     </div>
                 </div>
             ) : null}

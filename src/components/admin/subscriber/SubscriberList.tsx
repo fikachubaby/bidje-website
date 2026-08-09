@@ -13,7 +13,7 @@ import {
     ExternalLink,
     Loader2
 } from "lucide-react";
-import { AdminButton } from "@/components/admin/ui/AdminButton";
+import { Button } from "@/components/ui/ButtonProps";
 import { FormInput, FormSelect } from "@/components/admin/ui/FormField";
 import { cn } from "@/lib/utils";
 
@@ -197,20 +197,20 @@ export function SubscriberList({
                     Showing page <span className="font-semibold text-neutral-800">{page}</span> of <span className="font-semibold text-neutral-800">{totalPages}</span> (Total: {totalCount} requests)
                 </p>
                 <div className="flex items-center gap-2">
-                    <AdminButton
+                    <Button
                         variant="secondary"
                         onClick={() => setPage(Math.max(page - 1, 1))}
                         disabled={page <= 1 || loading}
                     >
                         <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-                    </AdminButton>
-                    <AdminButton
+                    </Button>
+                    <Button
                         variant="secondary"
                         onClick={() => setPage(Math.min(page + 1, totalPages))}
                         disabled={page >= totalPages || loading}
                     >
                         Next <ChevronRight className="h-4 w-4 ml-1" />
-                    </AdminButton>
+                    </Button>
                 </div>
             </div>
 

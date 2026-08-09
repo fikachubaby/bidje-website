@@ -168,4 +168,14 @@ export interface BuyerOffer {
   message: string;
   status: OfferStatus;
   createdAt: string;
+  icDocumentUrl?: string;
+  paymentProofUrl?: string;
+  history?: OfferHistoryItem[];
+}
+
+export interface OfferHistoryItem {
+  id: string;
+  action: string;
+  timestamp: string;
+  performedBy?: string;
 }

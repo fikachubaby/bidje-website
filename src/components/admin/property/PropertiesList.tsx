@@ -1,7 +1,7 @@
 "use client";
 
 import { Copy, Edit3, Plus, Search, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
-import { AdminButton } from "@/components/admin/ui/AdminButton";
+import { Button } from "@/components/ui/ButtonProps";
 import { FormInput, FormSelect } from "@/components/admin/ui/FormField";
 import { StatusBadge } from "@/components/admin/ui/StatusBadge";
 import { formatPrice } from "@/lib/utils";
@@ -44,9 +44,9 @@ export function PropertiesList({
   return (
     <div className="space-y-6" >
       <div className="flex flex-wrap items-center justify-end gap-3" >
-        <AdminButton onClick={onAdd}>
+        <Button onClick={onAdd}>
           <Plus className="h-5 w-5"/>Add property
-        </AdminButton>
+        </Button>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row">
@@ -158,18 +158,18 @@ export function PropertiesList({
         <p className="text-sm text-neutral-500"> Showing page <span className = "font-semibold text-neutral-800"> { page } </span> of <span className="font-semibold text-neutral-800">{totalPages}</span > (Total: { totalCount } properties)
         </p>
         <div className = "flex items-center gap-2">
-          <AdminButton
+          <Button
             variant="secondary"
             onClick = {() => setPage(Math.max(page - 1, 1))}
             disabled = { page <= 1 || loading}>
               <ChevronLeft className="h-4 w-4 mr-1"/>Previous
-          </AdminButton>
-          <AdminButton
+          </Button>
+          <Button
             variant = "secondary"
             onClick = {() => setPage(Math.min(page + 1, totalPages))}
             disabled = { page >= totalPages || loading}>Next
             <ChevronRight className = "h-4 w-4 ml-1" />
-          </AdminButton>
+          </Button>
         </div>
       </div>
     </div>

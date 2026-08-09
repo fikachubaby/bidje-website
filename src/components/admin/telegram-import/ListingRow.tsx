@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, ImageIcon } from "lucide-react";
-import { AdminButton } from "@/components/admin/ui/AdminButton";
+import { Button } from "@/components/ui/ButtonProps";
 import { formatPrice } from "@/lib/utils";
 import type { TelegramParsedProperty } from "@/types/telegram-import";
 
@@ -92,14 +92,14 @@ export function ListingRow({
                 )}
             </td>
             <td className="px-4 py-3">
-                <AdminButton
+                <Button
                     type="button"
                     variant="secondary"
                     size="sm"
                     onClick={() => void onOpenReview(index)}
                 >
                     Review
-                </AdminButton>
+                </Button>
             </td>
         </tr>
     );

@@ -48,7 +48,20 @@ export default function AdminPortal() {
     duplicateProperty,
   } = useAdminProperties(Boolean(user));
 
-  const {offers, updateOfferStatus } = useAdminOffers(Boolean(user));
+  const {
+    offers,
+    loading: loadingOffers,
+    page: offersPage,
+    setPage: setOffersPage,
+    totalPages: offersTotalPages,
+    totalCount: totalOffersCount,
+    search: offersSearch,
+    setSearch: setOffersSearch,
+    statusFilter: offersStatusFilter,
+    setStatusFilter: setOffersStatusFilter,
+    updateOfferStatus
+  } = useAdminOffers(Boolean(user));
+  
   const [activeView, setActiveView] = useState<AdminView>("dashboard");
   const [mobileNav, setMobileNav] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -71,7 +84,17 @@ export default function AdminPortal() {
 
   const handleSave = async (input: AdminPropertyInput) => {
     try {
+      const isEditing = Boolean(editingProperty);
       await saveProperty(input, editingProperty?.id);
+
+      const { data: userData } = await supabase.auth.getUser();
+      await supabase.from("audit_logs").insert({
+        actor_id: userData.user?.id || null,
+        action: isEditing ? `Updated property '${input.name}'` : `Created property '${input.name}'`,
+        entity: "properties",
+        entity_id: editingProperty?.id || null,
+      });
+
       handleCloseEditor();
     } catch {
       alert("Failed to save property");
@@ -180,6 +203,15 @@ export default function AdminPortal() {
             <OffersView
               offers={offers}
               properties={properties}
+              loading={loadingOffers}
+              page={offersPage}
+              setPage={setOffersPage}
+              totalPages={offersTotalPages}
+              totalCount={totalOffersCount}
+              search={offersSearch}
+              setSearch={setOffersSearch}
+              statusFilter={offersStatusFilter}
+              setStatusFilter={setOffersStatusFilter}
               onUpdateStatus={handleUpdateOffer}
             />
           )}

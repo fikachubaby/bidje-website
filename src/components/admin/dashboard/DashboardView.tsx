@@ -2,7 +2,7 @@
 
 import { Plus } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
-import { AdminButton } from "@/components/admin/ui/AdminButton";
+import { Button } from "@/components/ui/ButtonProps";
 import { StatCard } from "@/components/admin/ui/StatCard";
 import { StatusBadge } from "@/components/admin/ui/StatusBadge";
 import type { AdminProperty, BuyerOffer } from "@/types/property";
@@ -26,10 +26,10 @@ export function DashboardView({ properties, offers, onAddProperty }: DashboardVi
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-end gap-3">
-        <AdminButton onClick={onAddProperty}>
+        <Button onClick={onAddProperty}>
           <Plus className="h-5 w-5" />
           Add property
-        </AdminButton>
+        </Button>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

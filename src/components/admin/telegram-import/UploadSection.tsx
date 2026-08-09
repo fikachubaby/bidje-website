@@ -2,7 +2,7 @@
 
 import { AlertTriangle, FileArchive, Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
-import { AdminButton } from "@/components/admin/ui/AdminButton";
+import { Button } from "@/components/ui/ButtonProps";
 import { formatFileSize } from "@/lib/telegram/telegram-import";
 import { cn } from "@/lib/utils";
 import type { TelegramParseProgress } from "@/types/telegram-import";
@@ -68,16 +68,16 @@ export function UploadSection({
                 </p>
                 <p className="mt-1 text-xs text-neutral-500">or choose a file from your computer</p>
                 <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-                    <AdminButton
+                    <Button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={parsing}
                     >
                         <Upload className="h-4 w-4" />
                         Choose ZIP
-                    </AdminButton>
+                    </Button>
                     {file ? (
-                        <AdminButton
+                        <Button
                             type="button"
                             variant="secondary"
                             onClick={onClearFile}
@@ -85,7 +85,7 @@ export function UploadSection({
                         >
                             <X className="h-4 w-4" />
                             Clear file
-                        </AdminButton>
+                        </Button>
                     ) : null}
                 </div>
                 <input
@@ -103,9 +103,9 @@ export function UploadSection({
                         <p className="text-sm font-bold text-neutral-900">{file.name}</p>
                         <p className="text-xs text-neutral-500">{formatFileSize(file.size)}</p>
                     </div>
-                    <AdminButton type="button" onClick={onParse} disabled={parsing}>
+                    <Button type="button" onClick={onParse} disabled={parsing}>
                         {parsing ? "Parsing…" : "Parse Export"}
-                    </AdminButton>
+                    </Button>
                 </div>
             ) : null}
 

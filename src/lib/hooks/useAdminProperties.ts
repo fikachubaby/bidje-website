@@ -27,7 +27,7 @@ export function useAdminProperties(isAuthenticated: boolean) {
                 page,
                 limit,
                 search,
-                status: statusFilter,
+                status: statusFilter === "All" ? "All" : statusFilter.toLowerCase(),
             });
 
             const res = await fetch(`/api/admin/properties?${queryString}`);
@@ -165,23 +165,53 @@ export function useAdminProperties(isAuthenticated: boolean) {
 export function useAdminOffers(isAuthenticated: boolean) {
     const [offers, setOffers] = useState<BuyerOffer[]>([]);
     const [loading, setLoading] = useState(false);
+    const [page, setPage] = useState(1);
+    const [limit] = useState(10);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
+    const [search, setSearch] = useState("");
+    const [statusFilter, setStatusFilter] = useState<OfferStatus | "All">("All");
 
     const fetchOffers = useCallback(async () => {
         try {
             setLoading(true);
-            const res = await fetch("/api/admin/offers");
+            const queryString = buildQueryString({
+                page,
+                limit,
+                search,
+                status: statusFilter,
+            });
+
+            const res = await fetch(`/api/admin/offers?${queryString}`);
             const data = await res.json();
-            if (res.ok) setOffers(data.offers || []);
+
+            if (res.ok) {
+                setOffers(data.offers || []);
+                if (data.pagination) {
+                    setTotalPages(data.pagination.totalPages);
+                    setTotalCount(data.pagination.totalCount);
+                }
+            }
         } catch (err) {
             console.error("Error loading offers:", err);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [page, limit, search, statusFilter]);
 
     useEffect(() => {
         if (isAuthenticated) fetchOffers();
     }, [isAuthenticated, fetchOffers]);
+
+    const handleSearchChange = (term: string) => {
+        setSearch(term);
+        setPage(1);
+    };
+
+    const handleStatusFilterChange = (status: OfferStatus | "All") => {
+        setStatusFilter(status);
+        setPage(1);
+    };
 
     const updateOfferStatus = useCallback(
         async (id: string, status: OfferStatus) => {
@@ -196,5 +226,18 @@ export function useAdminOffers(isAuthenticated: boolean) {
         [fetchOffers]
     );
 
-    return { offers, loading, fetchOffers, updateOfferStatus };
+    return {
+        offers,
+        loading,
+        page,
+        setPage,
+        totalPages,
+        totalCount,
+        search,
+        setSearch: handleSearchChange,
+        statusFilter,
+        setStatusFilter: handleStatusFilterChange,
+        fetchOffers,
+        updateOfferStatus
+    };
 }

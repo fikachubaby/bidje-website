@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-interface AdminButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "ghost" | "danger";
   size?: "sm" | "md" | "lg";
 }
@@ -18,13 +18,13 @@ const sizes = {
   lg: "px-5 py-3 text-base",
 };
 
-export function AdminButton({
+export function Button({
   variant = "primary",
   size = "md",
   className,
   children,
   ...props
-}: AdminButtonProps) {
+}: ButtonProps) {
   return (
     <button
       className={cn(

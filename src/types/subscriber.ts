@@ -29,5 +29,5 @@ export interface SubscriptionRequest {
     amount_paid: number | null;
     proof_of_payment_url: string | null;
     created_at: string;
-    profiles?: SubscriberProfile; // Joined profile data
+    profiles?: SubscriberProfile;
 }

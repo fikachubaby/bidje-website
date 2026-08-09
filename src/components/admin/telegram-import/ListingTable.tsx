@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckSquare, Download, Search, Square } from "lucide-react";
-import { AdminButton } from "@/components/admin/ui/AdminButton";
+import { Button } from "@/components/ui/ButtonProps";
 import { FormInput, FormSelect } from "@/components/admin/ui/FormField";
 import { downloadParsedJson } from "@/lib/telegram/telegram-import";
 import type {
@@ -82,27 +82,27 @@ export function ListingTable({
                     <option value="missing-photos">Missing photos</option>
                     <option value="duplicates">Duplicate codes</option>
                 </FormSelect>
-                <AdminButton type="button" variant="secondary" onClick={() => downloadParsedJson(properties)}>
+                <Button type="button" variant="secondary" onClick={() => downloadParsedJson(properties)}>
                     <Download className="h-4 w-4" />
                     Download Parsed JSON
-                </AdminButton>
+                </Button>
             </div>
 
             {/* Selection bar */}
             <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3 shadow-sm">
-                <AdminButton type="button" variant="secondary" size="sm" onClick={onSelectAllVisible}>
+                <Button type="button" variant="secondary" size="sm" onClick={onSelectAllVisible}>
                     <CheckSquare className="h-4 w-4" />
                     Select all visible
-                </AdminButton>
-                <AdminButton type="button" variant="ghost" size="sm" onClick={onDeselectAll}>
+                </Button>
+                <Button type="button" variant="ghost" size="sm" onClick={onDeselectAll}>
                     <Square className="h-4 w-4" />
                     Deselect all
-                </AdminButton>
+                </Button>
                 <p className="text-sm font-bold text-neutral-600">
                     {selected.size} selected
                 </p>
                 <div className="ml-auto flex flex-col items-end gap-1">
-                    <AdminButton
+                    <Button
                         type="button"
                         disabled={selected.size === 0}
                         onClick={() => {
@@ -124,7 +124,7 @@ export function ListingTable({
                         }}
                     >
                         Import Selected ({selected.size}) to Supabase
-                    </AdminButton>
+                    </Button>
                     <p className="max-w-sm text-right text-xs text-neutral-500">
                         Supabase import and permanent photo storage will be connected after the
                         parsed listings are reviewed.
@@ -193,7 +193,7 @@ export function ListingTable({
                         {(currentPage - 1) * PAGE_SIZE + pageItems.length} of {filtered.length}
                     </p>
                     <div className="flex items-center gap-2">
-                        <AdminButton
+                        <Button
                             type="button"
                             variant="secondary"
                             size="sm"
@@ -201,11 +201,11 @@ export function ListingTable({
                             onClick={() => onPageChange((p) => Math.max(1, p - 1))}
                         >
                             Previous
-                        </AdminButton>
+                        </Button>
                         <span className="text-sm font-bold text-neutral-700">
                             Page {currentPage} / {totalPages}
                         </span>
-                        <AdminButton
+                        <Button
                             type="button"
                             variant="secondary"
                             size="sm"
@@ -213,7 +213,7 @@ export function ListingTable({
                             onClick={() => onPageChange((p) => Math.min(totalPages, p + 1))}
                         >
                             Next
-                        </AdminButton>
+                        </Button>
                     </div>
                 </div>
             </div>

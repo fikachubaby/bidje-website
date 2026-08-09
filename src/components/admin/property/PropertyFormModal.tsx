@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { ImagePlus, Trash2, Loader2, Upload, FileText } from "lucide-react";
-import { AdminButton } from "@/components/admin/ui/AdminButton";
+import { Button } from "@/components/ui/ButtonProps";
 import {
   FormField,
   FormInput,
@@ -518,10 +518,10 @@ export function PropertyFormModal({
               placeholder="Paste an image URL"
               className="mt-0 flex-1 min-w-[200px]"
             />
-            <AdminButton type="button" variant="secondary" onClick={addImage}>
+            <Button type="button" variant="secondary" onClick={addImage}>
               <ImagePlus className="h-4 w-4" />
               Add
-            </AdminButton>
+            </Button>
           </div>
 
           {uploadError ? (
@@ -658,13 +658,13 @@ export function PropertyFormModal({
         </FormField>
 
         <div className="flex justify-end gap-3 md:col-span-2">
-          <AdminButton type="button" variant="secondary" onClick={handleClose}>
+          <Button type="button" variant="secondary" onClick={handleClose}>
             Cancel
-          </AdminButton>
-          <AdminButton type="submit" disabled={saving}>
+          </Button>
+          <Button type="submit" disabled={saving}>
             {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             {saving ? "Saving..." : isEditing ? "Save changes" : "Create property"}
-          </AdminButton>
+          </Button>
         </div>
       </form>
     </Modal>
