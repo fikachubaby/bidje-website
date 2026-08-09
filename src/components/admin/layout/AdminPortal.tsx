@@ -32,6 +32,15 @@ export default function AdminPortal() {
 
   const {
     properties,
+    loading,
+    page,
+    setPage,
+    totalPages,
+    totalCount,
+    search,
+    setSearch,
+    statusFilter,
+    setStatusFilter,
     saveProperty,
     deleteProperty,
     updateStatus,
@@ -149,6 +158,15 @@ export default function AdminPortal() {
           {activeView === "properties" && (
             <PropertiesList
               properties={properties}
+              loading={loading}
+              page={page}
+              setPage={setPage}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              search={search}
+              setSearch={setSearch}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
               onAdd={handleOpenCreate}
               onEdit={handleOpenEdit}
               onDelete={deleteProperty}

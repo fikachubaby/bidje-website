@@ -5,15 +5,39 @@ import { requireStaffSession } from "@/lib/auth/requireStaffSession";
 import { generateSlug } from "@/lib/utils/property-utils";
 
 // GET /api/admin/properties
-export async function GET() {
+export async function GET(request: Request) {
     const check = await requireStaffSession();
     if (check.error) return check.error;
 
     try {
-        const { data: properties, error } = await supabaseAdmin
+        const { searchParams } = new URL(request.url);
+        const page = parseInt(searchParams.get("page") || "1", 10);
+        const limit = parseInt(searchParams.get("limit") || "10", 10);
+        const search = searchParams.get("search")?.trim() || "";
+        const status = searchParams.get("status") || "All";
+
+        const from = (page - 1) * limit;
+        const to = from + limit - 1;
+
+        let query = supabaseAdmin
             .from("properties")
-            .select("*, property_images(*), property_documents(*)")
-            .order("created_at", { ascending: false });
+            .select("*, property_images(*), property_documents(*)", { count: "exact" });
+
+        // Server-side status filter
+        if (status !== "All") {
+            query = query.eq("status", status);
+        }
+
+        // Server-side search filter across title, address, district, state, property type
+        if (search) {
+            query = query.or(
+                `title.ilike.%${search}%,full_address.ilike.%${search}%,district.ilike.%${search}%,state.ilike.%${search}%,property_type.ilike.%${search}%`
+            );
+        }
+
+        query = query.order("created_at", { ascending: false }).range(from, to);
+
+        const { data: properties, count, error } = await query;
 
         if (error) throw error;
 
@@ -55,7 +79,18 @@ export async function GET() {
             };
         });
 
-        return NextResponse.json({ properties: formatted });
+        const totalCount = count ?? 0;
+        const totalPages = Math.ceil(totalCount / limit) || 1;
+
+        return NextResponse.json({
+            properties: formatted,
+            pagination: {
+                page,
+                limit,
+                totalCount,
+                totalPages,
+            },
+        });
     } catch (err: unknown) {
         console.error("SUPABASE FETCH ERROR ON GET /api/admin/properties:", err);
         const msg = err instanceof Error ? err.message : "Failed to fetch properties";

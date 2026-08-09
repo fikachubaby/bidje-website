@@ -12,23 +12,53 @@ import type {
 export function useAdminProperties(isAuthenticated: boolean) {
     const [properties, setProperties] = useState<AdminProperty[]>([]);
     const [loading, setLoading] = useState(false);
+    const [page, setPage] = useState(1);
+    const [limit] = useState(10); // Items per page
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
+    const [search, setSearch] = useState("");
+    const [statusFilter, setStatusFilter] = useState<PropertyStatus | "All">("All");
 
     const fetchProperties = useCallback(async () => {
         try {
             setLoading(true);
-            const res = await fetch("/api/admin/properties");
+            const params = new URLSearchParams({
+                page: page.toString(),
+                limit: limit.toString(),
+                search,
+                status: statusFilter,
+            });
+
+            const res = await fetch(`/api/admin/properties?${params.toString()}`);
             const data = await res.json();
-            if (res.ok) setProperties(data.properties || []);
+
+            if (res.ok) {
+                setProperties(data.properties || []);
+                if (data.pagination) {
+                    setTotalPages(data.pagination.totalPages);
+                    setTotalCount(data.pagination.totalCount);
+                }
+            }
         } catch (err) {
             console.error("Error loading properties:", err);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [page, limit, search, statusFilter]);
 
     useEffect(() => {
         if (isAuthenticated) fetchProperties();
     }, [isAuthenticated, fetchProperties]);
+
+    const handleSearchChange = (term: string) => {
+        setSearch(term);
+        setPage(1);
+    };
+
+    const handleStatusFilterChange = (status: PropertyStatus | "All") => {
+        setStatusFilter(status);
+        setPage(1);
+    };
 
     const saveProperty = useCallback(
         async (input: AdminPropertyInput, editingId?: string) => {
@@ -115,6 +145,14 @@ export function useAdminProperties(isAuthenticated: boolean) {
     return {
         properties,
         loading,
+        page,
+        setPage,
+        totalPages,
+        totalCount,
+        search,
+        setSearch: handleSearchChange,
+        statusFilter,
+        setStatusFilter: handleStatusFilterChange,
         fetchProperties,
         saveProperty,
         deleteProperty,
