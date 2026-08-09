@@ -4,6 +4,7 @@
         "closeAriaLabel": "Close",
         "redirectingMessage": "Almost there — create an account to submit your offer.",
         "redirectingSubtext": "We've saved your offer details. Redirecting you to sign up…",
+        "submittingMessage": "Submitting your offer...",
         "successMessage": "Your offer has been submitted successfully. Our team will review it and contact you soon.",
         "successCloseButton": "Close",
         "cancelButton": "Cancel",

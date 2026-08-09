@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, type FormEvent } from "react";
 import { usePathname } from "next/navigation";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/auth/useSession";
 import {
@@ -35,15 +35,19 @@ export function SubmitOfferModal({
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitted, setSubmitted] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+  const [loading, setLoading] = useState(false); // Added loading state
 
   const submitOffer = useCallback(async (data: FormData) => {
     if (!user) return;
 
+    setLoading(true);
     const result = await submitOfferToSupabase({
       propertyId,
       userId: user.id,
       data,
     });
+
+    setLoading(false);
 
     if (!result.success) {
       setErrors({ offerAmount: result.error });
@@ -77,10 +81,12 @@ export function SubmitOfferModal({
   if (!open) return null;
 
   function handleClose() {
+    if (loading) return;
     setForm(initialForm);
     setErrors({});
     setSubmitted(false);
     setRedirecting(false);
+    setLoading(false);
     onClose();
   }
 
@@ -96,9 +102,13 @@ export function SubmitOfferModal({
     if (sessionLoading) return;
 
     if (!user) {
+      setLoading(true);
       savePendingOffer({ propertyId, ...form });
       setRedirecting(true);
-      window.location.href = `/signup?next=${encodeURIComponent(pathname)}`;
+
+      setTimeout(() => {
+        window.location.href = `/signup?next=${encodeURIComponent(pathname)}`;
+      }, 600);
       return;
     }
 
@@ -134,17 +144,21 @@ export function SubmitOfferModal({
           <button
             type="button"
             onClick={handleClose}
-            className="rounded-full p-2 text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-black"
+            disabled={loading}
+            className="rounded-full p-2 text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-black disabled:opacity-50"
             aria-label={t("SubmitOfferModal.closeAriaLabel")}
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {redirecting ? (
-          <div className="mt-8 rounded-2xl border border-neutral-200 bg-neutral-50 p-6 text-center">
-            <p className="text-sm font-semibold text-black">
-              {t("SubmitOfferModal.redirectingMessage")}
+        {redirecting || loading ? (
+          <div className="mt-8 flex flex-col items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-50 p-8 text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-brand" />
+            <p className="mt-4 text-sm font-semibold text-black">
+              {redirecting
+                ? t("SubmitOfferModal.redirectingMessage")
+                : t("SubmitOfferModal.submittingMessage")}
             </p>
             <p className="mt-2 text-sm text-neutral-500">
               {t("SubmitOfferModal.redirectingSubtext")}
@@ -264,14 +278,17 @@ export function SubmitOfferModal({
               <button
                 type="button"
                 onClick={handleClose}
-                className="flex-1 rounded-2xl border border-neutral-200 py-3.5 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-50"
+                disabled={loading}
+                className="flex-1 rounded-2xl border border-neutral-200 py-3.5 text-sm font-semibold text-neutral-700 transition-colors hover:bg-neutral-50 disabled:opacity-50"
               >
                 {t("SubmitOfferModal.cancelButton")}
               </button>
               <button
                 type="submit"
-                className="flex-1 rounded-2xl bg-brand py-3.5 text-sm font-bold text-black transition-colors hover:bg-brand-dark"
+                disabled={loading}
+                className="flex items-center justify-center gap-2 flex-1 rounded-2xl bg-brand py-3.5 text-sm font-bold text-black transition-colors hover:bg-brand-dark disabled:opacity-50"
               >
+                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                 {t("SubmitOfferModal.submitButton")}
               </button>
             </div>
