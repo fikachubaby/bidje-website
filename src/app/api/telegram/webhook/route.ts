@@ -49,6 +49,7 @@ export async function POST(request: Request) {
 
     const expectedChatId = process.env.TELEGRAM_GROUP_CHAT_ID;
     if (String(msg.chat.id) !== expectedChatId) {
+        console.warn(`[telegram-webhook] Chat ID mismatch: got ${msg.chat.id}, expected ${expectedChatId}`);
         return NextResponse.json({ ok: true });
     }
 
@@ -141,7 +142,9 @@ export async function POST(request: Request) {
         telegram_message_ids: [msg.message_id],
         telegram_sender_id: senderId,
         telegram_last_synced_at: new Date().toISOString(),
-        ...(existingRow ? {} : { status: "Draft" }),
+        tags: fields.amenities,
+        internal_notes: fields.internalNotes,
+        ...(existingRow ? {} : { status: "Published" }),
     };
 
     let propertyId: string;

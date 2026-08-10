@@ -340,11 +340,28 @@ export function TelegramImportView() {
   };
 
   const handleImportSelected = async (selectedListings: TelegramParsedProperty[]) => {
+    const zip = zipRef.current;
+    if (!zip) {
+      alert("The original ZIP is no longer available — please re-upload and re-parse before importing.");
+      return;
+    }
+
     try {
+      const formData = new FormData();
+      formData.append("listings", JSON.stringify(selectedListings));
+
+      for (const listing of selectedListings) {
+        for (let i = 0; i < listing.photoPaths.length; i++) {
+          const path = listing.photoPaths[i];
+          const blob = await loadPhotoBlob(zip, path, zipEntryByPhotoPathRef.current);
+          if (!blob) continue;
+          formData.append(`photo::${listing.telegramCode}::${i}`, blob, `${listing.telegramCode}_${i}.jpg`);
+        }
+      }
+
       const response = await fetch("/api/admin/import-telegram", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ listings: selectedListings }),
+        body: formData,
       });
 
       const data = await response.json();

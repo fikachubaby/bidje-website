@@ -136,12 +136,13 @@ function extractLabeledValue(text: string, labels: string[]): string {
   const sorted = [...labels].sort((a, b) => b.length - a.length);
   for (const label of sorted) {
     const re = new RegExp(
-      `(?:^|\\n)\\s*${escapeRegExp(label)}\\s*[:：]\\s*(.+?)(?=\\n|$)`,
+      `(?:^|\\n)[ \\t]*${escapeRegExp(label)}[ \\t]*[:：][ \\t]*(.*?)(?=\\n|$)`,
       "i"
     );
     const match = text.match(re);
-    if (match?.[1]) {
-      return match[1].trim();
+    if (match) {
+      const value = match[1].trim();
+      if (value) return value;
     }
   }
   return "";
@@ -160,6 +161,10 @@ function cleanDescription(rawText: string): string {
       if (!trimmed) return true;
       if (/^(?:property\s+)?code\s*[:：]/i.test(trimmed)) return false;
       if (LABEL_LINE_RE.test(trimmed)) return false;
+      if (/^amenities\s*[:：]?$/i.test(trimmed)) return false;
+      if (/^access\s*[:：]?$/i.test(trimmed)) return false;
+      if (/^t&c to cobroke\s*[:：]?$/i.test(trimmed)) return false;
+      if (/^\d+\.\s/.test(trimmed)) return false;
       const withoutMaps = trimmed.replace(MAPS_URL_RE, "").trim();
       if (withoutMaps === "" && /google\.com\/maps|maps\.app\.goo\.gl|goo\.gl\/maps/i.test(trimmed)) {
         return false;
@@ -249,6 +254,8 @@ export interface ExtractedFields {
   mapsUrl: string;
   description: string;
   title: string;
+  amenities: string[];
+  internalNotes: string;
 }
 
 interface PropertyDraft {
@@ -258,30 +265,41 @@ interface PropertyDraft {
   messageIds: number[];
 }
 
-/** Extract structured fields from a single block of listing text. Used by both
- *  the ZIP importer (finalizeProperty) and the live Telegram webhook. */
 export function extractFieldsFromText(
   rawText: string,
   telegramCode: string
 ): ExtractedFields {
   const address = extractLabeledValue(rawText, FIELD_LABELS.address);
-  const propertyType = extractLabeledValue(rawText, FIELD_LABELS.propertyType);
+  let propertyType = extractLabeledValue(rawText, FIELD_LABELS.propertyType);
   const tenure = extractLabeledValue(rawText, FIELD_LABELS.tenure);
   const bumiStatus = extractLabeledValue(rawText, FIELD_LABELS.bumiStatus);
   const builtUp = extractLabeledValue(rawText, FIELD_LABELS.builtUp);
   const landSize = extractLabeledValue(rawText, FIELD_LABELS.landSize);
-  const state = extractLabeledValue(rawText, FIELD_LABELS.state);
-  const district = extractLabeledValue(rawText, FIELD_LABELS.district);
+  let state = extractLabeledValue(rawText, FIELD_LABELS.state);
+  let district = extractLabeledValue(rawText, FIELD_LABELS.district);
   const bedrooms = parseCount(extractLabeledValue(rawText, FIELD_LABELS.bedrooms));
   const bathrooms = parseCount(extractLabeledValue(rawText, FIELD_LABELS.bathrooms));
   const price = parsePrice(extractLabeledValue(rawText, FIELD_LABELS.price));
   const mapsUrl = extractMapsUrl(rawText);
   const description = cleanDescription(rawText);
+
+  if (!propertyType) propertyType = derivePropertyTypeFromTitle(rawText);
+  if (!state) state = deriveStateFromAddress(address);
+  if (!district) district = deriveDistrictFromAddress(address, state);
+
+  const amenities = extractAmenities(rawText);
+  const cobrokeTerms = extractCobrokeTerms(rawText);
+  const internalNotes = [
+    `Telegram Import Code: ${telegramCode}`,
+    cobrokeTerms ? `T&C to cobroke:\n${cobrokeTerms}` : "",
+  ].filter(Boolean).join("\n\n");
+
   const title = generateTitle(propertyType, district, address, telegramCode);
 
   return {
     address, propertyType, tenure, bumiStatus, builtUp, landSize,
     state, district, bedrooms, bathrooms, price, mapsUrl, description, title,
+    amenities, internalNotes,
   };
 }
 
@@ -301,7 +319,6 @@ function finalizeProperty(
       zipPhotoLookup.get(relative.toLowerCase());
     if (!zipEntry) continue;
     if (seen.has(relative)) continue;
-    // Prefer image-like paths for listing photos; skip obvious non-images from file/
     if (!/\.(jpe?g|png|gif|webp|bmp)$/i.test(relative) && !relative.includes("photos/")) {
       continue;
     }
@@ -585,4 +602,80 @@ export function getDuplicateCodes(properties: TelegramParsedProperty[]): Set<str
     if (count > 1) duplicates.add(code);
   }
   return duplicates;
+}
+
+const MALAYSIA_STATES = [
+  "Kuala Lumpur", "Selangor", "Johor", "Penang", "Pulau Pinang", "Perak",
+  "Negeri Sembilan", "Melaka", "Malacca", "Pahang", "Terengganu", "Kelantan",
+  "Kedah", "Perlis", "Sabah", "Sarawak", "Putrajaya", "Labuan",
+];
+
+function deriveStateFromAddress(address: string): string {
+  if (!address) return "";
+  for (const state of MALAYSIA_STATES) {
+    const re = new RegExp(`\\b${escapeRegExp(state)}\\b`, "i");
+    if (re.test(address)) return state;
+  }
+  return "";
+}
+
+/** District is typically the comma-segment just before the state/postcode tail. */
+function deriveDistrictFromAddress(address: string, state: string): string {
+  if (!address) return "";
+  const parts = address.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 0) return "";
+
+  const withoutState = parts.filter((p) => {
+    const isStateOnly = state && p.toLowerCase() === state.toLowerCase();
+    const isPostcodeState = state && new RegExp(`^\\d{5}\\s+${escapeRegExp(state)}$`, "i").test(p);
+    return !isStateOnly && !isPostcodeState;
+  });
+
+  if (withoutState.length === 0) return "";
+  const last = withoutState[withoutState.length - 1];
+  const postcodeMatch = last.match(/^\d{5}\s+(.+)$/);
+  if (postcodeMatch) {
+    return withoutState[withoutState.length - 2] ?? "";
+  }
+  return last;
+}
+
+function extractSection(text: string, startLabel: string, endLabels: string[]): string[] {
+  const startRe = new RegExp(`(?:^|\\n)[ \\t]*${escapeRegExp(startLabel)}[ \\t]*[:：]?[ \\t]*\\n`, "i");
+  const startMatch = text.match(startRe);
+  if (!startMatch || startMatch.index == null) return [];
+
+  const sectionStart = startMatch.index + startMatch[0].length;
+  const rest = text.slice(sectionStart);
+
+  let endIndex = rest.length;
+  for (const endLabel of endLabels) {
+    const endRe = new RegExp(`(?:^|\\n)[ \\t]*${escapeRegExp(endLabel)}`, "i");
+    const endMatch = rest.match(endRe);
+    if (endMatch && endMatch.index != null && endMatch.index < endIndex) {
+      endIndex = endMatch.index;
+    }
+  }
+
+  const block = rest.slice(0, endIndex);
+  return block
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^\s*\d+\.\s*/, "").trim())
+    .filter(Boolean);
+}
+
+function extractAmenities(text: string): string[] {
+  return extractSection(text, "Amenities", ["Access", "T&C to cobroke", "PRICE"]);
+}
+
+function extractCobrokeTerms(text: string): string {
+  const lines = extractSection(text, "T&C to cobroke", ["PRICE"]);
+  return lines.join("\n");
+}
+
+function derivePropertyTypeFromTitle(rawText: string): string {
+  const firstLine = rawText.split(/\r?\n/).find((l) => l.trim() && !/^code\s*[:：]/i.test(l.trim()));
+  if (!firstLine) return "";
+  const match = firstLine.match(/^(.*?)\s+for\s+(?:sale|rent)\s+at\s+/i);
+  return match?.[1]?.trim() || "";
 }
