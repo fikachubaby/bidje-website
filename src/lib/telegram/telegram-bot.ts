@@ -1,6 +1,7 @@
 import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
 
 const TELEGRAM_API = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}`;
+const TELEGRAM_FILE_BASE = `https://api.telegram.org/file/bot${process.env.TELEGRAM_BOT_TOKEN}`;
 
 interface SendMediaGroupResult {
     messageIds: number[];
@@ -206,4 +207,49 @@ export async function deleteMessages(messageIds: number[]): Promise<void> {
             console.error(`Failed to delete Telegram message ${messageId}:`, err);
         }
     }
+}
+
+/** Fetch Telegram's internal file_path for a file_id, then download the raw bytes. */
+export async function downloadTelegramPhoto(fileId: string): Promise<Buffer> {
+    const fileRes = await fetch(`${TELEGRAM_API}/getFile?file_id=${fileId}`);
+    const fileData = await fileRes.json();
+    if (!fileData.ok) {
+        throw new Error(`Telegram getFile failed: ${fileData.description}`);
+    }
+    const filePath = fileData.result.file_path;
+    const bytesRes = await fetch(`${TELEGRAM_FILE_BASE}/${filePath}`);
+    if (!bytesRes.ok) {
+        throw new Error(`Telegram file download failed: ${bytesRes.status}`);
+    }
+    return Buffer.from(await bytesRes.arrayBuffer());
+}
+
+/** Download a Telegram photo and upload it to Supabase Storage under a property's folder. */
+export async function uploadTelegramPhotoToStorage(
+    propertyId: string,
+    fileId: string,
+    displayOrder: number
+): Promise<string> {
+    const bytes = await downloadTelegramPhoto(fileId);
+    const path = `properties/${propertyId}/${fileId}.jpg`;
+
+    const { error: uploadError } = await supabaseAdmin.storage
+        .from("property-images")
+        .upload(path, bytes, { contentType: "image/jpeg", upsert: true });
+    if (uploadError) {
+        throw new Error(`Storage upload failed: ${uploadError.message}`);
+    }
+
+    const { data: publicUrlData } = supabaseAdmin.storage
+        .from("property-images")
+        .getPublicUrl(path);
+
+    await supabaseAdmin.from("property_images").insert({
+        property_id: propertyId,
+        image_url: publicUrlData.publicUrl,
+        display_order: displayOrder,
+        is_cover: displayOrder === 0,
+    });
+
+    return publicUrlData.publicUrl;
 }
