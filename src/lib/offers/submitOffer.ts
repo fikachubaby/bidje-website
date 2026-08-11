@@ -21,7 +21,11 @@ export async function submitOfferToSupabase({
     const { error } = await supabase.from("offers").insert({
         property_id: propertyId,
         user_id: userId,
+        deposit: data.deposit ? parseOfferAmount(data.deposit) : null,
         offer_price: parseOfferAmount(data.offerAmount),
+        purchase_method: data.purchaseMethod,
+        financing_consultant_id: data.financingConsultantId || null,
+        legal_firm_id: data.legalFirmId || null,
         contact_phone: data.phone,
     });
 

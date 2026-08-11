@@ -3,6 +3,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { SlidersHorizontal, Search, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { searchProperties } from "@/lib/properties/property-service";
+import { translate as t } from "@/lib/i18n/getTranslation";
 
 interface PropertiesPageProps {
     searchParams: Promise<{
@@ -40,7 +41,7 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
                     {/* Header */}
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h1 className="text-3xl font-extrabold text-black">Property Listings</h1>
+                            <h1 className="text-3xl font-extrabold text-black">{t("Properties.propertyListing")}</h1>
                             <p className="mt-1 text-sm text-neutral-600">
                                 Showing {properties.length} of {totalCount} available properties.
                             </p>

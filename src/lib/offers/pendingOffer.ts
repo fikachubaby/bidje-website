@@ -4,8 +4,11 @@ export interface FormData {
     fullName: string;
     phone: string;
     email: string;
+    deposit: string;
     offerAmount: string;
     purchaseMethod: string;
+    financingConsultantId: string;
+    legalFirmId: string;
     message: string;
     confirmed: boolean;
 }
@@ -14,8 +17,11 @@ export interface FormErrors {
     fullName?: string;
     phone?: string;
     email?: string;
+    deposit?: string;
     offerAmount?: string;
     purchaseMethod?: string;
+    financingConsultantId?: string;
+    legalFirmId?: string;
     confirmed?: string;
 }
 

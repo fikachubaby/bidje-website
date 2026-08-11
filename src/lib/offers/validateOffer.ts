@@ -44,6 +44,13 @@ export function validateForm(data: FormData, minimumPrice?: number): FormErrors 
         errors.email = "Enter a valid email address";
     }
 
+    const depositAmount = parseOfferAmount(data.deposit);
+    if (!data.deposit.trim()) {
+        errors.deposit = "Deposit amount is required";
+    } else if (depositAmount <= 0) {
+        errors.deposit = "Deposit amount must be greater than zero";
+    }
+
     const amount = parseOfferAmount(data.offerAmount);
     if (!data.offerAmount.trim()) {
         errors.offerAmount = "Offer amount is required";

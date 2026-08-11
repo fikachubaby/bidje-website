@@ -41,8 +41,8 @@
                 "options": {
                     "default": "Select purchase method",
                     "cash": "Cash",
-                    "bankFinancing": "Bank financing",
-                    "other": "Other"
+                    "loan": "Loan",
+                    "jointVenture": "Joint Venture"
                 }
             },
             "message": {

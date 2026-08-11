@@ -4,6 +4,7 @@ import { ArrowLeft, ChevronRight } from "lucide-react";
 import { MakeOfferClient } from "@/components/property/MakeOfferClient";
 import { getPropertyById } from "@/lib/properties/property-service";
 import { Navbar } from "@/components/layout/Navbar";
+import { translate as t } from "@/lib/i18n/getTranslation";
 
 interface MakeOfferPageProps {
   params: Promise<{ id: string }>;
@@ -40,7 +41,7 @@ export default async function MakeOfferPage({ params }: MakeOfferPageProps) {
             </div>
           </nav>
 
-          <h1 className="mt-6 text-3xl font-extrabold text-black">Make an Offer</h1>
+          <h1 className="mt-6 text-3xl font-extrabold text-black">{t("Main.subHeading.subH4")}</h1>
           <p className="mt-2 text-neutral-600">
             Review the process below before submitting your offer for{" "}
             <span className="font-semibold text-black">{property.title}</span>.

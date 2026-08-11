@@ -1,24 +1,35 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/supabase";
 import { FormField, FormInput } from "@/components/admin/ui/FormField";
+import { submitOfferToSupabase } from "@/lib/offers/submitOffer";
+import { clearPendingOffer } from "@/lib/offers/pendingOffer";
 
 export function VisitorLoginForm() {
     const searchParams = useSearchParams();
     const justConfirmed = searchParams.get("confirmed") === "1";
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+
+    useEffect(() => {
+        const rawStorage = sessionStorage.getItem("bidje:pendingOffer");
+        if (rawStorage) {
+            try {
+                const parsed = JSON.parse(rawStorage);
+                if (parsed.email) setEmail(parsed.email);
+            } catch {
+            }
+        }
+    }, []);
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         setError("");
         setLoading(true);
-
-        const data = new FormData(event.currentTarget);
-        const email = String(data.get("email") ?? "").trim();
-        const password = String(data.get("password") ?? "");
 
         const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
             email,
@@ -31,6 +42,22 @@ export function VisitorLoginForm() {
             return;
         }
 
+        const rawPending = sessionStorage.getItem("bidje:pendingOffer");
+        if (rawPending) {
+            try {
+                const pendingData = JSON.parse(rawPending);
+                if (pendingData.propertyId) {
+                    await submitOfferToSupabase({
+                        propertyId: pendingData.propertyId,
+                        userId: authData.user.id,
+                        data: pendingData,
+                    });
+                    clearPendingOffer();
+                }
+            } catch {
+            }
+        }
+
         const { data: profile } = await supabase
             .from("profiles")
             .select("role")
@@ -40,8 +67,9 @@ export function VisitorLoginForm() {
         setLoading(false);
 
         const isAdminOrStaff = profile?.role === "admin" || profile?.role === "staff";
-        const next = searchParams.get("next");
-        const redirectPath = isAdminOrStaff ? "/admin" : next || "/";
+
+        // If they had a pending offer, prioritize routing them to the dashboard
+        const redirectPath = isAdminOrStaff ? "/admin" : rawPending ? "/dashboard" : searchParams.get("next") || "/";
 
         window.location.href = redirectPath;
     }
@@ -61,6 +89,8 @@ export function VisitorLoginForm() {
                         id="email"
                         name="email"
                         type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         required
                         autoComplete="email"
                         placeholder="name@example.com"
@@ -76,6 +106,8 @@ export function VisitorLoginForm() {
                         id="password"
                         name="password"
                         type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                         required
                         autoComplete="current-password"
                         placeholder="••••••••"
@@ -90,7 +122,7 @@ export function VisitorLoginForm() {
                 </p>
             ) : null}
 
-            {/* Stable Button (No Hover Drop/Shift) */}
+            {/* Stable Button */}
             <button
                 type="submit"
                 disabled={loading}

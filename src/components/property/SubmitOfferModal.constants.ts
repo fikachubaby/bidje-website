@@ -1,18 +1,21 @@
 import { FormData } from "./SubmitOfferModal.types";
 
 export const PURCHASE_METHODS = [
-    { value: "", labelKey: "fields.purchaseMethod.options.default" },
-    { value: "cash", labelKey: "fields.purchaseMethod.options.cash" },
-    { value: "bank-financing", labelKey: "fields.purchaseMethod.options.bankFinancing" },
-    { value: "other", labelKey: "fields.purchaseMethod.options.other" },
+    { value: "", labelKey: "SubmitOfferModal.fields.purchaseMethod.options.default" },
+    { value: "Loan", labelKey: "SubmitOfferModal.fields.purchaseMethod.options.loan" },
+    { value: "Cash", labelKey: "SubmitOfferModal.fields.purchaseMethod.options.cash" },
+    { value: "Joint Venture", labelKey: "SubmitOfferModal.fields.purchaseMethod.options.jointVenture" },
 ];
 
 export const initialForm: FormData = {
     fullName: "",
     phone: "",
     email: "",
+    deposit: "",
     offerAmount: "",
     purchaseMethod: "",
+    financingConsultantId: "",
+    legalFirmId: "",
     message: "",
     confirmed: false,
 };

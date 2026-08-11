@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/supabase";
 import { FormField, FormInput } from "@/components/admin/ui/FormField";
@@ -9,17 +9,28 @@ export function SignupForm() {
     const router = useRouter();
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [fullName, setFullName] = useState("");
+    const [phone, setPhone] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+
+    useEffect(() => {
+        const rawStorage = sessionStorage.getItem("bidje:pendingOffer");
+        if (rawStorage) {
+            try {
+                const parsed = JSON.parse(rawStorage);
+                if (parsed.fullName) setFullName(parsed.fullName);
+                if (parsed.phone) setPhone(parsed.phone);
+                if (parsed.email) setEmail(parsed.email);
+            } catch {
+            }
+        }
+    }, []);
 
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
         setError("");
         setLoading(true);
-
-        const data = new FormData(event.currentTarget);
-        const fullName = String(data.get("fullName") ?? "").trim();
-        const phone = String(data.get("phone") ?? "").trim();
-        const email = String(data.get("email") ?? "").trim();
-        const password = String(data.get("password") ?? "");
 
         if (!fullName || !phone || !email || !password) {
             setError("All fields are required.");
@@ -58,6 +69,8 @@ export function SignupForm() {
                     <FormInput
                         id="fullName"
                         name="fullName"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
                         required
                         autoComplete="name"
                         placeholder="John Doe"
@@ -73,6 +86,8 @@ export function SignupForm() {
                         id="phone"
                         name="phone"
                         type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
                         required
                         autoComplete="tel"
                         placeholder="e.g. 0137098606"
@@ -88,6 +103,8 @@ export function SignupForm() {
                         id="email"
                         name="email"
                         type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         required
                         autoComplete="email"
                         placeholder="name@example.com"
@@ -103,6 +120,8 @@ export function SignupForm() {
                         id="password"
                         name="password"
                         type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                         required
                         autoComplete="new-password"
                         placeholder="At least 8 characters"

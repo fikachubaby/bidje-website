@@ -24,6 +24,7 @@ import {
     History
 } from "lucide-react";
 import Link from "next/link";
+import { translate as t } from "@/lib/i18n/getTranslation";
 
 interface PropertyListing {
     id: string;

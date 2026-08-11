@@ -1,11 +1,15 @@
 "use client";
 
+import { useEffect } from "react";
 import { Plus } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/ButtonProps";
 import { StatCard } from "@/components/admin/ui/StatCard";
 import { StatusBadge } from "@/components/admin/ui/StatusBadge";
 import type { AdminProperty, BuyerOffer } from "@/types/property";
+import { supabase } from "@/lib/supabase/supabase";
+import { submitOfferToSupabase } from "@/lib/offers/submitOffer";
+import { clearPendingOffer } from "@/lib/offers/pendingOffer";
 
 interface DashboardViewProps {
   properties: AdminProperty[];
@@ -14,6 +18,37 @@ interface DashboardViewProps {
 }
 
 export function DashboardView({ properties, offers, onAddProperty }: DashboardViewProps) {
+  // Catch-all fallback effect to flush any orphaned pending offers once active user is rendered on dashboard
+  useEffect(() => {
+    async function processPendingOffer() {
+      const rawPending = sessionStorage.getItem("bidje:pendingOffer");
+      if (!rawPending) return;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+
+      try {
+        const pendingData = JSON.parse(rawPending);
+        if (pendingData.propertyId) {
+          const res = await submitOfferToSupabase({
+            propertyId: pendingData.propertyId,
+            userId: session.user.id,
+            data: pendingData,
+          });
+          if (res.success) {
+            clearPendingOffer();
+            // Refresh window state or router to display new offer metrics
+            window.location.reload();
+          }
+        }
+      } catch {
+        clearPendingOffer();
+      }
+    }
+
+    void processPendingOffer();
+  }, []);
+
   const published = properties.filter((p) => p.status === "Published").length;
   const underOffer = properties.filter((p) => p.status === "Under Offer").length;
   const sold = properties.filter((p) => p.status === "Sold").length;

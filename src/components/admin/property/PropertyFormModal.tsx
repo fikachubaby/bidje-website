@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { ImagePlus, Trash2, Loader2, Upload, FileText } from "lucide-react";
 import { Button } from "@/components/ui/ButtonProps";
+import { toast } from "sonner";
 import {
   FormField,
   FormInput,
@@ -231,6 +232,8 @@ export function PropertyFormModal({
       return;
     }
 
+    setError("");
+
     try {
       setSaving(true);
       await onSave({
@@ -239,6 +242,9 @@ export function PropertyFormModal({
         documents: form.documents || [],
         tags: form.tags || [],
       });
+      toast.success(isEditing ? "Property updated successfully" : "Property created successfully");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save property");
     } finally {
       setSaving(false);
     }

@@ -26,7 +26,8 @@ export type AdminView =
   | "ads" | "imports" | "users" | "audit-logs" | "profile";
 
 export const PROPERTY_TYPES = [
-  "Terrace", "Semi-D", "Bungalow", "Apartment", "Condominium", "Shop Lot", "Land"
+  "Terrace", "Semi-D", "Bungalow", "Apartment",
+  "Condominium", "Shop Lot", "Land", "Low Cost Flat", "Double Storey "
 ] as const;
 export type PropertyType = (typeof PROPERTY_TYPES)[number];
 

@@ -1,4 +1,4 @@
-import { PendingOfferDraft } from "@/lib/offers/pendingOffer";
+import { PendingOfferDraft, FormData, FormErrors } from "@/lib/offers/pendingOffer";
 
 export interface SubmitOfferModalProps {
     open: boolean;
@@ -10,21 +10,4 @@ export interface SubmitOfferModalProps {
     autoSubmit?: boolean;
 }
 
-export interface FormData {
-    fullName: string;
-    phone: string;
-    email: string;
-    offerAmount: string;
-    purchaseMethod: string;
-    message: string;
-    confirmed: boolean;
-}
-
-export interface FormErrors {
-    fullName?: string;
-    phone?: string;
-    email?: string;
-    offerAmount?: string;
-    purchaseMethod?: string;
-    confirmed?: string;
-}
+export type { FormData, FormErrors };

@@ -28,7 +28,7 @@ type FieldKey =
   | "district";
 
 const FIELD_LABELS: Record<FieldKey, string[]> = {
-  address: ["address", "alamat", "alamat hartanah", "property address"],
+  address: ["full address", "address", "alamat", "alamat hartanah", "property address"],
   propertyType: ["type", "property type", "jenis hartanah", "jenis rumah"],
   tenure: ["tenure", "freehold/leasehold", "pegangan"],
   bumiStatus: ["bumi status", "bumi lot", "non bumi", "lot bumi", "bumi lot/non bumi"],
