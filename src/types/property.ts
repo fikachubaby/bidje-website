@@ -176,7 +176,46 @@ export interface BuyerOffer {
 
 export interface OfferHistoryItem {
   id: string;
-  action: string;
-  timestamp: string;
+  action?: string;
+  timestamp?: string;
   performedBy?: string;
+  propertyTitle: string;
+  offeredAmount: string;
+  status: "Pending" | "Accepted" | "Rejected";
+  dateSubmitted: string;
+  icFileName?: string;
+  paymentProofName?: string;
+}
+
+export interface PropertyListing {
+  id: string;
+  title: string;
+  location: string;
+  price: string;
+  type: string;
+  beds: number;
+  baths: number;
+  sqft: number;
+  image: string;
+}
+
+export interface SupabasePropertyRecord {
+  id: string;
+  title: string;
+  district?: string | null;
+  state?: string | null;
+  asking_price?: number | null;
+  property_type?: string | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  area_sqft?: number | null;
+  status?: string | null;
+}
+
+export interface SupabaseOfferRecord {
+  id: string;
+  property_id?: string | null;
+  offer_price?: number | null;
+  status?: "Pending" | "Accepted" | "Rejected" | null;
+  submitted_at?: string | null;
 }

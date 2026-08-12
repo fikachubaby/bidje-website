@@ -18,7 +18,6 @@ interface DashboardViewProps {
 }
 
 export function DashboardView({ properties, offers, onAddProperty }: DashboardViewProps) {
-  // Catch-all fallback effect to flush any orphaned pending offers once active user is rendered on dashboard
   useEffect(() => {
     async function processPendingOffer() {
       const rawPending = sessionStorage.getItem("bidje:pendingOffer");
@@ -37,7 +36,6 @@ export function DashboardView({ properties, offers, onAddProperty }: DashboardVi
           });
           if (res.success) {
             clearPendingOffer();
-            // Refresh window state or router to display new offer metrics
             window.location.reload();
           }
         }

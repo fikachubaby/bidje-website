@@ -24,29 +24,13 @@ import {
     History
 } from "lucide-react";
 import Link from "next/link";
-import { translate as t } from "@/lib/i18n/getTranslation";
 
-interface PropertyListing {
-    id: string;
-    title: string;
-    location: string;
-    price: string;
-    type: string;
-    beds: number;
-    baths: number;
-    sqft: number;
-    image: string;
-}
-
-interface OfferHistoryItem {
-    id: string;
-    propertyTitle: string;
-    offeredAmount: string;
-    status: "Pending" | "Accepted" | "Rejected";
-    dateSubmitted: string;
-    icFileName?: string;
-    paymentProofName?: string;
-}
+import type {
+    PropertyListing,
+    OfferHistoryItem,
+    SupabasePropertyRecord,
+    SupabaseOfferRecord
+} from "@/types/property";
 
 export default function PropertyDashboardPage() {
     const supabase = createBrowserClient(
@@ -55,10 +39,9 @@ export default function PropertyDashboardPage() {
     );
 
     const [loading, setLoading] = useState(true);
+    const [userId, setUserId] = useState("");
     const [userEmail, setUserEmail] = useState("");
     const [fullName, setFullName] = useState("");
-
-    // Offer form states
     const [selectedProperty, setSelectedProperty] = useState("");
     const [offerPrice, setOfferPrice] = useState("");
     const [icFile, setIcFile] = useState<File | null>(null);
@@ -66,74 +49,72 @@ export default function PropertyDashboardPage() {
     const [submittingOffer, setSubmittingOffer] = useState(false);
     const [offerMessage, setOfferMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-    const [listings] = useState<PropertyListing[]>([
-        {
-            id: "1",
-            title: "TRX Residences Luxury Service Suite",
-            location: "TRX, Kuala Lumpur",
-            price: "RM 3,200 /mo",
-            type: "Condominium",
-            beds: 2,
-            baths: 2,
-            sqft: 850,
-            image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=600&auto=format&fit=crop&q=60"
-        },
-        {
-            id: "2",
-            title: "Modern Freehold Link Terrace",
-            location: "Setia Alam, Selangor",
-            price: "RM 780,000",
-            type: "Terrace House",
-            beds: 4,
-            baths: 3,
-            sqft: 2100,
-            image: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600&auto=format&fit=crop&q=60"
-        },
-        {
-            id: "3",
-            title: "Studio Unit near LRT Station",
-            location: "Bangsar South, Kuala Lumpur",
-            price: "RM 1,900 /mo",
-            type: "SoHo",
-            beds: 1,
-            baths: 1,
-            sqft: 520,
-            image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=600&auto=format&fit=crop&q=60"
-        }
-    ]);
-
-    // Mock initial offer history log
-    const [offerHistory, setOfferHistory] = useState<OfferHistoryItem[]>([
-        {
-            id: "off-101",
-            propertyTitle: "TRX Residences Luxury Service Suite",
-            offeredAmount: "RM 3,100 /mo",
-            status: "Pending",
-            dateSubmitted: "2026-03-08",
-            icFileName: "ic_copy_ahmad.pdf",
-            paymentProofName: "rm500_fee_trx.pdf"
-        },
-        {
-            id: "off-102",
-            propertyTitle: "Modern Freehold Link Terrace",
-            offeredAmount: "RM 750,000",
-            status: "Accepted",
-            dateSubmitted: "2026-02-14",
-            icFileName: "ic_front_back.png",
-            paymentProofName: "receipt_setia_alam.pdf"
-        }
-    ]);
+    const [listings, setListings] = useState<PropertyListing[]>([]);
+    const [offerHistory, setOfferHistory] = useState<OfferHistoryItem[]>([]);
 
     useEffect(() => {
-        async function loadUserData() {
+        async function loadDashboardData() {
+            setLoading(true);
             const { data: { user } } = await supabase.auth.getUser();
+
             if (user) {
+                setUserId(user.id);
                 setUserEmail(user.email || "");
                 setFullName(user.user_metadata?.full_name || "Property Investor");
+
+                const [offersResponse, propertiesResponse] = await Promise.all([
+                    supabase
+                        .from("offers")
+                        .select("id, property_id, offer_price, status, submitted_at")
+                        .eq("user_id", user.id)
+                        .order("submitted_at", { ascending: false }),
+                    supabase
+                        .from("properties")
+                        .select("*")
+                ]);
+
+                const propertyMap = new Map<string, SupabasePropertyRecord>();
+                if (propertiesResponse.data) {
+                    const allProps = propertiesResponse.data as unknown as SupabasePropertyRecord[];
+                    allProps.forEach((p) => propertyMap.set(p.id, p));
+
+                    const publishedProps = allProps.filter(p => p.status === "Published");
+                    const formattedListings: PropertyListing[] = publishedProps.map((p) => ({
+                        id: p.id,
+                        title: p.title,
+                        location: `${p.district || ""}, ${p.state || ""}`.replace(/^,\s*/, ""),
+                        price: `RM ${Number(p.asking_price || 0).toLocaleString()}`,
+                        type: p.property_type || "Property",
+                        beds: p.bedrooms || 0,
+                        baths: p.bathrooms || 0,
+                        sqft: p.area_sqft || 0,
+                        image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=600&auto=format&fit=crop&q=60"
+                    }));
+                    setListings(formattedListings);
+                }
+
+                if (!offersResponse.error && offersResponse.data) {
+                    const typedOffers = offersResponse.data as unknown as SupabaseOfferRecord[];
+                    const formattedOffers: OfferHistoryItem[] = typedOffers.map((item) => {
+                        const matchedProp = item.property_id ? propertyMap.get(item.property_id) : undefined;
+                        return {
+                            id: item.id,
+                            propertyTitle: matchedProp?.title || "Unknown Property",
+                            offeredAmount: `RM ${Number(item.offer_price || 0).toLocaleString()}`,
+                            status: item.status || "Pending",
+                            dateSubmitted: item.submitted_at ? item.submitted_at.split("T")[0] : "",
+                            icFileName: "Uploaded",
+                            paymentProofName: "Uploaded"
+                        };
+                    });
+                    setOfferHistory(formattedOffers);
+                }
             }
+
             setLoading(false);
         }
-        loadUserData();
+
+        void loadDashboardData();
     }, [supabase]);
 
     async function handleOfferSubmit(e: FormEvent) {
@@ -145,17 +126,42 @@ export default function PropertyDashboardPage() {
             return;
         }
 
+        if (!userId) {
+            setOfferMessage({ type: "error", text: "You must be signed in to submit an offer." });
+            return;
+        }
+
         setSubmittingOffer(true);
 
-        // Simulate network/database request for offer upload & document submission
-        setTimeout(() => {
+        const numericAmount = parseFloat(offerPrice.replace(/[^0-9.]/g, "")) || 0;
+        const { data, error } = await supabase
+            .from("offers")
+            .insert({
+                property_id: selectedProperty,
+                user_id: userId,
+                offer_price: numericAmount,
+                status: "Pending"
+            })
+            .select("id, property_id, offer_price, status, submitted_at")
+            .single();
+
+        setSubmittingOffer(false);
+
+        if (error) {
+            setOfferMessage({ type: "error", text: `Failed to submit offer: ${error.message}` });
+            return;
+        }
+
+        if (data) {
+            const typedData = data as unknown as SupabaseOfferRecord;
             const targetListing = listings.find(l => l.id === selectedProperty);
+
             const newEntry: OfferHistoryItem = {
-                id: `off-${Date.now()}`,
-                propertyTitle: targetListing ? targetListing.title : "Selected Property",
-                offeredAmount: offerPrice,
-                status: "Pending",
-                dateSubmitted: new Date().toISOString().split("T")[0],
+                id: typedData.id,
+                propertyTitle: targetListing?.title || "Selected Property",
+                offeredAmount: `RM ${Number(typedData.offer_price || numericAmount).toLocaleString()}`,
+                status: typedData.status || "Pending",
+                dateSubmitted: typedData.submitted_at ? typedData.submitted_at.split("T")[0] : new Date().toISOString().split("T")[0],
                 icFileName: icFile.name,
                 paymentProofName: paymentProofFile.name
             };
@@ -163,13 +169,11 @@ export default function PropertyDashboardPage() {
             setOfferHistory([newEntry, ...offerHistory]);
             setOfferMessage({ type: "success", text: "Offer and verification documents submitted successfully! Status is now Pending." });
 
-            // Reset form
             setSelectedProperty("");
             setOfferPrice("");
             setIcFile(null);
             setPaymentProofFile(null);
-            setSubmittingOffer(false);
-        }, 1000);
+        }
     }
 
     if (loading) {
@@ -321,30 +325,38 @@ export default function PropertyDashboardPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-neutral-100 text-sm">
-                            {offerHistory.map((offer) => {
-                                let badgeStyles = "bg-amber-50 text-amber-800 border-amber-200";
-                                if (offer.status === "Accepted") badgeStyles = "bg-emerald-50 text-emerald-800 border-emerald-200";
-                                if (offer.status === "Rejected") badgeStyles = "bg-red-50 text-red-800 border-red-200";
+                            {offerHistory.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="py-8 text-center text-sm text-neutral-500">
+                                        No offers submitted yet. Choose a property below to make your first offer.
+                                    </td>
+                                </tr>
+                            ) : (
+                                offerHistory.map((offer) => {
+                                    let badgeStyles = "bg-amber-50 text-amber-800 border-amber-200";
+                                    if (offer.status === "Accepted") badgeStyles = "bg-emerald-50 text-emerald-800 border-emerald-200";
+                                    if (offer.status === "Rejected") badgeStyles = "bg-red-50 text-red-800 border-red-200";
 
-                                return (
-                                    <tr key={offer.id} className="hover:bg-neutral-50/50 transition-colors">
-                                        <td className="py-4 px-3 font-semibold text-black">{offer.propertyTitle}</td>
-                                        <td className="py-4 px-3 text-neutral-800">{offer.offeredAmount}</td>
-                                        <td className="py-4 px-3 text-neutral-500">{offer.dateSubmitted}</td>
-                                        <td className="py-4 px-3">
-                                            <div className="flex flex-col gap-0.5 text-xs text-neutral-600">
-                                                <span className="flex items-center gap-1"><FileText className="h-3 w-3 text-neutral-400" /> IC: {offer.icFileName || "Uploaded"}</span>
-                                                <span className="flex items-center gap-1"><FileText className="h-3 w-3 text-neutral-400" /> Fee Proof: {offer.paymentProofName || "Uploaded"}</span>
-                                            </div>
-                                        </td>
-                                        <td className="py-4 px-3">
-                                            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold border ${badgeStyles}`}>
-                                                {offer.status}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
+                                    return (
+                                        <tr key={offer.id} className="hover:bg-neutral-50/50 transition-colors">
+                                            <td className="py-4 px-3 font-semibold text-black">{offer.propertyTitle}</td>
+                                            <td className="py-4 px-3 text-neutral-800">{offer.offeredAmount}</td>
+                                            <td className="py-4 px-3 text-neutral-500">{offer.dateSubmitted}</td>
+                                            <td className="py-4 px-3">
+                                                <div className="flex flex-col gap-0.5 text-xs text-neutral-600">
+                                                    <span className="flex items-center gap-1"><FileText className="h-3 w-3 text-neutral-400" /> IC: {offer.icFileName}</span>
+                                                    <span className="flex items-center gap-1"><FileText className="h-3 w-3 text-neutral-400" /> Fee Proof: {offer.paymentProofName}</span>
+                                                </div>
+                                            </td>
+                                            <td className="py-4 px-3">
+                                                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold border ${badgeStyles}`}>
+                                                    {offer.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -389,7 +401,7 @@ export default function PropertyDashboardPage() {
                             <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700">Your Offer Amount (RM)</label>
                             <input
                                 type="text"
-                                placeholder="e.g. RM 3,100 /mo or RM 750,000"
+                                placeholder="e.g. 750000"
                                 value={offerPrice}
                                 onChange={(e) => setOfferPrice(e.target.value)}
                                 className="mt-1.5 w-full rounded-2xl border border-neutral-200 px-4 py-3 text-sm text-black focus:border-black focus:outline-none"
@@ -450,64 +462,70 @@ export default function PropertyDashboardPage() {
                 </div>
 
                 <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {listings.map((item) => (
-                        <div key={item.id} className="group rounded-2xl border border-neutral-200 overflow-hidden bg-white transition-all hover:border-black flex flex-col justify-between">
-                            <div>
-                                <div className="relative h-48 w-full overflow-hidden bg-neutral-100">
-                                    <Image
-                                        src={item.image}
-                                        alt={item.title}
-                                        fill
-                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                    />
-                                    <div className="absolute top-3 right-3 z-10 bg-white/90 backdrop-blur-md p-2 rounded-full cursor-pointer hover:bg-white text-black shadow-sm">
-                                        <Heart className="h-4 w-4" />
+                    {listings.length === 0 ? (
+                        <p className="col-span-full py-8 text-center text-sm text-neutral-500">
+                            No published property listings available at the moment.
+                        </p>
+                    ) : (
+                        listings.map((item) => (
+                            <div key={item.id} className="group rounded-2xl border border-neutral-200 overflow-hidden bg-white transition-all hover:border-black flex flex-col justify-between">
+                                <div>
+                                    <div className="relative h-48 w-full overflow-hidden bg-neutral-100">
+                                        <Image
+                                            src={item.image}
+                                            alt={item.title || "Property listing image"}
+                                            fill
+                                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                        />
+                                        <div className="absolute top-3 right-3 z-10 bg-white/90 backdrop-blur-md p-2 rounded-full cursor-pointer hover:bg-white text-black shadow-sm">
+                                            <Heart className="h-4 w-4" />
+                                        </div>
+                                        <div className="absolute bottom-3 left-3 z-10 bg-black/70 backdrop-blur-md text-white text-xs font-semibold px-2.5 py-1 rounded-lg">
+                                            {item.type}
+                                        </div>
                                     </div>
-                                    <div className="absolute bottom-3 left-3 z-10 bg-black/70 backdrop-blur-md text-white text-xs font-semibold px-2.5 py-1 rounded-lg">
-                                        {item.type}
+
+                                    <div className="p-5">
+                                        <div className="text-lg font-bold text-black">{item.price}</div>
+                                        <h3 className="mt-1 font-semibold text-neutral-900 line-clamp-1">{item.title}</h3>
+
+                                        <div className="mt-2 flex items-center gap-1.5 text-xs text-neutral-500">
+                                            <MapPin className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
+                                            <span className="truncate">{item.location}</span>
+                                        </div>
+
+                                        <div className="mt-4 grid grid-cols-3 gap-2 py-3 border-t border-b border-neutral-100 text-xs text-neutral-600">
+                                            <div className="flex items-center gap-1">
+                                                <Bed className="h-4 w-4 text-neutral-400" />
+                                                <span>{item.beds} Beds</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <Bath className="h-4 w-4 text-neutral-400" />
+                                                <span>{item.baths} Baths</span>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <Square className="h-4 w-4 text-neutral-400" />
+                                                <span>{item.sqft} sqft</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="p-5">
-                                    <div className="text-lg font-bold text-black">{item.price}</div>
-                                    <h3 className="mt-1 font-semibold text-neutral-900 line-clamp-1">{item.title}</h3>
-
-                                    <div className="mt-2 flex items-center gap-1.5 text-xs text-neutral-500">
-                                        <MapPin className="h-3.5 w-3.5 shrink-0 text-neutral-400" />
-                                        <span className="truncate">{item.location}</span>
-                                    </div>
-
-                                    <div className="mt-4 grid grid-cols-3 gap-2 py-3 border-t border-b border-neutral-100 text-xs text-neutral-600">
-                                        <div className="flex items-center gap-1">
-                                            <Bed className="h-4 w-4 text-neutral-400" />
-                                            <span>{item.beds} Beds</span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <Bath className="h-4 w-4 text-neutral-400" />
-                                            <span>{item.baths} Baths</span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <Square className="h-4 w-4 text-neutral-400" />
-                                            <span>{item.sqft} sqft</span>
-                                        </div>
-                                    </div>
+                                <div className="p-5 pt-0">
+                                    <button
+                                        onClick={() => {
+                                            setSelectedProperty(item.id);
+                                            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                                        }}
+                                        className="w-full flex items-center justify-center gap-2 rounded-xl bg-neutral-100 py-3 text-xs font-bold text-black transition-colors hover:bg-black hover:text-white"
+                                    >
+                                        Make an Offer <ExternalLink className="h-3.5 w-3.5" />
+                                    </button>
                                 </div>
                             </div>
-
-                            <div className="p-5 pt-0">
-                                <button
-                                    onClick={() => {
-                                        setSelectedProperty(item.id);
-                                        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-                                    }}
-                                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-neutral-100 py-3 text-xs font-bold text-black transition-colors hover:bg-black hover:text-white"
-                                >
-                                    Make an Offer <ExternalLink className="h-3.5 w-3.5" />
-                                </button>
-                            </div>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </div>
         </div>
