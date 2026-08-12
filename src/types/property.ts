@@ -171,6 +171,7 @@ export interface BuyerOffer {
   createdAt: string;
   icDocumentUrl?: string;
   paymentProofUrl?: string;
+  invoiceUrl?: string | null;
   history?: OfferHistoryItem[];
 }
 
@@ -183,8 +184,9 @@ export interface OfferHistoryItem {
   offeredAmount: string;
   status: "Pending" | "Accepted" | "Rejected";
   dateSubmitted: string;
-  icFileName?: string;
-  paymentProofName?: string;
+  icDocumentUrl?: string | null;
+  paymentProofUrl?: string | null;
+  invoiceUrl?: string | null;
 }
 
 export interface PropertyListing {
@@ -218,4 +220,7 @@ export interface SupabaseOfferRecord {
   offer_price?: number | null;
   status?: "Pending" | "Accepted" | "Rejected" | null;
   submitted_at?: string | null;
+  ic_upload_url?: string | null;
+  payment_proof_url?: string | null;
+  invoice_url?: string | null;
 }

@@ -19,11 +19,11 @@ export async function POST(request: Request) {
     });
 
     if (!isValid) {
-        console.error("[fiuu callback] Invalid skey — possible spoofed callback", payload);
+        console.error("[fiuu callback] Invalid signature", payload);
         return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
-    const paymentId = payload.orderid; // we set orderid = payment.id at checkout time
+    const paymentId = payload.orderid;
     const isSuccess = payload.status === "00";
 
     const { data: payment, error } = await supabaseAdmin
@@ -40,16 +40,33 @@ export async function POST(request: Request) {
         .single();
 
     if (error || !payment) {
-        console.error("[fiuu callback] Payment record not found", paymentId);
         return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     }
 
-    // Reflect payment result on the offer itself
     await supabaseAdmin
         .from("offers")
-        .update({ payment_status: isSuccess ? "paid" : "failed" })
+        .update({ payment_status: isSuccess ? "Paid" : "Failed" })
         .eq("id", payment.reference_id);
 
-    // Fiuu expects a plain "OK" acknowledgement to stop retrying
+    if (isSuccess) {
+        const invoiceContent = `INVOICE - BIDJE PROPERTY\nOffer ID: ${payment.reference_id}\nAmount: ${payment.amount} MYR\nStatus: PAID\nDate: ${new Date().toISOString()}`;
+        const fileName = `invoices/${payment.reference_id}-${Date.now()}.txt`;
+
+        const { error: uploadError } = await supabaseAdmin.storage
+            .from("documents")
+            .upload(fileName, Buffer.from(invoiceContent), { contentType: "text/plain", upsert: true });
+
+        if (!uploadError) {
+            const { data: publicUrlData } = supabaseAdmin.storage.from("documents").getPublicUrl(fileName);
+
+            await supabaseAdmin.from("offer_invoices").insert({
+                offer_id: payment.reference_id,
+                user_id: payment.user_id,
+                invoice_url: publicUrlData.publicUrl,
+                amount: payment.amount,
+            });
+        }
+    }
+
     return new Response("OK", { status: 200 });
 }

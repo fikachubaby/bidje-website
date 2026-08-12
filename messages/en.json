@@ -10,6 +10,8 @@
         "cancelButton": "Cancel",
         "submitButton": "Submit Offer",
         "verifyOffer": "Verrified Offers",
+        "totalOffer": "Total Offers",
+        "noOffer": "No offers submitted yet. Choose a property below to make your first offer.",
         "fields": {
             "fullName": {
                 "label": "Full name",
@@ -29,6 +31,7 @@
                 "errorInvalid": "Enter a valid email address"
             },
             "offerAmount": {
+                "title": "Offer Amount",
                 "label": "Offer amount (RM)",
                 "placeholder": "0",
                 "currencyPrefix": "RM",
@@ -53,7 +56,10 @@
                 "label": "I confirm that the information provided is accurate and I agree to be contacted regarding this offer.",
                 "errorRequired": "You must confirm the accuracy of your information"
             }
-        }
+        },
+        "title1": "Submit New Property Offer & Documents",
+        "message1": "Choose from your submitted offers, attach your IC, and upload payment receipt",
+        "message2": "Note: You haven't submitted any offers yet. Click Make an Offer on an active listing below to initiate an offer first."
     },
     "Authentication": {
         "loginTitle": "Welcome back. Sign in to manage your offers.",
@@ -63,7 +69,8 @@
         "signIn": "Sign in",
         "logout": "Logout",
         "registerTitle": "Create your account",
-        "registerSubtitle": "Register to submit offers on properties you like."
+        "registerSubtitle": "Register to submit offers on properties you like.",
+        "format": "PDF, PNG, JPG up to 10MB"
     },
     "Properties": {
         "propertyListing": "Property Listing",
@@ -146,5 +153,16 @@
         "info": "Bidje connects property seekers with exclusive off-market listings and direct owners through a transparent subscription ecosystem and a streamlined Offer to Purchase process. Buyers remain responsible for arranging their own financing.",
         "terms1": "Transparent Terms:",
         "terms2": "The full commitment-fee, document verification, withdrawal, and refund policies are displayed transparently to buyers before any payment is finalized."
+    },
+    "Subscribers": {
+        "welcome": "Welcome back,",
+        "title1": "Manage your property bids, review offer history status, and upload verification files.",
+        "title2": "Subscriber Tier Unlocked",
+        "title3": "Subscription & Billing",
+        "title4": "Manage Auto-Renewal Settings",
+        "title5": "Offer History Log",
+        "title6": "Track the status of your purchase and rental bids",
+        "userProfile": "User Profile",
+        "uploadIC": "Upload Identity Card (IC)"
     }
 }
