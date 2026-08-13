@@ -137,6 +137,7 @@ export async function POST(request: Request) {
         bathrooms: fields.bathrooms,
         description: fields.description || null,
         google_maps_url: fields.mapsUrl || null,
+        is_address_hidden: true,
         telegram_code: code,
         telegram_chat_id: String(msg.chat.id),
         telegram_message_ids: [msg.message_id],

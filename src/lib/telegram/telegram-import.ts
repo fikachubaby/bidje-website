@@ -43,7 +43,7 @@ const FIELD_LABELS: Record<FieldKey, string[]> = {
   landSize: ["land area", "land size", "size tanah"],
   price: ["price", "asking price", "selling price", "target jualan", "harga"],
   state: ["state", "negeri"],
-  district: ["district", "daerah", "area", "lokasi"],
+  district: ["district", "daerah", "area", "lokasi", "location"],
 };
 
 const LABEL_LINE_RE = buildLabelLineRegex();

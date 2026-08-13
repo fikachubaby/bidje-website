@@ -113,6 +113,12 @@ export interface Property {
   marketValue?: number;
   maxLoanApplicable?: number;
   tags?: string[];
+  isAddressHidden?: boolean;
+  googleMapsUrl?: string;
+  fullAddress?: string;
+  district?: string;
+  state?: string;
+  documents?: string[];
 }
 
 export interface AdminProperty {

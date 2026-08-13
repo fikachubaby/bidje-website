@@ -116,6 +116,10 @@ export interface PropertyRow {
     max_loan_applicable: number | null;
     minimum_acceptable_price: number | null;
     created_at: string;
+    // --- Added DB fields safely ---
+    is_address_hidden?: boolean | null;
+    google_maps_url?: string | null;
+    documents?: string[] | null;
     property_images?: { image_url: string; is_cover: boolean }[];
 }
 
@@ -162,6 +166,12 @@ export function mapPropertyRowToProperty(row: PropertyRow): Property {
         marketValue: row.market_value ?? undefined,
         maxLoanApplicable: row.max_loan_applicable ?? undefined,
         tags: row.tags ?? [],
+        isAddressHidden: Boolean(row.is_address_hidden),
+        googleMapsUrl: row.google_maps_url ?? undefined,
+        fullAddress: row.full_address ?? undefined,
+        district: row.district ?? undefined,
+        state: row.state ?? undefined,
+        documents: row.documents ?? [],
     };
 }
 

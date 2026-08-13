@@ -253,3 +253,13 @@ export async function uploadTelegramPhotoToStorage(
 
     return publicUrlData.publicUrl;
 }
+
+/**
+ * Safely extracts a Google Maps URL from a raw Telegram post text.
+ * Matches standard Google Maps links (e.g., maps.app.goo.gl, google.com/maps, goo.gl/maps).
+ */
+export function extractGoogleMapsUrl(text: string): string | null {
+    if (!text) return null;
+    const match = text.match(/https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps|(?:www\.)?google\.com\/maps)[^\s\n]+/i);
+    return match ? match[0].trim() : null;
+}
