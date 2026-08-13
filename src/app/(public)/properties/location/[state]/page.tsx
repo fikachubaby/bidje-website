@@ -3,22 +3,18 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Navbar } from "@/components/layout/Navbar";
 import { MapPin } from "lucide-react";
-
-const VALID_STATES: Record<string, string> = {
-    "kuala-lumpur": "Kuala Lumpur",
-    "selangor": "Selangor",
-    "perak": "Perak",
-    "melaka": "Melaka",
-    "negeri-sembilan": "Negeri Sembilan",
-};
+import { getFilteredProperties } from "@/lib/properties/property-service";
+import { PropertyListingGrid } from "@/components/property/PropertyListingGrid";
+import { getStateName, VALID_CATEGORIES } from "@/config/locations";
 
 interface StatePageProps {
     params: Promise<{ state: string }>;
+    searchParams: Promise<{ page?: string }>;
 }
 
 export async function generateMetadata({ params }: StatePageProps): Promise<Metadata> {
     const { state } = await params;
-    const stateName = VALID_STATES[state.toLowerCase()];
+    const stateName = getStateName(state);
 
     if (!stateName) {
         return { title: "Properties | Bidje" };
@@ -37,13 +33,22 @@ export async function generateMetadata({ params }: StatePageProps): Promise<Meta
     };
 }
 
-export default async function StatePropertiesPage({ params }: StatePageProps) {
+export default async function StatePropertiesPage({ params, searchParams }: StatePageProps) {
     const { state } = await params;
-    const stateName = VALID_STATES[state.toLowerCase()];
+    const { page } = await searchParams;
+    const stateName = getStateName(state);
 
     if (!stateName) {
         notFound();
     }
+
+    const currentPage = page ? parseInt(page, 10) : 1;
+
+    const { properties, totalCount, totalPages } = await getFilteredProperties({
+        state,
+        page: currentPage,
+        limit: 9,
+    });
 
     return (
         <main className="min-h-screen bg-neutral-50 text-black">
@@ -61,14 +66,33 @@ export default async function StatePropertiesPage({ params }: StatePageProps) {
                     </p>
                 </div>
 
+                {/* Category quick links — the internal linking that actually drives pSEO */}
+                <div className="mt-6 flex flex-wrap gap-2">
+                    {Object.entries(VALID_CATEGORIES).map(([slug, label]) => (
+                        <Link
+                            key={slug}
+                            href={`/properties/location/${state}/category/${slug}`}
+                            className="rounded-full border border-neutral-300 bg-white px-4 py-1.5 text-sm font-semibold hover:bg-neutral-100"
+                        >
+                            {label}
+                        </Link>
+                    ))}
+                </div>
+
                 <div className="mt-8 flex items-center justify-between">
-                    <Link
-                        href="/properties"
-                        className="text-sm font-bold text-neutral-600 hover:underline"
-                    >
+                    <Link href="/properties" className="text-sm font-bold text-neutral-600 hover:underline">
                         &larr; View all listings
                     </Link>
                 </div>
+
+                <PropertyListingGrid
+                    properties={properties}
+                    totalCount={totalCount}
+                    totalPages={totalPages}
+                    currentPage={currentPage}
+                    basePath={`/properties/location/${state}`}
+                    emptyMessage={`No properties found in ${stateName} yet.`}
+                />
             </div>
         </main>
     );

@@ -32,6 +32,9 @@ export interface PSEOLocationFilterParams {
     state?: string;
     district?: string;
     category?: string;
+    page?: number;
+    limit?: number;
+    sortBy?: "newest" | "price_asc" | "price_desc" | "score_desc";
 }
 
 export async function getFeaturedProperties(limit = 4): Promise<Property[]> {
@@ -135,12 +138,16 @@ export async function searchProperties(
 
 export async function getFilteredProperties(
     filters: PSEOLocationFilterParams
-): Promise<Property[]> {
+): Promise<PaginatedPropertiesResult> {
+    const page = filters.page && filters.page > 0 ? filters.page : 1;
+    const limit = filters.limit && filters.limit > 0 ? filters.limit : 9;
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
     let query = supabase
         .from("properties")
-        .select(PROPERTY_SELECT)
-        .eq("status", "Published")
-        .order("created_at", { ascending: false });
+        .select(PROPERTY_SELECT, { count: "exact" })
+        .eq("status", "Published");
 
     if (filters.state) {
         query = query.ilike("state", filters.state.replace(/-/g, " "));
@@ -153,12 +160,36 @@ export async function getFilteredProperties(
         query = query.or(`category.ilike.${fc},property_type.ilike.${fc}`);
     }
 
-    const { data, error } = await query;
+    switch (filters.sortBy) {
+        case "price_asc":
+            query = query.order("asking_price", { ascending: true });
+            break;
+        case "price_desc":
+            query = query.order("asking_price", { ascending: false });
+            break;
+        case "score_desc":
+            query = query.order("bidje_score", { ascending: false, nullsFirst: false });
+            break;
+        case "newest":
+        default:
+            query = query.order("created_at", { ascending: false });
+            break;
+    }
+
+    const { data, count, error } = await query.range(from, to);
 
     if (error) {
         console.error("getFilteredProperties error:", error.message);
-        return [];
+        return { properties: [], totalCount: 0, totalPages: 0, currentPage: page };
     }
 
-    return mapPropertyRowsToProperties((data as PropertyRow[]) || []);
+    const totalCount = count ?? 0;
+    const totalPages = Math.ceil(totalCount / limit);
+
+    return {
+        properties: mapPropertyRowsToProperties((data as PropertyRow[]) || []),
+        totalCount,
+        totalPages,
+        currentPage: page,
+    };
 }
