@@ -23,7 +23,7 @@ export async function GET(
     return NextResponse.json(property);
   }
 
-  // Case 2: GET /api/properties (Search / Filter List)
+  // Case 2: GET /api/properties
   if (!slug || slug.length === 0) {
     const { searchParams } = new URL(request.url);
 
@@ -42,6 +42,5 @@ export async function GET(
     return NextResponse.json(properties);
   }
 
-  // Unknown subpath under /api/properties/*
   return NextResponse.json({ error: "Not Found" }, { status: 404 });
 }
