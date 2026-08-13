@@ -4,7 +4,6 @@ import { VALID_STATES, VALID_DISTRICTS, VALID_CATEGORIES } from '@/config/locati
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://bidje.com';
 
-// Regenerate the sitemap at most once every 6 hours instead of on every crawl.
 export const revalidate = 21600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
