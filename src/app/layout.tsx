@@ -3,7 +3,7 @@ import "@/app/globals.css";
 import { Footer } from "@/components/layout/Footer";
 import { Toaster } from "sonner";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://bidje.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bidje.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

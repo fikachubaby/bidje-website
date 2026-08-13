@@ -104,12 +104,6 @@ export function VisitorLoginForm() {
                     <label htmlFor="password" className="text-xs uppercase tracking-wider text-neutral-500 font-bold">
                         Password
                     </label>
-                    <Link
-                        href="/forgot-password"
-                        className="text-xs font-bold text-neutral-600 underline decoration-[#ffd400] decoration-2 underline-offset-2 transition-colors hover:text-black"
-                    >
-                        Forgot password?
-                    </Link>
                 </div>
                 <FormInput
                     id="password"
@@ -129,6 +123,13 @@ export function VisitorLoginForm() {
                     {error}
                 </p>
             ) : null}
+
+            <Link
+                href="/forgot-password"
+                className="text-xs font-bold text-neutral-600 underline decoration-[#ffd400] decoration-2 underline-offset-2 transition-colors hover:text-black"
+            >
+                Forgot password?
+            </Link>
 
             {/* Stable Button */}
             <button

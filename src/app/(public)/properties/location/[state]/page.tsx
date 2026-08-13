@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: StatePageProps): Promise<Meta
         title: `Properties for Sale in ${stateName} | Houses, Land & Commercial | Bidje`,
         description: `Find properties for sale in ${stateName}. Browse residential houses, land, and commercial properties in ${stateName} with market valuations and direct offer tools.`,
         alternates: {
-            canonical: `https://bidje.com/properties/location/${state.toLowerCase()}`,
+            canonical: `https://www.bidje.com/properties/location/${state.toLowerCase()}`,
         },
         openGraph: {
             title: `Properties for Sale in ${stateName} | Bidje`,

@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: StateCategoryPageProps): Prom
         title: `${categoryName} Properties for Sale in ${stateName} | Bidje`,
         description: `Browse ${categoryName.toLowerCase()} properties for sale in ${stateName}. Compare prices, view market valuations, and submit direct offers with Bidje.`,
         alternates: {
-            canonical: `https://bidje.com/properties/location/${state.toLowerCase()}/category/${category.toLowerCase()}`,
+            canonical: `https://www.bidje.com/properties/location/${state.toLowerCase()}/category/${category.toLowerCase()}`,
         },
         openGraph: {
             title: `${categoryName} Properties for Sale in ${stateName} | Bidje`,

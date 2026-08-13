@@ -59,10 +59,10 @@ export default function CheckEmailPage() {
                         </button>
 
                         <Link
-                            href="/login"
+                            href="/"
                             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#ffd400] py-3.5 text-sm font-black text-black transition-colors hover:bg-[#ffe24b]"
                         >
-                            Proceed to sign in
+                            Back to Homepage
                             <ArrowRight className="h-4 w-4" />
                         </Link>
                     </div>

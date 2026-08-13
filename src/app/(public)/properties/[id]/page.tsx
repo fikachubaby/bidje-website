@@ -80,7 +80,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
         "@type": "RealEstateListing",
         "name": property.title,
         "description": property.description,
-        "url": `https://bidje.com/properties/${property.id}`,
+        "url": `https://www.bidje.com/properties/${property.id}`,
         "datePosted": property.createdAt,
         "price": property.price,
         "priceCurrency": property.currency || "MYR",

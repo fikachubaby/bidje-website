@@ -1,4 +1,4 @@
-import { FormData } from "./SubmitOfferModal.types";
+import { FormData } from "../../types/offer";
 
 export const PURCHASE_METHODS = [
     { value: "", labelKey: "SubmitOfferModal.fields.purchaseMethod.options.default" },

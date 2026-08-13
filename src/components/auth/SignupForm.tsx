@@ -43,11 +43,13 @@ export function SignupForm() {
             return;
         }
 
+        const currentOrigin = window.location.origin;
         const { error: signUpError } = await supabase.auth.signUp({
             email,
             password,
             options: {
                 data: { full_name: fullName, phone },
+                emailRedirectTo: `${currentOrigin}/auth/callback`, 
             },
         });
 

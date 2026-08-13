@@ -1,4 +1,4 @@
-import type { FormData, FormErrors } from "@/components/property/SubmitOfferModal.types";
+import type { FormData, FormErrors } from "@/types/offer";
 
 interface ValidateOfferPriceParams {
     offerPrice: number;

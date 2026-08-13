@@ -12,8 +12,9 @@ import {
 import { submitOfferToSupabase } from "@/lib/offers/submitOffer";
 import type { FormData, FormErrors } from "@/lib/offers/pendingOffer";
 import { checkEmailExists } from "@/lib/offers/checkEmail";
+import { supabase } from "@/lib/supabase/supabase"; // Ensure supabase client is imported
 
-import { SubmitOfferModalProps } from "./SubmitOfferModal.types";
+import { SubmitOfferModalProps } from "@/types/offer";
 import { PURCHASE_METHODS, initialForm } from "./SubmitOfferModal.constants";
 import { formatOfferInput, validateForm } from "@/lib/offers/validateOffer";
 import { Field, inputClass } from "@/components/ui/Field";
@@ -39,6 +40,44 @@ export function SubmitOfferModal({
   const [redirecting, setRedirecting] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Auto-fill user details if logged in
+  useEffect(() => {
+    if (!open) return;
+
+    if (user) {
+      // Fetch user profile data from Supabase (e.g., from a 'profiles' table or user metadata)
+      async function fetchUserProfile() {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, phone")
+          .eq("id", user?.id)
+          .single();
+
+        setForm((prev) => ({
+          ...prev,
+          fullName: profile?.full_name || user?.user_metadata?.full_name || "",
+          phone: profile?.phone || user?.user_metadata?.phone || "",
+          email: user?.email || "",
+        }));
+      }
+
+      fetchUserProfile();
+    } else if (prefill) {
+      setForm({
+        fullName: prefill.fullName,
+        phone: prefill.phone,
+        email: prefill.email,
+        offerAmount: prefill.offerAmount,
+        purchaseMethod: prefill.purchaseMethod,
+        message: prefill.message,
+        confirmed: prefill.confirmed,
+        deposit: prefill.deposit,
+        financingConsultantId: prefill.financingConsultantId,
+        legalFirmId: prefill.legalFirmId,
+      });
+    }
+  }, [open, user, prefill]);
+
   const submitOffer = useCallback(async (data: FormData) => {
     if (!user) return;
 
@@ -59,34 +98,16 @@ export function SubmitOfferModal({
     clearPendingOffer();
     setSubmitted(true);
 
-    // Redirect registered member to dashboard on success
     setTimeout(() => {
       router.push("/dashboard");
     }, 400);
   }, [propertyId, user, router]);
 
   useEffect(() => {
-    if (!open || !prefill) return;
-
-    const restored: FormData = {
-      fullName: prefill.fullName,
-      phone: prefill.phone,
-      email: prefill.email,
-      offerAmount: prefill.offerAmount,
-      purchaseMethod: prefill.purchaseMethod,
-      message: prefill.message,
-      confirmed: prefill.confirmed,
-      deposit: prefill.deposit,
-      financingConsultantId: prefill.financingConsultantId,
-      legalFirmId: prefill.legalFirmId,
-    };
-
-    setForm(restored);
-
-    if (autoSubmit && user) {
-      void submitOffer(restored);
+    if (open && prefill && autoSubmit && user) {
+      void submitOffer(form);
     }
-  }, [open, prefill, autoSubmit, user, submitOffer]);
+  }, [open, prefill, autoSubmit, user, submitOffer, form]);
 
   if (!open) return null;
 
@@ -111,13 +132,13 @@ export function SubmitOfferModal({
 
     if (sessionLoading) return;
 
-    // 1. If user is logged in, submit directly to Supabase and route to dashboard
+    // 1. If user is logged in, submit directly to Supabase
     if (user) {
       await submitOffer(form);
       return;
     }
 
-    // 2. If user is NOT logged in, save draft to sessionStorage and route to signup/login
+    // 2. If user is NOT logged in, save draft and route to signup/login
     setLoading(true);
     const emailExists = await checkEmailExists(form.email);
     setLoading(false);
@@ -156,6 +177,11 @@ export function SubmitOfferModal({
               {t("SubmitOfferModal.title")}
             </h2>
             <p className="mt-1 text-sm text-neutral-500">{propertyTitle}</p>
+            {user && (
+              <p className="mt-1 text-xs font-medium text-emerald-600">
+                ✨ Submitting as logged-in member ({user.email})
+              </p>
+            )}
           </div>
           <button
             type="button"
@@ -190,38 +216,51 @@ export function SubmitOfferModal({
             </div>
           ) : (
             <form onSubmit={handleSubmit} id="submit-offer-form" className="space-y-5" noValidate>
-              <Field label={t("SubmitOfferModal.fields.fullName.label")} id="fullName" error={errors.fullName} required>
-                <input
-                  id="fullName"
-                  type="text"
-                  value={form.fullName}
-                  onChange={(e) => updateField("fullName", e.target.value)}
-                  className={inputClass(errors.fullName)}
-                  placeholder={t("SubmitOfferModal.fields.fullName.placeholder")}
-                />
-              </Field>
 
-              <Field label={t("SubmitOfferModal.fields.phone.label")} id="phone" error={errors.phone} required>
-                <input
-                  id="phone"
-                  type="tel"
-                  value={form.phone}
-                  onChange={(e) => updateField("phone", e.target.value)}
-                  className={inputClass(errors.phone)}
-                  placeholder={t("SubmitOfferModal.fields.phone.placeholder")}
-                />
-              </Field>
+              {/* Only show/require contact info inputs if user is NOT logged in. If logged in, they are read-only or auto-filled. */}
+              {!user ? (
+                <>
+                  <Field label={t("SubmitOfferModal.fields.fullName.label")} id="fullName" error={errors.fullName} required>
+                    <input
+                      id="fullName"
+                      type="text"
+                      value={form.fullName}
+                      onChange={(e) => updateField("fullName", e.target.value)}
+                      className={inputClass(errors.fullName)}
+                      placeholder={t("SubmitOfferModal.fields.fullName.placeholder")}
+                    />
+                  </Field>
 
-              <Field label={t("SubmitOfferModal.fields.email.label")} id="email" error={errors.email} required>
-                <input
-                  id="email"
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => updateField("email", e.target.value)}
-                  className={inputClass(errors.email)}
-                  placeholder={t("SubmitOfferModal.fields.email.placeholder")}
-                />
-              </Field>
+                  <Field label={t("SubmitOfferModal.fields.phone.label")} id="phone" error={errors.phone} required>
+                    <input
+                      id="phone"
+                      type="tel"
+                      value={form.phone}
+                      onChange={(e) => updateField("phone", e.target.value)}
+                      className={inputClass(errors.phone)}
+                      placeholder={t("SubmitOfferModal.fields.phone.placeholder")}
+                    />
+                  </Field>
+
+                  <Field label={t("SubmitOfferModal.fields.email.label")} id="email" error={errors.email} required>
+                    <input
+                      id="email"
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => updateField("email", e.target.value)}
+                      className={inputClass(errors.email)}
+                      placeholder={t("SubmitOfferModal.fields.email.placeholder")}
+                    />
+                  </Field>
+                </>
+              ) : (
+                <div className="rounded-2xl bg-neutral-50 p-4 border border-neutral-200 text-xs text-neutral-600 space-y-1">
+                  <p className="font-semibold text-neutral-900">Your Contact Info (Auto-filled):</p>
+                  <p>👤 {form.fullName || "Loading name..."}</p>
+                  <p>📞 {form.phone || "Loading phone..."}</p>
+                  <p>✉️ {form.email}</p>
+                </div>
+              )}
 
               <Field label="Deposit" id="deposit" error={errors.deposit} required>
                 <div className="relative">

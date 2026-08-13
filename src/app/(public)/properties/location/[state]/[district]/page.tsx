@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: DistrictPageProps): Promise<M
         title: `Properties for Sale in ${districtName}, ${stateName} | Bidje`,
         description: `Find properties for sale in ${districtName}, ${stateName}. Browse residential houses, land, and commercial properties with market valuations and direct offer tools.`,
         alternates: {
-            canonical: `https://bidje.com/properties/location/${state.toLowerCase()}/${district.toLowerCase()}`,
+            canonical: `https://www.bidje.com/properties/location/${state.toLowerCase()}/${district.toLowerCase()}`,
         },
         openGraph: {
             title: `Properties for Sale in ${districtName}, ${stateName} | Bidje`,

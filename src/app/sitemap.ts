@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import { getFilteredProperties } from '@/lib/properties/property-service';
 import { VALID_STATES, VALID_DISTRICTS, VALID_CATEGORIES } from '@/config/locations';
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://bidje.com';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.bidje.com';
 
 export const revalidate = 21600;
 
