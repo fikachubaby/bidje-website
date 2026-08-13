@@ -15,6 +15,7 @@ import { AuditLogsView } from "@/components/admin/settings/AuditLogsView";
 import { ProfileView } from "@/components/admin/settings/ProfileView";
 import { SubscriberManagement } from "@/components/admin/subscriber/SubscriberManagement";
 import { AdminAdsView } from "@/components/admin/views/AdminAdsView";
+import { FlaggedPhotosReview } from "@/components/admin/property/FlaggedPhotosReview";
 
 import { useSession } from "@/lib/auth/useSession";
 import { useAdminProperties, useAdminOffers } from "@/lib/hooks/useAdminProperties";
@@ -181,23 +182,26 @@ export default function AdminPortal() {
           )}
 
           {activeView === "properties" && (
-            <PropertiesList
-              properties={properties}
-              loading={loading}
-              page={page}
-              setPage={setPage}
-              totalPages={totalPages}
-              totalCount={totalCount}
-              search={search}
-              setSearch={setSearch}
-              statusFilter={statusFilter}
-              setStatusFilter={setStatusFilter}
-              onAdd={handleOpenCreate}
-              onEdit={handleOpenEdit}
-              onDelete={deleteProperty}
-              onDuplicate={duplicateProperty}
-              onStatusChange={updateStatus}
-            />
+            <>
+              <FlaggedPhotosReview />
+              <PropertiesList
+                properties={properties}
+                loading={loading}
+                page={page}
+                setPage={setPage}
+                totalPages={totalPages}
+                totalCount={totalCount}
+                search={search}
+                setSearch={setSearch}
+                statusFilter={statusFilter}
+                setStatusFilter={setStatusFilter}
+                onAdd={handleOpenCreate}
+                onEdit={handleOpenEdit}
+                onDelete={deleteProperty}
+                onDuplicate={duplicateProperty}
+                onStatusChange={updateStatus}
+              />
+            </>
           )}
 
           {activeView === "offers" && (

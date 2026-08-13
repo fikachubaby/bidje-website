@@ -78,6 +78,7 @@ export async function GET(request: Request) {
         .from("telegram_pending_photos")
         .delete()
         .eq("resolved", false)
+        .eq("needs_manual_review", false)
         .lt("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
 
     return NextResponse.json({ ok: true, processed });

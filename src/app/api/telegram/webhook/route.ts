@@ -171,9 +171,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, code, action: existingRow ? "updated" : "created", isEdit });
 }
 
-/**
- * Store or immediately process an incoming photo, now keyed reliably by code.
- */
 async function handleIncomingPhoto(params: {
     fileId: string;
     messageId: number;
@@ -183,11 +180,14 @@ async function handleIncomingPhoto(params: {
 }) {
     const { fileId, messageId, chatId, mediaGroupId, code } = params;
 
-    if (code) {
+    const resolvedCode = code;
+    let needsManualReview = false;
+
+    if (resolvedCode) {
         const { data: property } = await supabaseAdmin
             .from("properties")
             .select("id")
-            .eq("telegram_code", code)
+            .eq("telegram_code", resolvedCode)
             .maybeSingle();
 
         if (property) {
@@ -200,13 +200,47 @@ async function handleIncomingPhoto(params: {
         }
     }
 
+    if (!resolvedCode && !mediaGroupId) {
+        const FALLBACK_WINDOW_MS = 10 * 60 * 1000;
+        const cutoff = new Date(Date.now() - FALLBACK_WINDOW_MS).toISOString();
+
+        const { data: recentProperty } = await supabaseAdmin
+            .from("properties")
+            .select("id, telegram_code")
+            .eq("telegram_chat_id", chatId)
+            .gte("telegram_last_synced_at", cutoff)
+            .order("telegram_last_synced_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        if (recentProperty) {
+            const { count } = await supabaseAdmin
+                .from("property_images")
+                .select("id", { count: "exact", head: true })
+                .eq("property_id", recentProperty.id);
+            await uploadTelegramPhotoToStorage(recentProperty.id, fileId, count ?? 0);
+            console.warn(
+                `[telegram-webhook] Lone photo (message ${messageId}) had no code — ` +
+                `auto-linked via time-window fallback to ${recentProperty.telegram_code}.`
+            );
+            return;
+        }
+
+        needsManualReview = true;
+        console.error(
+            `[telegram-webhook] ORPHANED PHOTO flagged for manual review: message ${messageId} ` +
+            `in chat ${chatId}, file_id=${fileId}. No code, no album, no recent listing match.`
+        );
+    }
+
     await supabaseAdmin.from("telegram_pending_photos").insert({
         media_group_id: mediaGroupId,
         message_id: messageId,
         file_id: fileId,
         chat_id: chatId,
-        telegram_code: code,
+        telegram_code: resolvedCode,
         resolved: false,
+        needs_manual_review: needsManualReview,
     });
 }
 
