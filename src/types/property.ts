@@ -23,7 +23,7 @@ export type OfferStatus = "Pending" | "Accepted" | "Rejected";
 
 export type AdminView =
   | "dashboard" | "properties" | "subscribers" | "offers" | "subscribers"
-  | "ads" | "imports" | "users" | "audit-logs" | "profile";
+  | "ads" | "imports" | "users" | "audit-logs" | "profile" | "ads";
 
 export const PROPERTY_TYPES = [
   "Terrace", "Semi-D", "Bungalow", "Apartment",

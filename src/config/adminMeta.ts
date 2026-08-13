@@ -18,8 +18,8 @@ export const VIEW_META: Record<AdminView, { title: string; subtitle: string }> =
         subtitle: "Review incoming offers and update their status.",
     },
     ads: {
-        title: "Advertisements",
-        subtitle: "Manage banner and promotional advertisements.",
+        title: "Advertisement Manager",
+        subtitle: "Manage dynamic banners, featured boosts, and native promo slots.",
     },
     imports: {
         title: "Telegram Import",

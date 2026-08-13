@@ -14,6 +14,7 @@ import { UsersManagementView } from "@/components/admin/settings/UsersManagement
 import { AuditLogsView } from "@/components/admin/settings/AuditLogsView";
 import { ProfileView } from "@/components/admin/settings/ProfileView";
 import { SubscriberManagement } from "@/components/admin/subscriber/SubscriberManagement";
+import { AdminAdsView } from "@/components/admin/views/AdminAdsView";
 
 import { useSession } from "@/lib/auth/useSession";
 import { useAdminProperties, useAdminOffers } from "@/lib/hooks/useAdminProperties";
@@ -216,6 +217,7 @@ export default function AdminPortal() {
             />
           )}
 
+          {activeView === "ads" && <AdminAdsView />}
           {activeView === "subscribers" && <SubscriberManagement />}
           {activeView === "imports" && <TelegramImportView />}
 
