@@ -1,11 +1,11 @@
 import Image from "next/image";
-import { Check } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { SearchBar } from "@/components/ui/SearchBar";
 import type { Property } from "@/types/property";
 
 const HERO_IMAGE_URL =
   "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200&q=80";
-
+gi
 interface HeroProps {
   featuredProperty?: Property;
 }
