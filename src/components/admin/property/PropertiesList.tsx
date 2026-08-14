@@ -79,6 +79,7 @@ export function PropertiesList({
           <table className="min-w-[960px] w-full text-left text-sm">
             <thead className="border-b border-neutral-200 bg-neutral-50">
               <tr>
+                <th className="px-5 py-4 font-bold text-neutral-600">Telegram Code</th>
                 <th className="px-5 py-4 font-bold text-neutral-600">Property</th>
                 <th className="px-5 py-4 font-bold text-neutral-600">Location</th>
                 <th className="px-5 py-4 font-bold text-neutral-600">Price</th>
@@ -103,12 +104,15 @@ export function PropertiesList({
                 properties.map((property) => (
                   <tr key={property.id} className="border-b border-neutral-100 last:border-0">
                     <td className="px-5 py-4">
+                      <p className="font-bold text-neutral-900">{property.telegramCode}</p>
+                    </td>
+                    <td className="px-5 py-4">
                       <p className="font-bold text-neutral-900">{property.name}</p>
                       <p className="text-neutral-500">
-                        {property.propertyType} · {property.tenure} · {property.bumiStatus}
+                        {property.propertyType} · {property.tenure}
                       </p>
                     </td>
-                    < td className="px-5 py-4 text-neutral-600">
+                    <td className="px-5 py-4 text-neutral-600">
                       <p>{property.district}, {property.state}</p>
                       <p className="mt-1 max-w-xs truncate text-xs text-neutral-400">
                         {property.address}

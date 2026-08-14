@@ -9,8 +9,8 @@ export async function GET(request: Request) {
 
     const { data, error } = await supabaseAdmin
         .from("properties")
-        .select("id, title, district, state")
-        .or(`title.ilike.%${q}%,district.ilike.%${q}%,state.ilike.%${q}%`)
+        .select("id, title, district, state, telegram_code")
+        .or(`title.ilike.%${q}%,district.ilike.%${q}%,state.ilike.%${q}%,telegram_code.ilike.${q}%`)
         .order("created_at", { ascending: false })
         .limit(8);
 
@@ -22,6 +22,7 @@ export async function GET(request: Request) {
             name: p.title,
             district: p.district,
             state: p.state,
+            telegramCode: p.telegram_code,
         })),
     });
 }

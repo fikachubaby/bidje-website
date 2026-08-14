@@ -6,7 +6,7 @@ export const VIEW_META: Record<AdminView, { title: string; subtitle: string }> =
         subtitle: "Overview of your property listings and buyer activity.",
     },
     properties: {
-        title: "Property management",
+        title: "Property Manager",
         subtitle: "Add, edit, publish, duplicate, or delete listings.",
     },
     subscribers: {
@@ -36,5 +36,13 @@ export const VIEW_META: Record<AdminView, { title: string; subtitle: string }> =
     profile: {
         title: "My Profile",
         subtitle: "Update your account profile details, name, or change password.",
+    },
+    legals: {
+        title: "Legal Consultants",
+        subtitle: "Manage legal consultants and update their status",
+    },
+    financials: {
+        title: "Financial Consultants",
+        subtitle: "Manage financial consultants and update their status",
     },
 };

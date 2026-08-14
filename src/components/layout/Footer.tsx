@@ -16,7 +16,23 @@ const footerLinks = {
   ],
 };
 
-export function Footer() {
+interface FooterProps {
+  isAdmin?: boolean;
+}
+
+export function Footer({ isAdmin = false }: FooterProps) {
+  if (isAdmin) {
+    return (
+      <footer className="border-t border-white/10 bg-neutral-950 py-6">
+        <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
+          <p className="text-sm text-neutral-400">
+            &copy; {new Date().getFullYear()} Bidje. All rights reserved.
+          </p>
+        </div>
+      </footer>
+    );
+  }
+
   return (
     <footer className="border-t border-neutral-200 bg-neutral-950 text-neutral-300">
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">

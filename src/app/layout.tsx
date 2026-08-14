@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "@/app/globals.css";
-import { Footer } from "@/components/layout/Footer";
+import { ConditionalFooter } from "@/components/layout/ConditionalFooter";
 import { Toaster } from "sonner";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.bidje.com";
@@ -50,7 +50,7 @@ export default function RootLayout({
       <body className="flex min-h-screen flex-col">
         <div className="flex-1">{children}</div>
         <Toaster richColors position="top-right" />
-        <Footer />
+        <ConditionalFooter />
       </body>
     </html>
   );

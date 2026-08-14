@@ -23,15 +23,13 @@ export async function GET(request: Request) {
             .from("properties")
             .select("*, property_images(*), property_documents(*)", { count: "exact" });
 
-        // Server-side status filter
         if (status !== "All") {
             query = query.eq("status", status);
         }
 
-        // Server-side search filter across title, address, district, state, property type
         if (search) {
             query = query.or(
-                `title.ilike.%${search}%,full_address.ilike.%${search}%,district.ilike.%${search}%,state.ilike.%${search}%,property_type.ilike.%${search}%`
+                `title.ilike.%${search}%,full_address.ilike.%${search}%,district.ilike.%${search}%,state.ilike.%${search}%,property_type.ilike.%${search}%,telegram_code.ilike.${search}%`
             );
         }
 
@@ -76,6 +74,7 @@ export async function GET(request: Request) {
                 furnishing: p.furnishing || "Unfurnished",
                 tags: p.tags || [],
                 images: sortedImages,
+                telegramCode: p.telegram_code || "",
             };
         });
 

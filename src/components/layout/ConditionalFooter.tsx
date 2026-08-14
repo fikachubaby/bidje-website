@@ -7,6 +7,5 @@ export function ConditionalFooter() {
   const pathname = usePathname();
   const isAdmin = pathname.startsWith("/admin");
 
-  if (isAdmin) return null;
-  return <Footer />;
+  return <Footer isAdmin={isAdmin} />;
 }

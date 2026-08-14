@@ -164,3 +164,94 @@ export async function DELETE(
         return NextResponse.json({ error: msg }, { status: 500 });
     }
 }
+
+export async function GET(
+    request: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    const check = await requireStaffSession();
+    if (check.error) return check.error;
+
+    try {
+        const { id } = await params;
+
+        const { data: p, error } = await supabaseAdmin
+            .from("properties")
+            .select("*, property_images(*), property_documents(*)")
+            .eq("id", id)
+            .single();
+
+        if (error) {
+            if (error.code === "PGRST116") {
+                return NextResponse.json({ error: "Property not found" }, { status: 404 });
+            }
+            throw error;
+        }
+
+        const sortedImages = (p.property_images || [])
+            .sort(
+                (a: { display_order?: number }, b: { display_order?: number }) =>
+                    (a.display_order ?? 0) - (b.display_order ?? 0)
+            )
+            .map((img: { image_url: string }) => img.image_url);
+
+        const sortedDocuments = (p.property_documents || []).map(
+            (doc: { id: string; url: string; doc_type: string | null; staff_only: boolean }) => ({
+                id: doc.id,
+                url: doc.url,
+                docType: doc.doc_type,
+                staffOnly: doc.staff_only,
+            })
+        );
+
+        const formatted = {
+            id: p.id,
+            name: p.title,
+            slug: p.slug || p.id,
+            price: Number(p.asking_price),
+            address: p.full_address,
+            state: p.state,
+            district: p.district || "",
+            propertyType: p.property_type,
+            tenure: p.tenure,
+            bumiStatus: p.bumi_status,
+            bedrooms: p.bedrooms || 0,
+            bathrooms: p.bathrooms || 0,
+            landSize: p.land_size || "",
+            builtUpSize: p.built_up_size || "",
+            description: p.description || "",
+            status: p.status,
+            createdAt: p.created_at,
+            updatedAt: p.updated_at,
+            outstandingDebt: Number(p.outstanding_debt ?? 0),
+            minimumPrice:
+                p.minimum_acceptable_price != null ? Number(p.minimum_acceptable_price) : 0,
+            internalNotes: p.internal_notes || "",
+            isAddressHidden: p.is_address_hidden || false,
+            furnishing: p.furnishing || "Unfurnished",
+            tags: p.tags || [],
+            images: sortedImages,
+            documents: sortedDocuments,
+            telegramCode: p.telegram_code || "",
+            telegramChatId: p.telegram_chat_id || "",
+            googleMapsUrl: p.google_maps_url || "",
+            metaTitle: p.meta_title || "",
+            metaDescription: p.meta_description || "",
+            category: p.category || "",
+            isFeatured: p.is_featured || false,
+            urgentSale: p.urgent_sale || false,
+            bidjeScore: p.bidje_score != null ? Number(p.bidje_score) : null,
+            verifiedOfferCount: p.verified_offer_count || 0,
+            marketValue: p.market_value != null ? Number(p.market_value) : null,
+            maxLoanApplicable: p.max_loan_applicable != null ? Number(p.max_loan_applicable) : null,
+            areaSqft: p.area_sqft != null ? Number(p.area_sqft) : null,
+            currency: p.currency || "MYR",
+        };
+
+        return NextResponse.json({ property: formatted });
+    } catch (err: unknown) {
+        console.error("SUPABASE FETCH ERROR ON GET /api/admin/properties/[id]:", err);
+        const msg = err instanceof Error ? err.message : "Failed to fetch property";
+        return NextResponse.json({ error: msg }, { status: 500 });
+    }
+}

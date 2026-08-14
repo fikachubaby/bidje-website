@@ -1,9 +1,11 @@
+// src/components/admin/layout/AdminPortal.tsx
 "use client";
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { translate as t } from "@/lib/i18n/getTranslation";
-import { AdminHeader, AdminSidebar } from "@/components/admin/layout/AdminSidebar";
+import { AdminSidebar } from "@/components/admin/layout/AdminSidebar";
+import { AdminHeader } from "@/components/admin/layout/AdminHeader";
 import { DashboardView } from "@/components/admin/dashboard/DashboardView";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { OffersView } from "@/components/admin/offers/OffersView";
@@ -15,6 +17,8 @@ import { AuditLogsView } from "@/components/admin/settings/AuditLogsView";
 import { ProfileView } from "@/components/admin/settings/ProfileView";
 import { SubscriberManagement } from "@/components/admin/subscriber/SubscriberManagement";
 import { AdminAdsView } from "@/components/admin/views/AdminAdsView";
+import { LegalView } from "@/components/admin/consultant/LegalView"
+import { FinancialView } from "@/components/admin/consultant/FinancialView"
 import { FlaggedPhotosReview } from "@/components/admin/property/FlaggedPhotosReview";
 
 import { useSession } from "@/lib/auth/useSession";
@@ -61,9 +65,9 @@ export default function AdminPortal() {
     setSearch: setOffersSearch,
     statusFilter: offersStatusFilter,
     setStatusFilter: setOffersStatusFilter,
-    updateOfferStatus
+    updateOfferStatus,
   } = useAdminOffers(Boolean(user));
-  
+
   const [activeView, setActiveView] = useState<AdminView>("dashboard");
   const [mobileNav, setMobileNav] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -139,10 +143,10 @@ export default function AdminPortal() {
           <p className="text-3xl font-black tracking-tight">
             {t("Main.title")}<span className="text-yellow-400">.</span>
           </p>
-          <h1 className="mt-6 text-2xl font-black text-neutral-900">{t("AdminManagement.staff")} {t("Authentication.signIn")}</h1>
-          <p className="mt-2 text-sm text-neutral-500">
-            {t("Main.heading3")}
-          </p>
+          <h1 className="mt-6 text-2xl font-black text-neutral-900">
+            {t("AdminManagement.staff")} {t("Authentication.signIn")}
+          </h1>
+          <p className="mt-2 text-sm text-neutral-500">{t("Main.heading3")}</p>
           <div className="mt-8">
             <LoginForm />
           </div>
@@ -176,6 +180,7 @@ export default function AdminPortal() {
           {activeView === "dashboard" && (
             <DashboardView
               properties={properties}
+              totalPropertiesCount={totalCount}
               offers={offers}
               onAddProperty={handleOpenCreate}
             />
@@ -225,7 +230,9 @@ export default function AdminPortal() {
           {activeView === "subscribers" && <SubscriberManagement />}
           {activeView === "imports" && <TelegramImportView />}
 
-          {/* New Settings & Profile View Components */}
+          {activeView === "legals" && <LegalView />}
+          {activeView === "financials" && <FinancialView />}
+
           {activeView === "users" && <UsersManagementView />}
           {activeView === "audit-logs" && <AuditLogsView />}
           {activeView === "profile" && <ProfileView user={user} />}

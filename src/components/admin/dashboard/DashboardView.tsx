@@ -6,18 +6,17 @@ import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/ButtonProps";
 import { StatCard } from "@/components/admin/ui/StatCard";
 import { StatusBadge } from "@/components/admin/ui/StatusBadge";
-import type { AdminProperty, BuyerOffer } from "@/types/property";
 import { supabase } from "@/lib/supabase/supabase";
 import { submitOfferToSupabase } from "@/lib/offers/submitOffer";
 import { clearPendingOffer } from "@/lib/offers/pendingOffer";
+import type { DashboardViewProps } from "@/types/admin";
 
-interface DashboardViewProps {
-  properties: AdminProperty[];
-  offers: BuyerOffer[];
-  onAddProperty: () => void;
-}
-
-export function DashboardView({ properties, offers, onAddProperty }: DashboardViewProps) {
+export function DashboardView({
+  properties,
+  totalPropertiesCount,
+  offers,
+  onAddProperty,
+}: DashboardViewProps) {
   useEffect(() => {
     async function processPendingOffer() {
       const rawPending = sessionStorage.getItem("bidje:pendingOffer");
@@ -56,6 +55,8 @@ export function DashboardView({ properties, offers, onAddProperty }: DashboardVi
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     .slice(0, 5);
 
+  const displayTotalProperties = totalPropertiesCount ?? properties.length;
+
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-end gap-3">
@@ -66,7 +67,7 @@ export function DashboardView({ properties, offers, onAddProperty }: DashboardVi
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Total properties" value={properties.length} />
+        <StatCard label="Total properties" value={displayTotalProperties} />
         <StatCard label="Published" value={published} />
         <StatCard label="Under offer" value={underOffer} />
         <StatCard label="Pending offers" value={pendingOffers} />
