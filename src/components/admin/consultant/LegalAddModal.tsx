@@ -77,8 +77,7 @@ export function LegalAddModal({ isOpen, onClose, onSuccess, editFirm }: LegalAdd
             }
 
             const successMsg = editFirm?.id ? "Legal firm updated successfully!" : "Legal firm added successfully!";
-
-            // Close modal first, then trigger parent toast and data refresh
+            
             onClose();
             onSuccess(successMsg);
         } catch (err: unknown) {

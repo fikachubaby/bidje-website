@@ -1,6 +1,7 @@
 import type { AdminView } from "@/types/property";
 import type { LucideIcon } from "lucide-react";
-import type { AdminProperty, BuyerOffer } from "@/types/property";
+import type { AdminProperty } from "@/types/property";
+import type { BuyerOffer } from "@/types/offer";
 
 export interface NavItem {
     id: AdminView;

@@ -14,23 +14,19 @@ import { Modal } from "@/components/admin/ui/Modal";
 import {
   PROPERTY_TYPES,
   PROPERTY_STATUSES,
-  type AdminProperty,
+  TENURE_TYPES,
+  BUMI_STATUSES,
   type AdminPropertyInput,
   type PropertyStatus,
-  type PropertyType
+  type PropertyType,
+  type PropertyFormModalProps,
 } from "@/types/property";
 import {
   formatWithCommas,
   parseCommaNumber,
   emptyPropertyInput,
 } from "@/lib/utils/property-utils";
-
-interface PropertyFormModalProps {
-  open: boolean;
-  editingProperty: AdminProperty | null;
-  onClose: () => void;
-  onSave: (input: AdminPropertyInput) => void;
-}
+import { validatePropertyForm } from "@/lib/validations/validator";
 
 export function PropertyFormModal({
   open,
@@ -128,7 +124,6 @@ export function PropertyFormModal({
 
     setUploading(true);
     setUploadError("");
-
     const uploadedUrls: string[] = [];
 
     for (const file of Array.from(files)) {
@@ -170,7 +165,6 @@ export function PropertyFormModal({
 
     setDocUploading(true);
     setDocUploadError("");
-
     const uploadedUrls: string[] = [];
 
     for (const file of Array.from(files)) {
@@ -215,20 +209,9 @@ export function PropertyFormModal({
     event.preventDefault();
     if (saving) return;
 
-    if (!form.name.trim()) {
-      setError("Property name is required.");
-      return;
-    }
-    if (form.price <= 0) {
-      setError("Please enter a valid price.");
-      return;
-    }
-    if ((form.minimumPrice ?? 0) > form.price) {
-      setError("Minimum acceptable price cannot exceed the asking price.");
-      return;
-    }
-    if (!form.address.trim() || !form.state.trim() || !(form.district ?? "").trim()) {
-      setError("Address, state, and district are required.");
+    const validationError = validatePropertyForm(form);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -272,7 +255,6 @@ export function PropertyFormModal({
           />
         </FormField>
 
-        {/* PRICE FIELD WITH COMMA FORMATTING */}
         <FormField label="Price (RM)" htmlFor="price">
           <FormInput
             id="price"
@@ -290,7 +272,6 @@ export function PropertyFormModal({
           />
         </FormField>
 
-        {/* OUTSTANDING DEBT FIELD WITH COMMA FORMATTING */}
         <FormField label="Outstanding debt / loan balance (RM)" htmlFor="outstandingDebt">
           <FormInput
             id="outstandingDebt"
@@ -308,7 +289,6 @@ export function PropertyFormModal({
           />
         </FormField>
 
-        {/* MINIMUM PRICE FIELD WITH COMMA FORMATTING */}
         <FormField
           label="Minimum acceptable price (RM)"
           htmlFor="minimumPrice"
@@ -363,6 +343,15 @@ export function PropertyFormModal({
           </FormSelect>
         </FormField>
 
+        <FormField label="Telegram Code" htmlFor="telegramCode">
+          <FormInput
+            id="telegramCode"
+            value={form.telegramCode || ""}
+            onChange={(e) => setForm({ ...form, telegramCode: e.target.value })}
+            placeholder="CFN0012KL"
+          />
+        </FormField>
+
         <FormField label="Address" wide htmlFor="address">
           <FormInput
             id="address"
@@ -398,12 +387,15 @@ export function PropertyFormModal({
               setForm({ ...form, tenure: e.target.value as AdminPropertyInput["tenure"] })
             }
           >
-            <option value="Freehold">Freehold</option>
-            <option value="Leasehold">Leasehold</option>
+            {TENURE_TYPES.map((tenure) => (
+              <option key={tenure} value={tenure}>
+                {tenure}
+              </option>
+            ))}
           </FormSelect>
         </FormField>
 
-        <FormField label="Bumi / Non Bumi" htmlFor="bumiStatus">
+        <FormField label="Bumi / Non Bumi / Both" htmlFor="bumiStatus">
           <FormSelect
             id="bumiStatus"
             value={form.bumiStatus}
@@ -411,8 +403,11 @@ export function PropertyFormModal({
               setForm({ ...form, bumiStatus: e.target.value as AdminPropertyInput["bumiStatus"] })
             }
           >
-            <option value="Bumi">Bumi</option>
-            <option value="Non Bumi">Non Bumi</option>
+            {BUMI_STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
           </FormSelect>
         </FormField>
 
@@ -483,7 +478,6 @@ export function PropertyFormModal({
           />
         </FormField>
 
-        {/* IMAGES SECTION */}
         <FormField
           label="Images"
           wide
@@ -530,11 +524,9 @@ export function PropertyFormModal({
             </Button>
           </div>
 
-          {uploadError ? (
-            <p className="mt-2 text-sm text-red-600">{uploadError}</p>
-          ) : null}
+          {uploadError && <p className="mt-2 text-sm text-red-600">{uploadError}</p>}
 
-          {currentImages.length > 0 ? (
+          {currentImages.length > 0 && (
             <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
               {currentImages.map((url, index) => (
                 <li
@@ -547,11 +539,11 @@ export function PropertyFormModal({
                     alt={`Property photo ${index + 1}`}
                     className="h-24 w-full object-cover"
                   />
-                  {index === 0 ? (
+                  {index === 0 && (
                     <span className="absolute left-1 top-1 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
                       Cover
                     </span>
-                  ) : null}
+                  )}
                   <button
                     type="button"
                     onClick={() => removeImage(index)}
@@ -563,10 +555,9 @@ export function PropertyFormModal({
                 </li>
               ))}
             </ul>
-          ) : null}
+          )}
         </FormField>
 
-        {/* DOCUMENTS (PDF) SECTION */}
         <FormField
           label="Property Documents (PDF)"
           wide
@@ -594,11 +585,9 @@ export function PropertyFormModal({
             </label>
           </div>
 
-          {docUploadError ? (
-            <p className="mt-2 text-sm text-red-600">{docUploadError}</p>
-          ) : null}
+          {docUploadError && <p className="mt-2 text-sm text-red-600">{docUploadError}</p>}
 
-          {currentDocuments.length > 0 ? (
+          {currentDocuments.length > 0 && (
             <ul className="mt-3 flex flex-col gap-2">
               {currentDocuments.map((url, index) => {
                 const fileName = url.split("/").pop() || `Document ${index + 1}`;
@@ -628,7 +617,7 @@ export function PropertyFormModal({
                 );
               })}
             </ul>
-          ) : null}
+          )}
         </FormField>
 
         <FormField label="Description" wide htmlFor="description">
@@ -641,13 +630,12 @@ export function PropertyFormModal({
           />
         </FormField>
 
-        {error ? (
+        {error && (
           <p className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700 md:col-span-2">
             {error}
           </p>
-        ) : null}
+        )}
 
-        {/* internal staff notes */}
         <FormField
           label="Internal Notes (Staff Only)"
           wide

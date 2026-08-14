@@ -37,6 +37,7 @@ export function buildTelegramCaption(property: {
     builtUpSize?: string | null;
     landSize?: string | null;
     askingPrice: number;
+    description?: string | null;
 }): string {
     const lines = [
         `Code: ${property.telegramCode}`,
@@ -54,6 +55,16 @@ export function buildTelegramCaption(property: {
     if (property.builtUpSize) lines.push(`Built up : ${property.builtUpSize}`);
     if (property.landSize) lines.push(`Land Area : ${property.landSize}`);
     lines.push(`PRICE : RM${property.askingPrice.toLocaleString()}`);
+
+    // Amenities / Access / Additional Information block, as typed or as
+    // captured verbatim from the original Telegram import.
+    const trimmedDescription = property.description?.trim();
+    if (trimmedDescription) {
+        lines.push(``, trimmedDescription);
+    }
+
+    lines.push(``, CONTACT_FOOTER);
+
     return lines.join("\n");
 }
 
@@ -135,7 +146,16 @@ interface SyncableProperty {
     builtUpSize?: string | null;
     landSize?: string | null;
     askingPrice: number;
+    description?: string | null;
 }
+
+const CONTACT_FOOTER = [
+    `Note ## : For privacy concern please contact us for more pictures and details`,
+    ``,
+    `Interested to buy property for your future? Contact us now!`,
+    `+60137098606 (Fikri/Ina/Haziq)`,
+    `www.dealhartanah.com`,
+].join("\n");
 
 /**
  * Push a website-side create/update to Telegram, then persist the resulting
@@ -160,6 +180,7 @@ export async function syncPropertyToTelegram(
             builtUpSize: property.builtUpSize,
             landSize: property.landSize,
             askingPrice: property.askingPrice,
+            description: property.description,
         });
 
         let messageIds = property.telegramMessageIds;

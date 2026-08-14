@@ -104,6 +104,7 @@ export async function PUT(
                 builtUpSize: property.built_up_size,
                 landSize: property.land_size,
                 askingPrice: Number(property.asking_price),
+                description: property.description,
             },
             images
         );

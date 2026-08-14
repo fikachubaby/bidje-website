@@ -139,6 +139,7 @@ export async function POST(request: Request) {
             is_address_hidden: body.isAddressHidden ?? false,
             furnishing: body.furnishing || null,
             tags: body.tags || [],
+            telegram_code: body.telegramCode,
         };
 
         const { data: property, error } = await supabaseAdmin
@@ -192,6 +193,7 @@ export async function POST(request: Request) {
                     builtUpSize: property.built_up_size,
                     landSize: property.land_size,
                     askingPrice: Number(property.asking_price),
+                    description: property.description,
                 },
                 images
             );

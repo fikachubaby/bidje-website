@@ -14,6 +14,8 @@ const FEATURED_LOCATIONS = [
   { name: "Perak", slug: "perak" },
   { name: "Melaka", slug: "melaka" },
   { name: "Negeri Sembilan", slug: "negeri-sembilan" },
+  { name: "Pulau Pinang", slug: "pulau-pinang" },
+  { name: "Kedah", slug: "kedah" },
 ];
 
 export function Navbar() {

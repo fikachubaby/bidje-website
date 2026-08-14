@@ -4,6 +4,8 @@ export const VALID_STATES: Record<string, string> = {
     "perak": "Perak",
     "melaka": "Melaka",
     "negeri-sembilan": "Negeri Sembilan",
+    "pulau-pinang": "Pulau Pinang",
+    "kedah": "Kedah",
 };
 
 export const VALID_DISTRICTS: Record<string, Record<string, string>> = {

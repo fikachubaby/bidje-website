@@ -5,9 +5,8 @@ import type {
     AdminProperty,
     AdminPropertyInput,
     PropertyStatus,
-    OfferStatus,
-    BuyerOffer,
 } from "@/types/property";
+import type { BuyerOffer, OfferStatus } from "@/types/offer";
 import { buildQueryString } from "@/lib/utils";
 
 export function useAdminProperties(isAuthenticated: boolean) {

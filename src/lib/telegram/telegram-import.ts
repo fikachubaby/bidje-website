@@ -153,18 +153,39 @@ function extractMapsUrl(text: string): string {
   return match?.[0]?.replace(/[.,;]+$/, "") ?? "";
 }
 
+/** Remove a labeled section (header line + its numbered/plain body) entirely from the text. */
+function removeSection(text: string, startLabel: string, endLabels: string[]): string {
+  const startRe = new RegExp(`(?:^|\\n)[ \\t]*${escapeRegExp(startLabel)}[ \\t]*[:：]?[ \\t]*\\n`, "i");
+  const startMatch = text.match(startRe);
+  if (!startMatch || startMatch.index == null) return text;
+
+  const sectionStart = startMatch.index;
+  const afterHeader = startMatch.index + startMatch[0].length;
+  const rest = text.slice(afterHeader);
+
+  let endIndex = rest.length;
+  for (const endLabel of endLabels) {
+    const endRe = new RegExp(`(?:^|\\n)[ \\t]*${escapeRegExp(endLabel)}`, "i");
+    const endMatch = rest.match(endRe);
+    if (endMatch && endMatch.index != null && endMatch.index < endIndex) {
+      endIndex = endMatch.index;
+    }
+  }
+
+  return text.slice(0, sectionStart) + rest.slice(endIndex);
+}
+
 function cleanDescription(rawText: string): string {
-  return rawText
+  const withoutCobroke = removeSection(rawText, "T&C to cobroke", ["PRICE"]);
+
+  return withoutCobroke
     .split(/\r?\n/)
     .filter((line) => {
       const trimmed = line.trim();
       if (!trimmed) return true;
       if (/^(?:property\s+)?code\s*[:：]/i.test(trimmed)) return false;
+      if (/^property\s+details\s*[:：]?$/i.test(trimmed)) return false;
       if (LABEL_LINE_RE.test(trimmed)) return false;
-      if (/^amenities\s*[:：]?$/i.test(trimmed)) return false;
-      if (/^access\s*[:：]?$/i.test(trimmed)) return false;
-      if (/^t&c to cobroke\s*[:：]?$/i.test(trimmed)) return false;
-      if (/^\d+\.\s/.test(trimmed)) return false;
       const withoutMaps = trimmed.replace(MAPS_URL_RE, "").trim();
       if (withoutMaps === "" && /google\.com\/maps|maps\.app\.goo\.gl|goo\.gl\/maps/i.test(trimmed)) {
         return false;
@@ -605,7 +626,7 @@ export function getDuplicateCodes(properties: TelegramParsedProperty[]): Set<str
 }
 
 const MALAYSIA_STATES = [
-  "Kuala Lumpur", "Selangor", "Johor", "Penang", "Pulau Pinang", "Perak",
+  "Kuala Lumpur", "Selangor", "Johor", "Pulau Pinang", "Pulau Pinang", "Perak",
   "Negeri Sembilan", "Melaka", "Malacca", "Pahang", "Terengganu", "Kelantan",
   "Kedah", "Perlis", "Sabah", "Sarawak", "Putrajaya", "Labuan",
 ];

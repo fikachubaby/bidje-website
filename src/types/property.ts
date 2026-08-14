@@ -18,16 +18,18 @@ export type FeatureTag = (typeof FEATURE_TAGS)[number];
 
 export type PropertyCategory = "land" | "landed" | "high-rise" | "commercial" | "auction";
 export type TenureType = "Freehold" | "Leasehold";
-export type BumiStatusType = "Bumi" | "Non Bumi" | "Unknown";
-export type OfferStatus = "Pending" | "Accepted" | "Rejected";
+export const TENURE_TYPES: TenureType[] = ["Freehold", "Leasehold"];
+
+export type BumiStatusType = "Bumi" | "Non Bumi" | "Both";
+export const BUMI_STATUSES: BumiStatusType[] = ["Bumi", "Non Bumi", "Both"];
 
 export type AdminView =
   | "dashboard" | "properties" | "subscribers" | "offers" | "subscribers"
   | "imports" | "users" | "audit-logs" | "profile" | "ads" | "legals" | "financials";
 
 export const PROPERTY_TYPES = [
-  "Terrace", "Semi-D", "Bungalow", "Apartment",
-  "Condominium", "Shop Lot", "Land", "Low Cost Flat", "Double Storey "
+  "Apartment", "Bungalow", "Condominium", "Double Storey", "Land", "Low Cost Flat", 
+  "Semi-D", "1-Storey", "Shop Lot", "Terrace", "Townhouse", "Superlink"
 ] as const;
 export type PropertyType = (typeof PROPERTY_TYPES)[number];
 
@@ -78,6 +80,7 @@ export interface DBProperty {
   special_features?: FeatureTag[] | null;
   outstanding_debt?: number | null;
   minimum_price?: number | null;
+  telegram_code?: string | null;
 }
 
 export interface DBPropertyImage {
@@ -119,6 +122,7 @@ export interface Property {
   district?: string;
   state?: string;
   documents?: string[];
+  telegramCode?: string;
 }
 
 export interface AdminProperty {
@@ -166,36 +170,6 @@ export interface CategoryInfo {
   icon: string;
 }
 
-export interface BuyerOffer {
-  id: string;
-  propertyId: string;
-  buyerName: string;
-  buyerPhone: string;
-  buyerEmail: string;
-  amount: number;
-  message: string;
-  status: OfferStatus;
-  createdAt: string;
-  icDocumentUrl?: string;
-  paymentProofUrl?: string;
-  invoiceUrl?: string | null;
-  history?: OfferHistoryItem[];
-}
-
-export interface OfferHistoryItem {
-  id: string;
-  action?: string;
-  timestamp?: string;
-  performedBy?: string;
-  propertyTitle: string;
-  offeredAmount: string;
-  status: "Pending" | "Accepted" | "Rejected";
-  dateSubmitted: string;
-  icDocumentUrl?: string | null;
-  paymentProofUrl?: string | null;
-  invoiceUrl?: string | null;
-}
-
 export interface PropertyListing {
   id: string;
   title: string;
@@ -221,13 +195,9 @@ export interface SupabasePropertyRecord {
   status?: string | null;
 }
 
-export interface SupabaseOfferRecord {
-  id: string;
-  property_id?: string | null;
-  offer_price?: number | null;
-  status?: "Pending" | "Accepted" | "Rejected" | null;
-  submitted_at?: string | null;
-  ic_upload_url?: string | null;
-  payment_proof_url?: string | null;
-  invoice_url?: string | null;
+export interface PropertyFormModalProps {
+  open: boolean;
+  editingProperty: AdminProperty | null;
+  onClose: () => void;
+  onSave: (input: AdminPropertyInput) => Promise<void> | void;
 }

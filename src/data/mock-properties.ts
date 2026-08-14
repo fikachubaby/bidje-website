@@ -114,11 +114,11 @@ export const mockProperties: Property[] = [
   },
   {
     id: "8",
-    title: "Industrial Land in Penang",
+    title: "Industrial Land in Pulau Pinang",
     description: "Zoned for light industrial use with highway access.",
     price: 2100000,
     currency: "MYR",
-    location: "Bayan Lepas, Penang",
+    location: "Bayan Lepas, Pulau Pinang",
     category: "land",
     areaSqft: 87120,
     imageUrl:

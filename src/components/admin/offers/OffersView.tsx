@@ -21,7 +21,8 @@ import { StatusBadge } from "@/components/admin/ui/StatusBadge";
 import { validateOfferPrice } from "@/lib/offers/validateOffer";
 import { OfferDetailsModal } from "@/components/ui/OfferDetailsModal";
 import { OfferHistoryModal } from "@/components/ui/OfferHistoryModal";
-import type { AdminProperty, BuyerOffer, OfferStatus } from "@/types/property";
+import type { AdminProperty } from "@/types/property";
+import type { BuyerOffer, OfferStatus } from "@/types/offer";
 
 interface OffersViewProps {
   offers: BuyerOffer[];

@@ -160,7 +160,7 @@ export function mapPropertyRowToProperty(row: PropertyRow): Property {
         urgentSale: row.urgent_sale,
         landSize: row.land_size ?? undefined,
         tenure: (row.tenure as TenureType) || undefined,
-        bumiStatus: (row.bumi_status as BumiStatusType) || "Unknown",
+        bumiStatus: (row.bumi_status as BumiStatusType) || "Both",
         bidjeScore: row.bidje_score ?? undefined,
         verifiedOfferCount: row.verified_offer_count ?? 0,
         marketValue: row.market_value ?? undefined,

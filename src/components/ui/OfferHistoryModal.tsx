@@ -3,7 +3,7 @@
 import { XCircle } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/ButtonProps";
-import type { BuyerOffer } from "@/types/property";
+import type { BuyerOffer } from "@/types/offer";
 
 interface OfferHistoryModalProps {
     offer: BuyerOffer | null;

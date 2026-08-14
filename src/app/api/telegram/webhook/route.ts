@@ -143,7 +143,6 @@ export async function POST(request: Request) {
         telegram_message_ids: [msg.message_id],
         telegram_sender_id: senderId,
         telegram_last_synced_at: new Date().toISOString(),
-        tags: fields.amenities,
         internal_notes: fields.internalNotes,
         ...(existingRow ? {} : { status: "Published" }),
     };

@@ -30,8 +30,9 @@ import type {
   AdminProperty,
   AdminPropertyInput,
   AdminView,
-  OfferStatus,
 } from "@/types/property";
+
+import type { OfferStatus } from "@/types/offer";
 
 export default function AdminPortal() {
   const router = useRouter();

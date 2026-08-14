@@ -24,12 +24,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
-import type {
-    PropertyListing,
-    OfferHistoryItem,
-    SupabasePropertyRecord,
-    SupabaseOfferRecord
-} from "@/types/property";
+import type { PropertyListing, SupabasePropertyRecord } from "@/types/property";
+import type { OfferHistoryItem, SupabaseOfferRecord } from "@/types/offer";
 import { translate as t } from "@/lib/i18n/getTranslation";
 
 export default function PropertyDashboardPage() {

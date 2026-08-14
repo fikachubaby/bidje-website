@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     default: "Bidje | Real Estate & Direct Property Offers in Malaysia",
     template: "%s | Bidje",
   },
-  description: "Buy and sell residential properties, land, and commercial units in KL, Selangor, Perak, Melaka, and Negeri Sembilan.",
+  description: "Buy and sell residential properties, land, and commercial units in KL, Selangor, Perak, Melaka, Pulau Pinang and Negeri Sembilan.",
   keywords: [
     "Property Malaysia",
     "Rumah untuk dijual",
