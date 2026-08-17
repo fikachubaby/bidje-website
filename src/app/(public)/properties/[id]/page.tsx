@@ -19,6 +19,7 @@ import { FavouriteButton } from "@/components/property/FavouriteButton";
 import { formatPrice } from "@/lib/utils";
 import { getPropertyById } from "@/lib/properties/property-service";
 import { translate as t } from "@/lib/i18n/getTranslation";
+import { PropertyGallery } from "@/components/property/PropertyGallery";
 
 interface PropertyDetailPageProps {
     params: Promise<{ id: string }>;
@@ -69,9 +70,11 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
         notFound();
     }
 
-    const images = property.images && property.images.length > 0
+    const rawImages = property.images && property.images.length > 0
         ? property.images
         : [property.imageUrl || "/placeholder-property.jpg"];
+
+    const images = rawImages.slice(0, 15);
 
     const bidjeScore = property.bidjeScore ?? 85;
 
@@ -173,36 +176,8 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                 </div>
 
                 {/* Media Gallery Grid */}
-                <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-4">
-                    <div className="relative aspect-[16/10] overflow-hidden rounded-2xl border border-neutral-200 md:col-span-3 md:aspect-[16/9]">
-                        <Image
-                            src={images[0]}
-                            alt={property.title}
-                            fill
-                            priority
-                            className="object-cover"
-                            sizes="(max-width: 768px) 100vw, 75vw"
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 md:grid-cols-1">
-                        {images.slice(1, 3).map((img, idx) => (
-                            <div key={idx} className="relative aspect-[16/10] overflow-hidden rounded-2xl border border-neutral-200">
-                                <Image
-                                    src={img}
-                                    alt={`${property.title} preview ${idx + 2}`}
-                                    fill
-                                    className="object-cover"
-                                    sizes="(max-width: 768px) 50vw, 25vw"
-                                />
-                            </div>
-                        ))}
-                        {images.length < 2 && (
-                            <div className="flex aspect-[16/10] items-center justify-center rounded-2xl border border-dashed border-neutral-300 bg-neutral-100 p-4 text-center text-xs font-medium text-neutral-500">
-                                {t("Main.subHeading.subH3")}
-                            </div>
-                        )}
-                    </div>
+                <div className="mt-6">
+                    <PropertyGallery images={images} title={property.title} />
                 </div>
 
                 {/* Main Content Layout */}

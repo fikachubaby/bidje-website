@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Bath, BedDouble, MapPin } from "lucide-react";
+import { Bath, BedDouble, MapPin, ImageOff } from "lucide-react";
 
 import { FavouriteButton } from "@/components/property/FavouriteButton";
 import type { Property } from "@/types/property";
@@ -17,7 +17,14 @@ function getRatingLabel(score: number): string {
 }
 
 export function PropertyCard({ property }: PropertyCardProps) {
-  const image = property.imageUrl || property.images?.[0] || "/placeholder-property.jpg";
+  const hasValidImages =
+    (property.imageUrl && property.imageUrl.trim() !== "") ||
+    (Array.isArray(property.images) && property.images.length > 0 && property.images[0]?.trim() !== "");
+
+  const image = hasValidImages
+    ? (property.imageUrl || property.images?.[0])
+    : "/placeholder-property.jpg";
+
   const score = property.bidjeScore ?? 85;
   const ratingLabel = getRatingLabel(score);
 
@@ -26,13 +33,21 @@ export function PropertyCard({ property }: PropertyCardProps) {
       <div className="relative">
         <Link href={`/properties/${property.id}`} className="block">
           <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
-            <Image
-              src={image}
-              alt={property.title}
-              fill
-              className="object-cover transition duration-700 group-hover:scale-105"
-              sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-            />
+            {hasValidImages ? (
+              <Image
+                src={image!}
+                alt={property.title || "Property image"}
+                fill
+                className="object-cover transition duration-700 group-hover:scale-105"
+                sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+              />
+            ) : (
+              /* Custom "No Image Available" State */
+              <div className="flex h-full w-full flex-col items-center justify-center bg-neutral-100 text-neutral-400 transition duration-700 group-hover:scale-105">
+                <ImageOff className="h-10 w-10 stroke-1 mb-2" />
+                <span className="text-xs font-bold uppercase tracking-wider">No Image Available</span>
+              </div>
+            )}
 
             <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/70 to-transparent" />
 

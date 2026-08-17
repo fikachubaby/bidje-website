@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
-import { SlidersHorizontal, Search, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { PropertyCard } from "@/components/property/PropertyCard";
 import { searchProperties } from "@/lib/properties/property-service";
 import { translate as t } from "@/lib/i18n/getTranslation";
+import { Pagination } from "@/components/layout/Pagination";
 
 interface PropertiesPageProps {
     searchParams: Promise<{
@@ -118,30 +119,13 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
                                 ))}
                             </div>
 
-                            {/* Pagination Controls */}
-                            {totalPages > 1 && (
-                                <div className="mt-12 flex items-center justify-center gap-3">
-                                    {currentPage > 1 && (
-                                        <Link
-                                            href={`/properties?page=${currentPage - 1}`}
-                                            className="flex items-center gap-1 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm font-bold shadow-sm hover:bg-neutral-50"
-                                        >
-                                            <ChevronLeft className="h-4 w-4" /> Prev
-                                        </Link>
-                                    )}
-                                    <span className="text-sm font-semibold text-neutral-600">
-                                        Page {currentPage} of {totalPages}
-                                    </span>
-                                    {currentPage < totalPages && (
-                                        <Link
-                                            href={`/properties?page=${currentPage + 1}`}
-                                            className="flex items-center gap-1 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm font-bold shadow-sm hover:bg-neutral-50"
-                                        >
-                                            Next <ChevronRight className="h-4 w-4" />
-                                        </Link>
-                                    )}
-                                </div>
-                            )}
+                            {/* Reusable Pagination Controls */}
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                baseUrl="/properties"
+                                searchParams={params}
+                            />
                         </>
                     )}
                 </div>
