@@ -20,8 +20,8 @@ export type PropertyCategory = "land" | "landed" | "high-rise" | "commercial" | 
 export type TenureType = "Freehold" | "Leasehold";
 export const TENURE_TYPES: TenureType[] = ["Freehold", "Leasehold"];
 
-export type BumiStatusType = "Bumi" | "Non Bumi" | "Both";
-export const BUMI_STATUSES: BumiStatusType[] = ["Bumi", "Non Bumi", "Both"];
+export type BumiStatusType = "Bumi" | "Non Bumi" | "Both" | "Unknown";
+export const BUMI_STATUSES: BumiStatusType[] = ["Bumi", "Non Bumi", "Both", "Unknown"];
 
 export type AdminView =
   | "dashboard" | "properties" | "subscribers" | "offers" | "subscribers"

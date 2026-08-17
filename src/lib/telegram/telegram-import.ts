@@ -25,25 +25,22 @@ type FieldKey =
   | "landSize"
   | "price"
   | "state"
-  | "district";
+  | "district"
+  | "mapsUrl";
 
 const FIELD_LABELS: Record<FieldKey, string[]> = {
   address: ["full address", "address", "alamat", "alamat hartanah", "property address"],
   propertyType: ["type", "property type", "jenis hartanah", "jenis rumah"],
   tenure: ["tenure", "freehold/leasehold", "pegangan"],
-  bumiStatus: ["bumi status", "bumi lot", "non bumi", "lot bumi", "bumi lot/non bumi"],
+  bumiStatus: ["bumi status", "bumi lot", "non bumi", "lot bumi", "bumi lot/non bumi", "non-bumi lot"],
   bedrooms: ["room", "rooms", "bedroom", "bedrooms", "bilik", "bilangan bilik"],
-  bathrooms: [
-    "bathroom",
-    "bathrooms",
-    "bilik air",
-    "bilangan bilik air",
-  ],
+  bathrooms: ["bathroom", "bathrooms", "bilik air", "bilangan bilik air"],
   builtUp: ["built up", "built-up", "size bangunan", "building size"],
   landSize: ["land area", "land size", "size tanah"],
   price: ["price", "asking price", "selling price", "target jualan", "harga"],
   state: ["state", "negeri"],
   district: ["district", "daerah", "area"],
+  mapsUrl: ["location", "lokasi"],
 };
 
 const LABEL_LINE_RE = buildLabelLineRegex();
@@ -136,7 +133,7 @@ function extractLabeledValue(text: string, labels: string[]): string {
   const sorted = [...labels].sort((a, b) => b.length - a.length);
   for (const label of sorted) {
     const re = new RegExp(
-      `(?:^|\\n)[ \\t]*${escapeRegExp(label)}[ \\t]*[:：][ \\t]*(.*?)(?=\\n|$)`,
+      `(?:^|\\n)\\s*${escapeRegExp(label)}\\s*[:：]\\s*(.*?)(?=\\n|$)`,
       "i"
     );
     const match = text.match(re);
@@ -292,8 +289,11 @@ export function extractFieldsFromText(
 ): ExtractedFields {
   const address = extractLabeledValue(rawText, FIELD_LABELS.address);
   let propertyType = extractLabeledValue(rawText, FIELD_LABELS.propertyType);
-  const tenure = extractLabeledValue(rawText, FIELD_LABELS.tenure);
-  const bumiStatus = extractLabeledValue(rawText, FIELD_LABELS.bumiStatus);
+
+  const tenureRaw = extractLabeledValue(rawText, FIELD_LABELS.tenure);
+  const { tenure, bumiStatus: bumiFromTenure } = splitTenureAndBumi(tenureRaw);
+  const bumiStatus = extractLabeledValue(rawText, FIELD_LABELS.bumiStatus) || bumiFromTenure;
+
   const builtUp = extractLabeledValue(rawText, FIELD_LABELS.builtUp);
   const landSize = extractLabeledValue(rawText, FIELD_LABELS.landSize);
   let state = extractLabeledValue(rawText, FIELD_LABELS.state);
@@ -301,26 +301,26 @@ export function extractFieldsFromText(
   const bedrooms = parseCount(extractLabeledValue(rawText, FIELD_LABELS.bedrooms));
   const bathrooms = parseCount(extractLabeledValue(rawText, FIELD_LABELS.bathrooms));
   const price = parsePrice(extractLabeledValue(rawText, FIELD_LABELS.price));
-  const mapsUrl = extractMapsUrl(rawText);
-  const description = cleanDescription(rawText);
+
+  // Google Maps URL: strictly from the "Location :" line's value — nowhere else.
+  const locationRaw = extractLabeledValue(rawText, FIELD_LABELS.mapsUrl);
+  const mapsUrl = extractMapsUrl(locationRaw);
+
+  const description = buildDescription(rawText);
 
   if (!propertyType) propertyType = derivePropertyTypeFromTitle(rawText);
   if (!state) state = deriveStateFromAddress(address);
   if (!district) district = deriveDistrictFromAddress(address, state);
 
-  const amenities = extractAmenities(rawText);
   const cobrokeTerms = extractCobrokeTerms(rawText);
-  const internalNotes = [
-    `Telegram Import Code: ${telegramCode}`,
-    cobrokeTerms ? `T&C to cobroke:\n${cobrokeTerms}` : "",
-  ].filter(Boolean).join("\n\n");
+  const internalNotes = cobrokeTerms ? `T&C to cobroke:\n${cobrokeTerms}` : "";
 
-  const title = generateTitle(propertyType, district, address, telegramCode);
+  const title = extractTitleLine(rawText) || generateTitle(propertyType, district, address, telegramCode);
 
   return {
     address, propertyType, tenure, bumiStatus, builtUp, landSize,
     state, district, bedrooms, bathrooms, price, mapsUrl, description, title,
-    amenities, internalNotes,
+    amenities: [], internalNotes,
   };
 }
 
@@ -699,4 +699,74 @@ function derivePropertyTypeFromTitle(rawText: string): string {
   if (!firstLine) return "";
   const match = firstLine.match(/^(.*?)\s+for\s+(?:sale|rent)\s+at\s+/i);
   return match?.[1]?.trim() || "";
+}
+
+function splitTenureAndBumi(rawValue: string): { tenure: string; bumiStatus: string } {
+  if (!rawValue) return { tenure: "", bumiStatus: "" };
+  const match = rawValue.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+  if (!match) return { tenure: rawValue.trim(), bumiStatus: "" };
+
+  const tenure = match[1].trim();
+  const bracket = match[2].trim();
+  let bumiStatus = "";
+  if (/non[\s-]?bumi/i.test(bracket)) bumiStatus = "Non Bumi";
+  else if (/\bbumi\b/i.test(bracket)) bumiStatus = "Bumi";
+
+  return { tenure, bumiStatus };
+}
+
+function extractTitleLine(rawText: string): string {
+  const lines = rawText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const codeLineIdx = lines.findIndex((l) => /^(?:property\s+)?code\s*[:：]/i.test(l));
+  const titleIdx = codeLineIdx >= 0 ? codeLineIdx + 1 : 0;
+  return lines[titleIdx] || "";
+}
+
+function extractSectionBlock(text: string, startLabel: string, endLabels: string[]): string {
+  const startRe = new RegExp(`(?:^|\\n)([ \\t]*${escapeRegExp(startLabel)}[ \\t]*[:：]?[ \\t]*)\\n`, "i");
+  const startMatch = text.match(startRe);
+  if (!startMatch || startMatch.index == null) return "";
+
+  const headerLine = startMatch[1].trim();
+  const sectionStart = startMatch.index + startMatch[0].length;
+  const rest = text.slice(sectionStart);
+
+  let endIndex = rest.length;
+  for (const endLabel of endLabels) {
+    const endRe = new RegExp(`(?:^|\\n)[ \\t]*${escapeRegExp(endLabel)}`, "i");
+    const endMatch = rest.match(endRe);
+    if (endMatch && endMatch.index != null && endMatch.index < endIndex) {
+      endIndex = endMatch.index;
+    }
+  }
+
+  const body = rest.slice(0, endIndex).trim();
+  return body ? `${headerLine}\n${body}` : "";
+}
+
+function buildDescription(rawText: string): string {
+  const parts: string[] = [];
+
+  const amenities = extractSectionBlock(rawText, "Amenities", [
+    "Access", "Additional Information", "T&C to cobroke", "PRICE", "Note",
+  ]);
+  if (amenities) parts.push(amenities);
+
+  const access = extractSectionBlock(rawText, "Access", [
+    "Additional Information", "T&C to cobroke", "PRICE", "Note",
+  ]);
+  if (access) parts.push(access);
+
+  const additionalInfo = extractSectionBlock(rawText, "Additional Information", [
+    "T&C to cobroke", "PRICE", "Note",
+  ]);
+  if (additionalInfo) parts.push(additionalInfo);
+
+  // "Note ##" through the end of the message (privacy line + contact footer)
+  const noteMatch = rawText.match(/(?:^|\n)[ \t]*Note\s*##[\s\S]*/i);
+  if (noteMatch && noteMatch.index != null) {
+    parts.push(rawText.slice(noteMatch.index).trim());
+  }
+
+  return parts.join("\n\n").trim();
 }
