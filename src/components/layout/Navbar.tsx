@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { LogOut, User, ChevronDown, Menu, X, MapPin, PlusCircle, ShieldCheck } from "lucide-react";
+import { LogOut, User, ChevronDown, Menu, X, MapPin, PlusCircle, ShieldCheck, Mail } from "lucide-react";
 import { useSession } from "@/lib/auth/useSession";
 import { supabase } from "@/lib/supabase/supabase";
 import { useRouter } from "next/navigation";
@@ -92,6 +92,12 @@ export function Navbar() {
 
           <Link href="/#how-it-works" className="hover:text-[#ffd400] transition-colors">{t("Main.menu.menu2")}</Link>
 
+          {/* Contact Us Link */}
+          <Link href="/contact" className="flex items-center gap-1.5 hover:text-[#ffd400] transition-colors">
+            <Mail className="h-4 w-4 text-[#ffd400]" />
+            <span>Contact Us</span>
+          </Link>
+
           {/* Seller CTA */}
           <Link
             href="/list-property"
@@ -124,7 +130,7 @@ export function Navbar() {
               href="/login"
               className="hidden text-sm font-bold hover:text-[#ffd400] transition-colors md:block"
             >
-                {t("Authentication.signIn")}
+              {t("Authentication.signIn")}
             </Link>
           )}
 
@@ -186,6 +192,15 @@ export function Navbar() {
             </Link>
 
             <Link
+              href="/contact"
+              onClick={() => setMobileMenuOpen(false)}
+              className="pt-2 border-t border-white/10 hover:text-[#ffd400] flex items-center gap-2"
+            >
+              <Mail className="h-4 w-4 text-[#ffd400]" />
+              Contact Us
+            </Link>
+
+            <Link
               href="/list-property"
               onClick={() => setMobileMenuOpen(false)}
               className="mt-2 inline-flex items-center justify-center gap-2 rounded-xl border-2 border-[#ffd400] bg-[#ffd400] px-4 py-3 text-center text-sm font-black text-black"
@@ -214,7 +229,7 @@ export function Navbar() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="mt-2 border-t border-white/10 pt-4 hover:text-[#ffd400]"
               >
-                  {t("Authentication.signIn")}
+                {t("Authentication.signIn")}
               </Link>
             )}
           </nav>
