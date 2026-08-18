@@ -92,10 +92,15 @@ export async function POST(request: Request) {
 
     const soldMatch = /^\[(SOLD|ARCHIVED)\]/i.exec(text.trim());
 
+    const isDetailsMessage = text.includes("Property Details");
+    if (!isDetailsMessage && (!msg.photo || msg.photo.length === 0)) {
+        return NextResponse.json({ ok: true, code, action: "ignored-no-details" });
+    }
+
     const { data: existingRow } = await supabaseAdmin
         .from("properties")
         .select(
-            "id, telegram_message_ids, sync_origin, status, title, asking_price, full_address, state, district, property_type, tenure, bumi_status, land_size, built_up_size, bedrooms, bathrooms, description, google_maps_url, internal_notes"
+            "id, telegram_message_ids, telegram_chat_id, telegram_has_caption, sync_origin, status, title, asking_price, full_address, state, district, property_type, tenure, bumi_status, land_size, built_up_size, bedrooms, bathrooms, description, google_maps_url, internal_notes"
         )
         .eq("telegram_code", code)
         .maybeSingle();
@@ -110,7 +115,6 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true, code, action: "status-updated" });
     }
 
-    const isDetailsMessage = text.includes("Property Details");
     if (!isDetailsMessage) {
         return NextResponse.json({ ok: true, code, action: "photo-only-skipped" });
     }
@@ -123,6 +127,20 @@ export async function POST(request: Request) {
     }
 
     const fields = extractFieldsFromText(text, code);
+
+    // A text-only follow-up (no photo attached to THIS message) should never
+    // overwrite the message-id link used for future caption edits — that link
+    // must stay pointed at the original photo message.
+    const isPhotoMessage = Boolean(msg.photo && msg.photo.length > 0);
+    const messageIdsForUpdate = isPhotoMessage
+        ? [msg.message_id]
+        : existingRow?.telegram_message_ids ?? [msg.message_id];
+    const hasCaptionForUpdate = isPhotoMessage
+        ? true
+        : existingRow?.telegram_has_caption ?? false;
+    const chatIdForUpdate = isPhotoMessage || !existingRow
+        ? String(msg.chat.id)
+        : existingRow.telegram_chat_id ?? String(msg.chat.id);
 
     const propertyPayload = {
         title: fields.title || existingRow?.title,
@@ -143,8 +161,9 @@ export async function POST(request: Request) {
         google_maps_url: fields.mapsUrl || existingRow?.google_maps_url || null,
         is_address_hidden: true,
         telegram_code: code,
-        telegram_chat_id: String(msg.chat.id),
-        telegram_message_ids: [msg.message_id],
+        telegram_chat_id: chatIdForUpdate,
+        telegram_message_ids: messageIdsForUpdate,
+        telegram_has_caption: hasCaptionForUpdate,
         telegram_sender_id: senderId,
         telegram_last_synced_at: new Date().toISOString(),
         internal_notes: fields.internalNotes || existingRow?.internal_notes || null,

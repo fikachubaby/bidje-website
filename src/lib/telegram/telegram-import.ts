@@ -12,7 +12,7 @@ const PROPERTY_CODE_RE =
   /(?:^|\n)\s*(?:property\s+)?code\s*[:：]\s*([A-Za-z0-9][A-Za-z0-9_-]*)/im;
 
 const MAPS_URL_RE =
-  /https?:\/\/(?:www\.)?(?:google\.com\/maps|maps\.app\.goo\.gl|goo\.gl\/maps)[^\s)\]>"']*/gi;
+  /https?:\/\/(?:www\.)?(?:maps\.google\.com|google\.com\/maps|maps\.app\.goo\.gl|goo\.gl\/maps|share\.google)[^\s)\]>"']*/gi;
 
 type FieldKey =
   | "address"
@@ -133,7 +133,7 @@ function extractLabeledValue(text: string, labels: string[]): string {
   const sorted = [...labels].sort((a, b) => b.length - a.length);
   for (const label of sorted) {
     const re = new RegExp(
-      `(?:^|\\n)\\s*${escapeRegExp(label)}\\s*[:：]\\s*(.*?)(?=\\n|$)`,
+      `(?:^|\\n)[ \\t\\u00A0]*${escapeRegExp(label)}[ \\t\\u00A0]*[:：][ \\t\\u00A0]*(.*?)(?=\\r?\\n|$)`,
       "i"
     );
     const match = text.match(re);

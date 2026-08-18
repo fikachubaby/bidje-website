@@ -281,6 +281,6 @@ export async function uploadTelegramPhotoToStorage(
  */
 export function extractGoogleMapsUrl(text: string): string | null {
     if (!text) return null;
-    const match = text.match(/https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps|(?:www\.)?google\.com\/maps)[^\s\n]+/i);
+    const match = text.match(/https?:\/\/(?:maps\.google\.com|maps\.app\.goo\.gl|goo\.gl\/maps|share\.google|(?:www\.)?google\.com\/maps)[^\s\n]+/i);
     return match ? match[0].trim() : null;
 }
