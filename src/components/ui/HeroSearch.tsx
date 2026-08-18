@@ -14,49 +14,8 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-
-const MALAYSIAN_STATES = [
-  "Johor",
-  "Kedah",
-  "Kelantan",
-  "Melaka",
-  "Negeri Sembilan",
-  "Pahang",
-  "Pulau Pinang",
-  "Perak",
-  "Perlis",
-  "Sabah",
-  "Sarawak",
-  "Selangor",
-  "Terengganu",
-  "Kuala Lumpur",
-  "Labuan",
-  "Putrajaya",
-];
-
-const STATE_DISTRICTS: Record<string, string[]> = {
-  Johor: ["Johor Bahru", "Batu Pahat", "Kluang", "Kulai", "Muar", "Segamat", "Pontian", "Kota Tinggi", "Mersing", "Tangkak"],
-  Kedah: ["Alor Setar", "Sungai Petani", "Kulim", "Langkawi", "Baling", "Bandar Baharu", "Kota Setar", "Kubang Pasu", "Kuala Muda", "Padang Terap", "Pendang", "Pokok Sena", "Sik", "Yan"],
-  Kelantan: ["Kota Bharu", "Pasir Mas", "Tumpat", "Bachok", "Pasir Puteh", "Machang", "Tanah Merah", "Jeli", "Kuala Krai", "Gua Musang"],
-  Melaka: ["Melaka Tengah", "Alor Gajah", "Jasin"],
-  "Negeri Sembilan": ["Seremban", "Port Dickson", "Rembau", "Tampin", "Kuala Pilah", "Jelebu", "Jempol"],
-  Pahang: ["Kuantan", "Temerloh", "Bentong", "Raub", "Cameron Highlands", "Lipis", "Jerantut", "Maran", "Bera", "Rompin", "Pekan"],
-  "Pulau Pinang": ["George Town", "Butterworth", "Bukit Mertajam", "Bayan Lepas", "Seberang Perai", "Barat Daya", "Timur Laut"],
-  Perak: ["Ipoh", "Taiping", "Teluk Intan", "Manjung", "Kuala Kangsar", "Kampar", "Kerian", "Kinta", "Perak Tengah"],
-  Perlis: ["Kangar", "Arau", "Padang Besar"],
-  Sabah: ["Kota Kinabalu", "Sandakan", "Tawau", "Lahad Datu", "Keningau", "Kudat", "Beaufort", "Papar", "Penampang", "Tuaran", "Ranau", "Semporna"],
-  Sarawak: ["Kuching", "Miri", "Sibu", "Bintulu", "Sarikei", "Sri Aman", "Betong", "Mukah", "Kapit", "Limbang", "Samarahan", "Serian"],
-  Selangor: ["Gombak", "Hulu Langat", "Hulu Selangor", "Klang", "Kuala Langat", "Kuala Selangor", "Petaling", "Sabak Bernam", "Sepang"],
-  Terengganu: ["Kuala Terengganu", "Kemaman", "Dungun", "Marang", "Hulu Terengganu", "Besut", "Setiu"],
-  "Kuala Lumpur": ["Wangsa Maju", "Setiawangsa", "Cheras", "Kepong", "Segambut", "Setapak", "Bukit Bintang", "Titiwangsa", "Bangsar", "Mont Kiara", "Bukit Jalil", "Lembah Pantai", "Bandar Tun Razak", "Seputeh", "Sentul", "Brickfields", "Damansara", "Ampang", "Sri Petaling", "OUG"],
-  Labuan: ["Victoria", "Bukit Kuda", "Layang-Layangan", "Rancha-Rancha"],
-  Putrajaya: [
-    "Presint 1", "Presint 2", "Presint 3", "Presint 4", "Presint 5",
-    "Presint 6", "Presint 7", "Presint 8", "Presint 9", "Presint 10",
-    "Presint 11", "Presint 12", "Presint 13", "Presint 14", "Presint 15",
-    "Presint 16", "Presint 17", "Presint 18", "Presint 19", "Presint 20"
-  ],
-};
+import { PROPERTY_TYPES } from "@/types/property";
+import { MALAYSIAN_STATES, STATE_DISTRICTS } from "@/constants/locations";
 
 function formatPrice(value: string) {
   const digits = value.replace(/\D/g, "");
@@ -77,18 +36,16 @@ const priceInputClassName =
 export default function HeroSearch() {
   const [state, setState] = useState("");
   const [district, setDistrict] = useState("");
-  const [category, setCategory] = useState("");
+  const [propertyType, setPropertyType] = useState("");
   const [minPriceDisplay, setMinPriceDisplay] = useState("");
   const [maxPriceDisplay, setMaxPriceDisplay] = useState("");
 
   // Advanced filter states
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [propertyType, setPropertyType] = useState("");
   const [bedrooms, setBedrooms] = useState("");
   const [bathrooms, setBathrooms] = useState("");
   const [tenure, setTenure] = useState("");
   const [bumiStatus, setBumiStatus] = useState("");
-  const [urgentSale, setUrgentSale] = useState(false);
   const [sorting, setSorting] = useState("latest");
 
   const districts = useMemo(() => {
@@ -213,25 +170,24 @@ export default function HeroSearch() {
                   </div>
                 </div>
 
-                {/* Property Category / Type Filter */}
+                {/* Property Type Filter (Replaces Category) */}
                 <div className="relative rounded-2xl bg-neutral-50/50 p-4 border border-neutral-200">
                   <div className="mb-2 flex items-center gap-2">
                     <House className="h-4 w-4 text-neutral-500" />
-                    <span className="text-xs font-black uppercase tracking-wider text-neutral-500">Category</span>
+                    <span className="text-xs font-black uppercase tracking-wider text-neutral-500">Property Type</span>
                   </div>
                   <div className="relative">
                     <select
-                      name="category"
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      aria-label="Select category"
+                      name="property_type"
+                      value={propertyType}
+                      onChange={(e) => setPropertyType(e.target.value)}
+                      aria-label="Select property type"
                       className={selectClassName}
                     >
-                      <option value="">All Categories</option>
-                      <option value="residential">Residential</option>
-                      <option value="commercial">Commercial</option>
-                      <option value="land">Land</option>
-                      <option value="industrial">Industrial</option>
+                      <option value="">All Property Types</option>
+                      {PROPERTY_TYPES.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
                     </select>
                     <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-neutral-500" />
                   </div>
@@ -293,27 +249,7 @@ export default function HeroSearch() {
 
               {/* Advanced Collapsible Filters Panel (Fully Server-Driven via hidden/named query inputs) */}
               {showAdvanced && (
-                <div className="mt-6 border-t border-neutral-200 pt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 animate-fadeIn">
-
-                  {/* Property Type Dropdown */}
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1.5">Property Type</label>
-                    <select
-                      name="property_type"
-                      value={propertyType}
-                      onChange={(e) => setPropertyType(e.target.value)}
-                      className="w-full rounded-xl border border-neutral-300 bg-white p-2.5 text-xs font-bold text-black outline-none focus:border-black"
-                    >
-                      <option value="">All Types</option>
-                      <option value="Condominium">Condominium</option>
-                      <option value="Terrace House">Terrace House</option>
-                      <option value="Bungalow">Bungalow</option>
-                      <option value="Semi-D">Semi-D</option>
-                      <option value="Apartment">Apartment</option>
-                      <option value="SoHo">SoHo</option>
-                      <option value="Shop Lot">Shop Lot</option>
-                    </select>
-                  </div>
+                <div className="mt-6 border-t border-neutral-200 pt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 animate-fadeIn">
 
                   {/* Bedrooms */}
                   <div>

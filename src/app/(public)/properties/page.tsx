@@ -10,6 +10,7 @@ interface PropertiesPageProps {
         state?: string;
         district?: string;
         category?: string;
+        property_type?: string;
         minPrice?: string;
         maxPrice?: string;
         tag?: string;
@@ -21,14 +22,29 @@ interface PropertiesPageProps {
 export default async function PropertiesPage({ searchParams }: PropertiesPageProps) {
     const params = await searchParams;
     const currentPage = params.page ? parseInt(params.page, 10) : 1;
+    const resolvedPropertyType = params.property_type || params.category;
 
     const { properties, totalCount, totalPages } = await searchProperties({
-        location: params.state,
-        category: params.category,
+        location: params.district || params.state,
+        property_type: resolvedPropertyType,
+        minPrice: params.minPrice ? Number(params.minPrice) : undefined,
+        maxPrice: params.maxPrice ? Number(params.maxPrice) : undefined,
         sortBy: params.sort,
         page: currentPage,
         limit: 9,
     });
+
+    // Build the dynamic subtitle suffix based on selected filters
+    let listingSubtitle = "";
+    if (params.district && params.state) {
+        listingSubtitle = ` in ${params.district}, ${params.state}`;
+    } else if (params.state) {
+        listingSubtitle = ` in ${params.state}`;
+    }
+
+    if (resolvedPropertyType) {
+        listingSubtitle += ` of ${resolvedPropertyType}`;
+    }
 
     return (
         <main className="min-h-screen bg-white text-black">
@@ -39,25 +55,28 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
                     {/* Header */}
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <h1 className="text-3xl font-extrabold text-black">{t("Properties.propertyListing")}</h1>
+                            <h1 className="text-3xl font-extrabold text-black">
+                                {t("Properties.propertyListing")}
+                                <span className="font-normal text-neutral-700">{listingSubtitle}</span>
+                            </h1>
                             <p className="mt-1 text-sm text-neutral-600">
                                 Showing {properties.length} of {totalCount} available properties.
                             </p>
                         </div>
                     </div>
 
-                    {/* Reusable State, District, & Category Search Filter */}
+                    {/* Reusable State, District, & Property Type Search Filter */}
                     <PropertySearchFilter
                         initialState={params.state}
                         initialDistrict={params.district}
-                        initialCategory={params.category}
+                        initialPropertyType={resolvedPropertyType}
                         initialSort={params.sort}
                     />
 
                     {/* Results Grid */}
                     {properties.length === 0 ? (
                         <div className="mt-10 rounded-2xl border border-neutral-200 bg-white p-12 text-center shadow-sm">
-                            <p className="text-lg font-semibold">No properties found</p>
+                            <p className="text-lg font-semibold">No properties found matching your selection.</p>
                         </div>
                     ) : (
                         <>

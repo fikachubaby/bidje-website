@@ -11,6 +11,7 @@ const PROPERTY_SELECT = "*, property_images(image_url, is_cover)";
 export interface PropertySearchParams {
     location?: string;
     category?: PropertyCategory | string;
+    property_type?: string;
     minPrice?: number;
     maxPrice?: number;
     tag?: string;
@@ -84,20 +85,30 @@ export async function searchProperties(
         .select(PROPERTY_SELECT, { count: "exact" })
         .eq("status", "Published");
 
-    if (params.location) {
+    if (params.location && params.location.trim() !== "") {
         builder = builder.or(
             `state.ilike.%${params.location}%,district.ilike.%${params.location}%,full_address.ilike.%${params.location}%`
         );
     }
 
-    if (params.category) {
+    // Handle property_type filter independently and cleanly
+    if (params.property_type && params.property_type.trim() !== "") {
+        builder = builder.ilike("property_type", `%${params.property_type}%`);
+    }
+
+    // Handle category filter independently if property_type isn't the sole filter intent
+    if (params.category && params.category.trim() !== "") {
         builder = builder.or(
             `category.ilike.%${params.category}%,property_type.ilike.%${params.category}%`
         );
     }
 
-    if (params.minPrice !== undefined) builder = builder.gte("asking_price", params.minPrice);
-    if (params.maxPrice !== undefined) builder = builder.lte("asking_price", params.maxPrice);
+    if (params.minPrice !== undefined && !isNaN(Number(params.minPrice))) {
+        builder = builder.gte("asking_price", Number(params.minPrice));
+    }
+    if (params.maxPrice !== undefined && !isNaN(Number(params.maxPrice))) {
+        builder = builder.lte("asking_price", Number(params.maxPrice));
+    }
     if (params.bedrooms !== undefined) builder = builder.gte("bedrooms", params.bedrooms);
     if (params.tag) builder = builder.contains("tags", [params.tag]);
     if (params.isFeatured) builder = builder.eq("is_featured", true);

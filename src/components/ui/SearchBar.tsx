@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
-import type { PropertyCategory } from "@/types/property";
+import { PROPERTY_TYPES } from "@/types/property";
 import { cn } from "@/lib/utils";
 
 const locations = [
@@ -17,13 +17,9 @@ const locations = [
   { value: "Damansara", label: "Damansara" },
 ];
 
-const propertyTypes: { value: PropertyCategory | ""; label: string }[] = [
-  { value: "", label: "Any property" },
-  { value: "land", label: "Land" },
-  { value: "landed", label: "Landed" },
-  { value: "high-rise", label: "High Rise" },
-  { value: "commercial", label: "Commercial" },
-  { value: "auction", label: "Auction" },
+const propertyTypes = [
+  { value: "", label: "All Property Types" },
+  ...PROPERTY_TYPES.map((type) => ({ value: type, label: type })),
 ];
 
 const priceRanges = [
@@ -88,14 +84,15 @@ function SearchField({
 export function SearchBar() {
   const router = useRouter();
   const [location, setLocation] = useState("");
-  const [category, setCategory] = useState<PropertyCategory | "">("");
+  const [propertyType, setPropertyType] = useState("");
   const [priceRange, setPriceRange] = useState("");
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     const params = new URLSearchParams();
-    if (location) params.set("location", location);
-    if (category) params.set("category", category);
+
+    if (location.trim()) params.set("location", location);
+    if (propertyType.trim()) params.set("property_type", propertyType);
 
     const selectedRange = priceRanges.find((range) => range.value === priceRange);
     if (selectedRange?.min) params.set("minPrice", selectedRange.min);
@@ -122,8 +119,8 @@ export function SearchBar() {
             <SearchField
               id="property-type"
               label="Property Type"
-              value={category}
-              onChange={(value) => setCategory(value as PropertyCategory | "")}
+              value={propertyType}
+              onChange={setPropertyType}
               options={propertyTypes}
             />
             <SearchField
