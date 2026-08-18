@@ -94,7 +94,9 @@ export async function POST(request: Request) {
 
     const { data: existingRow } = await supabaseAdmin
         .from("properties")
-        .select("id, telegram_message_ids, sync_origin, status")
+        .select(
+            "id, telegram_message_ids, sync_origin, status, title, asking_price, full_address, state, district, property_type, tenure, bumi_status, land_size, built_up_size, bedrooms, bathrooms, description, google_maps_url, internal_notes"
+        )
         .eq("telegram_code", code)
         .maybeSingle();
 
@@ -108,7 +110,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ ok: true, code, action: "status-updated" });
     }
 
-    const isDetailsMessage = !msg.photo || msg.photo.length === 0 || text.includes("Property Details");
+    const isDetailsMessage = text.includes("Property Details");
     if (!isDetailsMessage) {
         return NextResponse.json({ ok: true, code, action: "photo-only-skipped" });
     }
@@ -123,27 +125,29 @@ export async function POST(request: Request) {
     const fields = extractFieldsFromText(text, code);
 
     const propertyPayload = {
-        title: fields.title,
-        asking_price: fields.price ?? 0,
-        full_address: fields.address || "Address Pending",
-        state: fields.state || "Unknown",
-        district: fields.district || null,
-        property_type: fields.propertyType || "Residential",
-        tenure: fields.tenure === "Freehold" ? "Freehold" : "Leasehold",
-        bumi_status: ["Bumi", "Non Bumi"].includes(fields.bumiStatus) ? fields.bumiStatus : "Unknown",
-        land_size: fields.landSize || null,
-        built_up_size: fields.builtUp || null,
-        bedrooms: fields.bedrooms,
-        bathrooms: fields.bathrooms,
-        description: fields.description || null,
-        google_maps_url: fields.mapsUrl || null,
+        title: fields.title || existingRow?.title,
+        asking_price: fields.price ?? existingRow?.asking_price ?? 0,
+        full_address: fields.address || existingRow?.full_address || "Address Pending",
+        state: fields.state || existingRow?.state || "Unknown",
+        district: fields.district || existingRow?.district || null,
+        property_type: fields.propertyType || existingRow?.property_type || "Residential",
+        tenure: fields.tenure || existingRow?.tenure || "Leasehold",
+        bumi_status: ["Bumi", "Non Bumi"].includes(fields.bumiStatus)
+            ? fields.bumiStatus
+            : existingRow?.bumi_status || "Unknown",
+        land_size: fields.landSize || existingRow?.land_size || null,
+        built_up_size: fields.builtUp || existingRow?.built_up_size || null,
+        bedrooms: fields.bedrooms ?? existingRow?.bedrooms ?? null,
+        bathrooms: fields.bathrooms ?? existingRow?.bathrooms ?? null,
+        description: fields.description || existingRow?.description || null,
+        google_maps_url: fields.mapsUrl || existingRow?.google_maps_url || null,
         is_address_hidden: true,
         telegram_code: code,
         telegram_chat_id: String(msg.chat.id),
         telegram_message_ids: [msg.message_id],
         telegram_sender_id: senderId,
         telegram_last_synced_at: new Date().toISOString(),
-        internal_notes: fields.internalNotes,
+        internal_notes: fields.internalNotes || existingRow?.internal_notes || null,
         ...(existingRow ? {} : { status: "Published" }),
     };
 

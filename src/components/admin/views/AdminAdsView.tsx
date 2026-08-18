@@ -247,7 +247,8 @@ export function AdminAdsView() {
                             {[
                                 { slug: "privacy-policy", label: "Privacy Policy" },
                                 { slug: "terms-of-service", label: "Terms of Service" },
-                                { slug: "cookie-policy", label: "Cookie Policy" },
+                                { slug: "payment-policy", label: "Payment Policy" },
+                                { slug: "refund-cancel-policy", label: "Refund & Cancellation Policy" },
                             ].map((tab) => (
                                 <button
                                     key={tab.slug}

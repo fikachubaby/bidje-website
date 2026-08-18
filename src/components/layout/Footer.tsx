@@ -11,8 +11,10 @@ const footerLinks = {
     { href: "/properties?category=auction", label: "Auction" },
   ],
   legal: [
-    { href: "/privacy", label: "Privacy Policy" },
-    { href: "/terms", label: "Terms of Service" },
+    { href: "/policies/privacy", label: "Privacy Policy" },
+    { href: "/policies/terms", label: "Terms of Service" },
+    { href: "/policies/payment-policy", label: "Payment Policy" },
+    { href: "/policies/refund-cancel-policy", label: "Refund & Cancellation Policy" },
   ],
 };
 

@@ -1,4 +1,4 @@
-export type PolicySlug = "privacy-policy" | "terms-of-service" | "cookie-policy";
+export type PolicySlug = "privacy-policy" | "terms-of-service" | "payment-policy" | "refund-cancel-policy";
 
 export interface PolicyDocument {
     id: string;
