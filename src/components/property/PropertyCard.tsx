@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { Bath, BedDouble, MapPin, ImageOff } from "lucide-react";
@@ -8,6 +10,7 @@ import { formatArea, formatCategory, formatPrice } from "@/lib/utils";
 
 interface PropertyCardProps {
   property: Property;
+  searchString?: string; // Accept searchString directly from the server/parent component
 }
 
 function getRatingLabel(score: number): string {
@@ -16,7 +19,11 @@ function getRatingLabel(score: number): string {
   return "Review Carefully";
 }
 
-export function PropertyCard({ property }: PropertyCardProps) {
+export function PropertyCard({ property, searchString = "" }: PropertyCardProps) {
+  // Build URLs safely using the passed search string
+  const detailUrl = searchString ? `/properties/${property.id}?${searchString}` : `/properties/${property.id}`;
+  const makeOfferUrl = searchString ? `/properties/${property.id}/make-offer?${searchString}` : `/properties/${property.id}/make-offer`;
+
   const hasValidImages =
     (property.imageUrl && property.imageUrl.trim() !== "") ||
     (Array.isArray(property.images) && property.images.length > 0 && property.images[0]?.trim() !== "");
@@ -31,7 +38,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
   return (
     <article className="group flex flex-col overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-[0_10px_35px_rgba(0,0,0,0.07)] transition duration-300 hover:-translate-y-1.5 hover:border-[#ffd400] hover:shadow-[0_20px_45px_rgba(0,0,0,0.12)]">
       <div className="relative">
-        <Link href={`/properties/${property.id}`} className="block">
+        <Link href={detailUrl} className="block">
           <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
             {hasValidImages ? (
               <Image
@@ -42,7 +49,6 @@ export function PropertyCard({ property }: PropertyCardProps) {
                 sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
               />
             ) : (
-              /* Custom "No Image Available" State */
               <div className="flex h-full w-full flex-col items-center justify-center bg-neutral-100 text-neutral-400 transition duration-700 group-hover:scale-105">
                 <ImageOff className="h-10 w-10 stroke-1 mb-2" />
                 <span className="text-xs font-bold uppercase tracking-wider">No Image Available</span>
@@ -79,7 +85,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
             {formatPrice(property.price, property.currency)}
           </p>
 
-          <Link href={`/properties/${property.id}`} className="block">
+          <Link href={detailUrl} className="block">
             <h3 className="mt-3 line-clamp-1 text-lg font-black text-black transition-colors group-hover:text-neutral-800">
               {property.title}
             </h3>
@@ -137,7 +143,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
         {/* Action Button */}
         <div className="mt-5">
           <Link
-            href={`/properties/${property.id}/make-offer`}
+            href={makeOfferUrl}
             className="block w-full rounded-xl border-2 border-black bg-[#ffd400] py-3 text-center text-sm font-black shadow-[3px_3px_0_0_#000] transition hover:-translate-y-0.5 hover:bg-[#ffe24b]"
           >
             Submit Offer

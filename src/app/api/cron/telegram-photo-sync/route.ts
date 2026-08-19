@@ -51,7 +51,15 @@ export async function GET(request: Request) {
             .eq("telegram_code", code)
             .maybeSingle();
 
-        if (!property) continue;
+        if (!property) {
+            const ids = photos.map((p) => p.id);
+            await supabaseAdmin
+                .from("telegram_pending_photos")
+                .update({ needs_manual_review: true })
+                .in("id", ids);
+            console.warn(`Cron: no property found for code ${code}, flagged ${ids.length} photo(s) for review.`);
+            continue;
+        }
 
         const { count: existingCount } = await supabaseAdmin
             .from("property_images")
@@ -73,6 +81,17 @@ export async function GET(request: Request) {
             }
         }
     }
+
+    // Flag anything that's been sitting unresolved with no code at all for
+    // over an hour — likely an orphaned photo whose details message never
+    // arrived, or arrived with a mismatched/mistyped code.
+    await supabaseAdmin
+        .from("telegram_pending_photos")
+        .update({ needs_manual_review: true })
+        .eq("resolved", false)
+        .is("telegram_code", null)
+        .eq("needs_manual_review", false)
+        .lt("created_at", new Date(Date.now() - 60 * 60 * 1000).toISOString());
 
     await supabaseAdmin
         .from("telegram_pending_photos")

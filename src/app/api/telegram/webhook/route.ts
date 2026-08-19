@@ -4,7 +4,6 @@ import {
     detectPropertyCode,
     extractFieldsFromText,
 } from "@/lib/telegram/telegram-import";
-import { uploadTelegramPhotoToStorage } from "@/lib/telegram/telegram-bot";
 
 interface TelegramUpdate {
     message?: TgMessage;
@@ -32,168 +31,183 @@ const ALLOWED_SENDER_IDS = new Set(
 );
 
 export async function POST(request: Request) {
-    const secretHeader = request.headers.get("x-telegram-bot-api-secret-token");
-    if (secretHeader !== process.env.TELEGRAM_WEBHOOK_SECRET) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    try {
+        const secretHeader = request.headers.get("x-telegram-bot-api-secret-token");
+        if (secretHeader !== process.env.TELEGRAM_WEBHOOK_SECRET) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
 
-    const update: TelegramUpdate = await request.json();
-    const msg =
-        update.message ?? update.edited_message ?? update.channel_post ?? update.edited_channel_post;
+        const update: TelegramUpdate = await request.json();
+        const msg =
+            update.message ?? update.edited_message ?? update.channel_post ?? update.edited_channel_post;
 
-    if (!msg) {
-        return NextResponse.json({ ok: true });
-    }
+        if (!msg) {
+            return NextResponse.json({ ok: true });
+        }
 
-    const isEdit = Boolean(update.edited_message || update.edited_channel_post);
+        const isEdit = Boolean(update.edited_message || update.edited_channel_post);
 
-    const expectedChatId = process.env.TELEGRAM_GROUP_CHAT_ID;
-    if (String(msg.chat.id) !== expectedChatId) {
-        console.warn(`[telegram-webhook] Chat ID mismatch: got ${msg.chat.id}, expected ${expectedChatId}`);
-        return NextResponse.json({ ok: true });
-    }
+        const expectedChatId = process.env.TELEGRAM_GROUP_CHAT_ID;
+        if (String(msg.chat.id) !== expectedChatId) {
+            console.warn(`[telegram-webhook] Chat ID mismatch: got ${msg.chat.id}, expected ${expectedChatId}`);
+            return NextResponse.json({ ok: true });
+        }
 
-    const senderId = msg.from?.id
-        ? String(msg.from.id)
-        : msg.sender_chat?.id
-            ? String(msg.sender_chat.id)
-            : null;
+        const senderId = msg.from?.id
+            ? String(msg.from.id)
+            : msg.sender_chat?.id
+                ? String(msg.sender_chat.id)
+                : null;
 
-    if (!senderId || !ALLOWED_SENDER_IDS.has(senderId)) {
-        console.warn(`[telegram-webhook] Rejected message from unlisted sender: ${senderId ?? "unknown"}`);
-        return NextResponse.json({ ok: true });
-    }
+        if (!senderId || !ALLOWED_SENDER_IDS.has(senderId)) {
+            console.warn(`[telegram-webhook] Rejected message from unlisted sender: ${senderId ?? "unknown"}`);
+            return NextResponse.json({ ok: true });
+        }
 
-    const text = msg.caption ?? msg.text ?? "";
-    const code = text ? detectPropertyCode(text) : null;
+        const text = msg.caption ?? msg.text ?? "";
+        const code = text ? detectPropertyCode(text) : null;
 
-    if (msg.photo && msg.photo.length > 0) {
-        const largest = msg.photo[msg.photo.length - 1];
-        await handleIncomingPhoto({
-            fileId: largest.file_id,
-            messageId: msg.message_id,
-            chatId: String(msg.chat.id),
-            mediaGroupId: msg.media_group_id ?? null,
-            code,
-        });
+        if (msg.photo && msg.photo.length > 0) {
+            const largest = msg.photo[msg.photo.length - 1];
+            await bufferIncomingPhoto({
+                fileId: largest.file_id,
+                messageId: msg.message_id,
+                chatId: String(msg.chat.id),
+                mediaGroupId: msg.media_group_id ?? null,
+                code,
+            });
+
+            if (!code) {
+                return NextResponse.json({ ok: true, action: "photo-buffered" });
+            }
+        }
+
+        if (!text.trim() && !msg.photo) {
+            return NextResponse.json({ ok: true });
+        }
 
         if (!code) {
-            return NextResponse.json({ ok: true, action: "photo-buffered" });
+            return NextResponse.json({ ok: true });
         }
-    }
 
-    if (!text.trim() && !msg.photo) {
-        return NextResponse.json({ ok: true });
-    }
+        const soldMatch = /^\[(SOLD|ARCHIVED)\]/i.exec(text.trim());
+        const isDetailsMessage = text.includes("Property Details");
 
-    if (!code) {
-        return NextResponse.json({ ok: true });
-    }
+        if (!isDetailsMessage && (!msg.photo || msg.photo.length === 0)) {
+            return NextResponse.json({ ok: true, code, action: "ignored-no-details" });
+        }
 
-    const soldMatch = /^\[(SOLD|ARCHIVED)\]/i.exec(text.trim());
-
-    const isDetailsMessage = text.includes("Property Details");
-    if (!isDetailsMessage && (!msg.photo || msg.photo.length === 0)) {
-        return NextResponse.json({ ok: true, code, action: "ignored-no-details" });
-    }
-
-    const { data: existingRow } = await supabaseAdmin
-        .from("properties")
-        .select(
-            "id, telegram_message_ids, telegram_chat_id, telegram_has_caption, sync_origin, status, title, asking_price, full_address, state, district, property_type, tenure, bumi_status, land_size, built_up_size, bedrooms, bathrooms, description, google_maps_url, internal_notes"
-        )
-        .eq("telegram_code", code)
-        .maybeSingle();
-
-    if (soldMatch && existingRow) {
-        const newStatus = soldMatch[1].toUpperCase() === "SOLD" ? "Sold" : "Archived";
-        const { error } = await supabaseAdmin
+        const { data: existingRow } = await supabaseAdmin
             .from("properties")
-            .update({ status: newStatus })
-            .eq("id", existingRow.id);
-        if (error) throw error;
-        return NextResponse.json({ ok: true, code, action: "status-updated" });
+            .select(
+                "id, telegram_message_ids, telegram_chat_id, telegram_has_caption, sync_origin, status, title, asking_price, full_address, state, district, property_type, tenure, bumi_status, land_size, built_up_size, bedrooms, bathrooms, description, google_maps_url, internal_notes"
+            )
+            .eq("telegram_code", code)
+            .maybeSingle();
+
+        if (soldMatch && existingRow) {
+            const newStatus = soldMatch[1].toUpperCase() === "SOLD" ? "Sold" : "Archived";
+            const { error } = await supabaseAdmin
+                .from("properties")
+                .update({ status: newStatus })
+                .eq("id", existingRow.id);
+            if (error) {
+                console.error(`[telegram-webhook] status-update failed for code ${code}:`, error);
+                return NextResponse.json({ ok: true, code, action: "status-update-failed" });
+            }
+            return NextResponse.json({ ok: true, code, action: "status-updated" });
+        }
+
+        if (!isDetailsMessage) {
+            return NextResponse.json({ ok: true, code, action: "photo-only-skipped" });
+        }
+
+        if (
+            existingRow?.sync_origin === "website" &&
+            existingRow.telegram_message_ids?.includes(msg.message_id)
+        ) {
+            return NextResponse.json({ ok: true });
+        }
+
+        const fields = extractFieldsFromText(text, code);
+
+        const isPhotoMessage = Boolean(msg.photo && msg.photo.length > 0);
+        const messageIdsForUpdate = isPhotoMessage
+            ? [msg.message_id]
+            : existingRow?.telegram_message_ids ?? [msg.message_id];
+        const hasCaptionForUpdate = isPhotoMessage
+            ? true
+            : existingRow?.telegram_has_caption ?? false;
+        const chatIdForUpdate = isPhotoMessage || !existingRow
+            ? String(msg.chat.id)
+            : existingRow.telegram_chat_id ?? String(msg.chat.id);
+
+        const propertyPayload = {
+            title: fields.title || existingRow?.title || `Property ${code}`,
+            asking_price: fields.price ?? existingRow?.asking_price ?? 0,
+            full_address: fields.address || existingRow?.full_address || "Address Pending",
+            state: fields.state || existingRow?.state || "Unknown",
+            district: fields.district || existingRow?.district || null,
+            property_type: fields.propertyType || existingRow?.property_type || "Residential",
+            tenure: fields.tenure || existingRow?.tenure || "Leasehold",
+            bumi_status: ["Bumi", "Non Bumi"].includes(fields.bumiStatus)
+                ? fields.bumiStatus
+                : existingRow?.bumi_status || "Unknown",
+            land_size: fields.landSize || existingRow?.land_size || null,
+            built_up_size: fields.builtUp || existingRow?.built_up_size || null,
+            bedrooms: fields.bedrooms ?? existingRow?.bedrooms ?? null,
+            bathrooms: fields.bathrooms ?? existingRow?.bathrooms ?? null,
+            description: fields.description || existingRow?.description || null,
+            google_maps_url: fields.mapsUrl || existingRow?.google_maps_url || null,
+            is_address_hidden: true,
+            telegram_code: code,
+            telegram_chat_id: chatIdForUpdate,
+            telegram_message_ids: messageIdsForUpdate,
+            telegram_has_caption: hasCaptionForUpdate,
+            telegram_sender_id: senderId,
+            telegram_last_synced_at: new Date().toISOString(),
+            internal_notes: fields.internalNotes || existingRow?.internal_notes || null,
+        };
+
+        let propertyId: string;
+
+        if (existingRow) {
+            const { error } = await supabaseAdmin
+                .from("properties")
+                .update(propertyPayload)
+                .eq("id", existingRow.id);
+            if (error) {
+                console.error(`[telegram-webhook] update failed for code ${code}:`, error);
+                return NextResponse.json({ ok: true, code, action: "update-failed", error: error.message });
+            }
+            propertyId = existingRow.id;
+        } else {
+            const { data: upserted, error } = await supabaseAdmin
+                .from("properties")
+                .upsert(
+                    { ...propertyPayload, status: "Published" },
+                    { onConflict: "telegram_code" }
+                )
+                .select("id")
+                .single();
+            if (error) {
+                console.error(`[telegram-webhook] insert/upsert failed for code ${code}:`, error);
+                return NextResponse.json({ ok: true, code, action: "insert-failed", error: error.message });
+            }
+            propertyId = upserted.id;
+        }
+
+        await linkPendingPhotosToCode(code, msg.media_group_id ?? null);
+
+        return NextResponse.json({ ok: true, code, action: existingRow ? "updated" : "created", isEdit, propertyId });
+    } catch (err) {
+        console.error("[telegram-webhook] UNCAUGHT ERROR:", err);
+        return NextResponse.json({ ok: true, action: "error-logged" });
     }
-
-    if (!isDetailsMessage) {
-        return NextResponse.json({ ok: true, code, action: "photo-only-skipped" });
-    }
-
-    if (
-        existingRow?.sync_origin === "website" &&
-        existingRow.telegram_message_ids?.includes(msg.message_id)
-    ) {
-        return NextResponse.json({ ok: true });
-    }
-
-    const fields = extractFieldsFromText(text, code);
-
-    // A text-only follow-up (no photo attached to THIS message) should never
-    // overwrite the message-id link used for future caption edits — that link
-    // must stay pointed at the original photo message.
-    const isPhotoMessage = Boolean(msg.photo && msg.photo.length > 0);
-    const messageIdsForUpdate = isPhotoMessage
-        ? [msg.message_id]
-        : existingRow?.telegram_message_ids ?? [msg.message_id];
-    const hasCaptionForUpdate = isPhotoMessage
-        ? true
-        : existingRow?.telegram_has_caption ?? false;
-    const chatIdForUpdate = isPhotoMessage || !existingRow
-        ? String(msg.chat.id)
-        : existingRow.telegram_chat_id ?? String(msg.chat.id);
-
-    const propertyPayload = {
-        title: fields.title || existingRow?.title,
-        asking_price: fields.price ?? existingRow?.asking_price ?? 0,
-        full_address: fields.address || existingRow?.full_address || "Address Pending",
-        state: fields.state || existingRow?.state || "Unknown",
-        district: fields.district || existingRow?.district || null,
-        property_type: fields.propertyType || existingRow?.property_type || "Residential",
-        tenure: fields.tenure || existingRow?.tenure || "Leasehold",
-        bumi_status: ["Bumi", "Non Bumi"].includes(fields.bumiStatus)
-            ? fields.bumiStatus
-            : existingRow?.bumi_status || "Unknown",
-        land_size: fields.landSize || existingRow?.land_size || null,
-        built_up_size: fields.builtUp || existingRow?.built_up_size || null,
-        bedrooms: fields.bedrooms ?? existingRow?.bedrooms ?? null,
-        bathrooms: fields.bathrooms ?? existingRow?.bathrooms ?? null,
-        description: fields.description || existingRow?.description || null,
-        google_maps_url: fields.mapsUrl || existingRow?.google_maps_url || null,
-        is_address_hidden: true,
-        telegram_code: code,
-        telegram_chat_id: chatIdForUpdate,
-        telegram_message_ids: messageIdsForUpdate,
-        telegram_has_caption: hasCaptionForUpdate,
-        telegram_sender_id: senderId,
-        telegram_last_synced_at: new Date().toISOString(),
-        internal_notes: fields.internalNotes || existingRow?.internal_notes || null,
-        ...(existingRow ? {} : { status: "Published" }),
-    };
-
-    let propertyId: string;
-    if (existingRow) {
-        const { error } = await supabaseAdmin
-            .from("properties")
-            .update(propertyPayload)
-            .eq("id", existingRow.id);
-        if (error) throw error;
-        propertyId = existingRow.id;
-    } else {
-        const { data: inserted, error } = await supabaseAdmin
-            .from("properties")
-            .insert(propertyPayload)
-            .select("id")
-            .single();
-        if (error) throw error;
-        propertyId = inserted.id;
-    }
-
-    await flushPendingPhotosForCode(code, propertyId);
-
-    return NextResponse.json({ ok: true, code, action: existingRow ? "updated" : "created", isEdit });
 }
 
-async function handleIncomingPhoto(params: {
+/** Buffer a photo reference only — no download, no storage upload. Fast and safe under load. */
+async function bufferIncomingPhoto(params: {
     fileId: string;
     messageId: number;
     chatId: string;
@@ -202,97 +216,38 @@ async function handleIncomingPhoto(params: {
 }) {
     const { fileId, messageId, chatId, mediaGroupId, code } = params;
 
-    const resolvedCode = code;
-    let needsManualReview = false;
-
-    if (resolvedCode) {
-        const { data: property } = await supabaseAdmin
-            .from("properties")
-            .select("id")
-            .eq("telegram_code", resolvedCode)
-            .maybeSingle();
-
-        if (property) {
-            const { count } = await supabaseAdmin
-                .from("property_images")
-                .select("id", { count: "exact", head: true })
-                .eq("property_id", property.id);
-            await uploadTelegramPhotoToStorage(property.id, fileId, count ?? 0);
-            return;
-        }
-    }
-
-    if (!resolvedCode && !mediaGroupId) {
-        const FALLBACK_WINDOW_MS = 10 * 60 * 1000;
-        const cutoff = new Date(Date.now() - FALLBACK_WINDOW_MS).toISOString();
-
-        const { data: recentProperty } = await supabaseAdmin
-            .from("properties")
-            .select("id, telegram_code")
-            .eq("telegram_chat_id", chatId)
-            .gte("telegram_last_synced_at", cutoff)
-            .order("telegram_last_synced_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-        if (recentProperty) {
-            const { count } = await supabaseAdmin
-                .from("property_images")
-                .select("id", { count: "exact", head: true })
-                .eq("property_id", recentProperty.id);
-            await uploadTelegramPhotoToStorage(recentProperty.id, fileId, count ?? 0);
-            console.warn(
-                `[telegram-webhook] Lone photo (message ${messageId}) had no code — ` +
-                `auto-linked via time-window fallback to ${recentProperty.telegram_code}.`
-            );
-            return;
-        }
-
-        needsManualReview = true;
-        console.error(
-            `[telegram-webhook] ORPHANED PHOTO flagged for manual review: message ${messageId} ` +
-            `in chat ${chatId}, file_id=${fileId}. No code, no album, no recent listing match.`
-        );
-    }
-
-    await supabaseAdmin.from("telegram_pending_photos").insert({
+    const { error } = await supabaseAdmin.from("telegram_pending_photos").insert({
         media_group_id: mediaGroupId,
         message_id: messageId,
         file_id: fileId,
         chat_id: chatId,
-        telegram_code: resolvedCode,
+        telegram_code: code,
         resolved: false,
-        needs_manual_review: needsManualReview,
+        needs_manual_review: false,
     });
+
+    if (error) {
+        console.error(`[telegram-webhook] failed to buffer photo (message ${messageId}):`, error);
+    }
 }
 
-/** Flush buffered photos strictly matching this code — no more "most recent property" guessing. */
-async function flushPendingPhotosForCode(code: string, propertyId: string) {
-    const { data: pending } = await supabaseAdmin
+/**
+ * When a code becomes known (via the caption message), backfill it onto any
+ * sibling photos from the same album that were buffered earlier with
+ * telegram_code = null (this happens when Telegram delivers non-caption
+ * album photos before the caption photo).
+ */
+async function linkPendingPhotosToCode(code: string, mediaGroupId: string | null) {
+    if (!mediaGroupId) return;
+
+    const { error } = await supabaseAdmin
         .from("telegram_pending_photos")
-        .select("id, file_id")
-        .eq("resolved", false)
-        .eq("telegram_code", code)
-        .order("created_at", { ascending: true });
+        .update({ telegram_code: code })
+        .eq("media_group_id", mediaGroupId)
+        .is("telegram_code", null)
+        .eq("resolved", false);
 
-    if (!pending || pending.length === 0) return;
-
-    const { count: existingCount } = await supabaseAdmin
-        .from("property_images")
-        .select("id", { count: "exact", head: true })
-        .eq("property_id", propertyId);
-
-    let order = existingCount ?? 0;
-    for (const photo of pending) {
-        try {
-            await uploadTelegramPhotoToStorage(propertyId, photo.file_id, order);
-            await supabaseAdmin
-                .from("telegram_pending_photos")
-                .update({ resolved: true })
-                .eq("id", photo.id);
-            order += 1;
-        } catch (err) {
-            console.error(`Failed to flush pending photo ${photo.id}:`, err);
-        }
+    if (error) {
+        console.error(`[telegram-webhook] failed to link pending photos for group ${mediaGroupId}:`, error);
     }
 }
