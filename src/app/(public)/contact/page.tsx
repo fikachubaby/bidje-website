@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Mail, Clock, AlertCircle, HelpCircle, Building2, Send, MessageSquare, CheckCircle2, MessageCircle, ShieldCheck } from "lucide-react";
+import { Mail, Clock, AlertCircle, HelpCircle, Building2, Send, MessageSquare, CheckCircle2, ShieldCheck } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 
 export default function ContactPage() {
@@ -34,26 +34,11 @@ export default function ContactPage() {
                         </p>
                     </div>
 
-                    {/* Quick Channels Bar (WhatsApp & Direct Email shortcut) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <a
-                            href="https://wa.me/601112345678?text=Hi%20Bidje%20admin,%20I%20need%20help%20with%20my%20account."
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="group flex items-center gap-4 rounded-2xl border-2 border-black bg-white p-5 shadow-[4px_4px_0_0_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#000] transition-all"
-                        >
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white border-2 border-black shadow-[2px_2px_0_0_#000]">
-                                <MessageCircle className="h-6 w-6" />
-                            </div>
-                            <div>
-                                <div className="text-xs font-black uppercase tracking-wider text-neutral-400">Instant Chat</div>
-                                <div className="text-base font-black text-neutral-900 group-hover:text-emerald-600 transition-colors">WhatsApp Admin</div>
-                            </div>
-                        </a>
-
+                    {/* Quick Channels Bar (Email Shortcut Banner) */}
+                    <div className="grid grid-cols-1 max-w-xl mx-auto">
                         <a
                             href="mailto:admin@bidje.com"
-                            className="group flex items-center gap-4 rounded-2xl border-2 border-black bg-white p-5 shadow-[4px_4px_0_0_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#000] transition-all"
+                            className="group flex items-center justify-center gap-4 rounded-2xl border-2 border-black bg-white p-5 shadow-[4px_4px_0_0_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#000] transition-all"
                         >
                             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#ffd400] text-black border-2 border-black shadow-[2px_2px_0_0_#000]">
                                 <Mail className="h-6 w-6" />
@@ -201,7 +186,7 @@ export default function ContactPage() {
                                 <h2 className="text-lg font-bold">Support Response Time</h2>
                             </div>
                             <p className="text-neutral-600 text-sm leading-relaxed">
-                                Our core team handles inquiries during standard Malaysian working hours. If you haven&apos;t received a response after <strong className="text-neutral-900">24 to 48 working hours</strong>, feel free to drop us a WhatsApp message.
+                                Our core team handles inquiries during standard Malaysian working hours. We aim to get back to all direct messages within <strong className="text-neutral-900">24 to 48 working hours</strong> via email.
                             </p>
                             <div className="pt-2 border-t border-neutral-100 flex items-center space-x-2 text-xs text-neutral-500 font-medium">
                                 <Mail className="w-4 h-4 text-neutral-400" />
@@ -218,7 +203,7 @@ export default function ContactPage() {
                                 <h2 className="text-lg font-bold">FPX Gateway Status</h2>
                             </div>
                             <p className="text-neutral-600 text-sm leading-relaxed">
-                                If your application status remains <strong className="text-neutral-900">&quot;Pending Review&quot;</strong> for <strong className="text-neutral-900">more than 7 working days</strong>, it is recommended to reach out directly to Fiuu payment operations.
+                                If your application status remains <strong className="text-neutral-900">&quot;Pending Review&quot;</strong> for <strong className="text-neutral-900">more than 7 working days</strong>, it is recommended to reach out directly through our support desk.
                             </p>
                             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 text-xs text-amber-900 space-y-1">
                                 <div className="flex items-center font-bold space-x-1.5">
@@ -241,7 +226,7 @@ export default function ContactPage() {
                             <h3 className="text-xl sm:text-2xl font-black">Want us to audit your Bidje profile?</h3>
                         </div>
                         <p className="text-neutral-300 text-sm sm:text-base leading-relaxed relative z-10 max-w-2xl">
-                            We can manually review your seller profile or payment configurations to flag potential items that might delay your Fiuu verification before they run their official checks.
+                            We can manually review your seller profile or payment configurations via email to flag potential items that might delay your Fiuu verification before they run their official checks.
                         </p>
                         <div className="pt-2 relative z-10">
                             <a
