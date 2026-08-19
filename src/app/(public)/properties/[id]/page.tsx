@@ -23,6 +23,7 @@ import { PropertyGallery } from "@/components/property/PropertyGallery";
 
 interface PropertyDetailPageProps {
     params: Promise<{ id: string }>;
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export async function generateMetadata({ params }: PropertyDetailPageProps): Promise<Metadata> {
@@ -62,13 +63,25 @@ export async function generateMetadata({ params }: PropertyDetailPageProps): Pro
     };
 }
 
-export default async function PropertyDetailPage({ params }: PropertyDetailPageProps) {
+export default async function PropertyDetailPage({ params, searchParams }: PropertyDetailPageProps) {
     const { id } = await params;
+    const resolvedSearchParams = await searchParams;
     const property = await getPropertyById(id);
 
     if (!property) {
         notFound();
     }
+
+    const paramsObj = new URLSearchParams();
+    Object.entries(resolvedSearchParams).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+            value.forEach((v) => v !== undefined && paramsObj.append(key, v));
+        } else if (value !== undefined) {
+            paramsObj.set(key, value);
+        }
+    });
+    const searchString = paramsObj.toString();
+    const backUrl = searchString ? `/properties?${searchString}` : "/properties";
 
     const rawImages = property.images && property.images.length > 0
         ? property.images
@@ -128,7 +141,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                 {/* Back Link & Breadcrumb Navigation */}
                 <nav className="mb-6 flex items-center justify-between">
                     <Link
-                        href="/properties"
+                        href={backUrl}
                         className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-sm font-bold text-neutral-700 shadow-sm transition-all hover:bg-neutral-100 hover:text-black"
                     >
                         <ArrowLeft className="h-4 w-4" />
@@ -138,7 +151,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                     <div className="hidden items-center gap-2 text-xs font-semibold text-neutral-500 sm:flex">
                         <Link href="/" className="hover:underline">{t("Main.menu.menu4")}</Link>
                         <ChevronRight className="h-3 w-3 text-neutral-400" />
-                        <Link href="/properties" className="hover:underline">{t("Main.menu.menu5")}</Link>
+                        <Link href={backUrl} className="hover:underline">{t("Main.menu.menu5")}</Link>
                         <ChevronRight className="h-3 w-3 text-neutral-400" />
                         <span className="max-w-[200px] truncate text-black">{property.title}</span>
                     </div>
@@ -273,7 +286,7 @@ export default async function PropertyDetailPage({ params }: PropertyDetailPageP
                                 </p>
 
                                 <Link
-                                    href={`/properties/${property.id}/make-offer`}
+                                    href={searchString ? `/properties/${property.id}/make-offer?${searchString}` : `/properties/${property.id}/make-offer`}
                                     className="mt-5 block w-full rounded-xl border-2 border-black bg-[#ffd400] py-3.5 text-center text-sm font-black shadow-[3px_3px_0_0_#000] transition hover:-translate-y-0.5 hover:bg-[#ffe24b]"
                                 >
                                     {t("Main.subHeading.subH6")}

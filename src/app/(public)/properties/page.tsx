@@ -24,6 +24,13 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
     const currentPage = params.page ? parseInt(params.page, 10) : 1;
     const resolvedPropertyType = params.property_type || params.category;
 
+    const searchString = new URLSearchParams(
+        Object.entries(params).reduce((acc, [key, value]) => {
+            if (value !== undefined) acc[key] = String(value);
+            return acc;
+        }, {} as Record<string, string>)
+    ).toString();
+
     const { properties, totalCount, totalPages } = await searchProperties({
         location: params.district || params.state,
         property_type: resolvedPropertyType,
@@ -82,7 +89,7 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
                         <>
                             <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                                 {properties.map((property) => (
-                                    <PropertyCard key={property.id} property={property} />
+                                    <PropertyCard key={property.id} property={property} searchString={searchString} />
                                 ))}
                             </div>
 

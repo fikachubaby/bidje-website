@@ -1,4 +1,5 @@
 import { PendingOfferDraft, FormData, FormErrors } from "@/lib/offers/pendingOffer";
+import type { PropertyListing } from "@/types/property";
 
 export type { FormData, FormErrors };
 export type OfferStatus = "Pending" | "Accepted" | "Rejected";
@@ -30,16 +31,18 @@ export interface BuyerOffer {
 
 export interface OfferHistoryItem {
     id: string;
+    propertyId: string;
     action?: string;
     timestamp?: string;
     performedBy?: string;
     propertyTitle: string;
     offeredAmount: string;
-    status: "Pending" | "Accepted" | "Rejected";
+    status: string;
     dateSubmitted: string;
     icDocumentUrl?: string | null;
     paymentProofUrl?: string | null;
     invoiceUrl?: string | null;
+    propertyData: PropertyListing | null;
 }
 
 export interface SupabaseOfferRecord {
@@ -51,4 +54,16 @@ export interface SupabaseOfferRecord {
     ic_upload_url?: string | null;
     payment_proof_url?: string | null;
     invoice_url?: string | null;
+}
+
+/** Raw shape of a row from `select(...)` on `offers`, joined with `properties`. */
+export interface RawOfferRow {
+    id?: unknown;
+    property_id?: unknown;
+    offer_price?: unknown;
+    status?: unknown;
+    submitted_at?: unknown;
+    ic_upload_url?: unknown;
+    payment_proof_url?: unknown;
+    properties?: unknown;
 }
