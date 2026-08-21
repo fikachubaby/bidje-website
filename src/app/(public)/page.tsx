@@ -7,7 +7,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import Statistics from "@/components/home/Statistics";
 import { FeaturedListings } from "@/components/home/FeaturedListings";
 import { PropertyBrowseTabs } from "@/components/home/PropertyBrowseTabs";
-import type { DBProperty, DBPropertyImage } from "@/types/property";
+import SubscriptionBanner from "@/components/home/SubscriptionBanner";
 
 export default async function HomePage() {
   const cookieStore = await cookies();
@@ -50,6 +50,7 @@ export default async function HomePage() {
       <HeroSearch />
       <FeaturedListings />
       <Statistics />
+      <SubscriptionBanner />
       <PropertyBrowseTabs properties={browseProperties ?? []} />
       <HowItWorks />
     </main>
