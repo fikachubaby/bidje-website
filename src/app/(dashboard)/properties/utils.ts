@@ -1,7 +1,7 @@
 import type { PropertyListing } from "@/types/property";
 import type { RawPropertyImageRow, RawPropertyRow } from "./types";
 
-export const DEFAULT_PROPERTY_IMAGE = "/placeholder-property.jpg";
+export const DEFAULT_PROPERTY_IMAGE = "/images/placeholder-property.jpg";
 
 const EXCLUDED_STATUSES = new Set(["draft", "archived", "inactive"]);
 

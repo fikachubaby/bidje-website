@@ -79,7 +79,7 @@ export function PropertyModal({ property, onClose }: PropertyModalProps) {
                             Close
                         </button>
                         <Link
-                            href={`/properties/${property.id}`}
+                            href={`/properties/${property.slug || property.id}`}
                             className="inline-flex items-center gap-2 rounded-xl bg-black px-5 py-2.5 text-xs font-semibold text-white hover:bg-neutral-800 transition-colors"
                         >
                             Full Property Listing <ExternalLink className="h-3.5 w-3.5" />

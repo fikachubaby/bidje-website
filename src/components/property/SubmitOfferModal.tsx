@@ -132,13 +132,11 @@ export function SubmitOfferModal({
 
     if (sessionLoading) return;
 
-    // 1. If user is logged in, submit directly to Supabase
     if (user) {
       await submitOffer(form);
       return;
     }
 
-    // 2. If user is NOT logged in, save draft and route to signup/login
     setLoading(true);
     const emailExists = await checkEmailExists(form.email);
     setLoading(false);

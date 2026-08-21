@@ -20,9 +20,12 @@ function getRatingLabel(score: number): string {
 }
 
 export function PropertyCard({ property, searchString = "" }: PropertyCardProps) {
-  // Build URLs safely using the passed search string
-  const detailUrl = searchString ? `/properties/${property.id}?${searchString}` : `/properties/${property.id}`;
-  const makeOfferUrl = searchString ? `/properties/${property.id}/make-offer?${searchString}` : `/properties/${property.id}/make-offer`;
+  // Use property.slug if available, otherwise fallback to property.id
+  const identifier = property.slug || property.id;
+
+  // Build URLs safely using the slug/id and passed search string
+  const detailUrl = searchString ? `/properties/${identifier}?${searchString}` : `/properties/${identifier}`;
+  const makeOfferUrl = searchString ? `/properties/${identifier}/make-offer?${searchString}` : `/properties/${identifier}/make-offer`;
 
   const hasValidImages =
     (property.imageUrl && property.imageUrl.trim() !== "") ||

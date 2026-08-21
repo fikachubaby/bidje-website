@@ -204,3 +204,27 @@ export async function getFilteredProperties(
         currentPage: page,
     };
 }
+
+export async function getPropertyByIdOrSlug(identifier: string): Promise<Property | undefined> {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const isUuid = uuidRegex.test(identifier);
+
+    let query = supabase.from("properties").select(PROPERTY_SELECT);
+
+    if (isUuid) {
+        query = query.eq("id", identifier);
+    } else {
+        query = query.eq("slug", identifier);
+    }
+
+    const { data, error } = await query.maybeSingle();
+
+    if (error) {
+        console.error("getPropertyByIdOrSlug error:", error.message);
+        return undefined;
+    }
+
+    if (!data) return undefined;
+
+    return mapPropertyRowToProperty(data as PropertyRow);
+}

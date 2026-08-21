@@ -91,6 +91,7 @@ export function toPropertyInput(property: AdminProperty): AdminPropertyInput {
 // --- Database Mappers ---
 export interface PropertyRow {
     id: string;
+    slug?: string | null;
     title: string;
     description: string | null;
     asking_price: number;
@@ -144,6 +145,7 @@ export function mapPropertyRowToProperty(row: PropertyRow): Property {
 
     return {
         id: row.id,
+        slug: row.slug ?? undefined,
         title: row.title,
         description: row.description ?? "",
         price: row.asking_price,

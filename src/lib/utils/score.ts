@@ -1,5 +1,8 @@
 import { ScoreBadge, ScoreBreakdown } from "@/types/score";
 
+export const GOOD_BUY_THRESHOLD = 80;
+export const FAIR_VALUE_THRESHOLD = 65;
+
 export function getScoreBadge(val: number): ScoreBadge {
     if (val >= 85) {
         return {
@@ -57,4 +60,14 @@ export function calculateLocalScoreFallback(
             demandScore: calculatedDemand,
         },
     };
+}
+
+export function getRatingLabel(score: number): string {
+    if (score >= GOOD_BUY_THRESHOLD) return "Good Buy";
+    if (score >= FAIR_VALUE_THRESHOLD) return "Fair Value";
+    return "Review Carefully";
+}
+
+export function isHotDeal(score: number | null | undefined): boolean {
+    return score != null && score >= GOOD_BUY_THRESHOLD;
 }

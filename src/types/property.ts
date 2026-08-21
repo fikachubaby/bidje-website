@@ -115,6 +115,9 @@ export interface Property {
   verifiedOfferCount?: number;
   marketValue?: number;
   maxLoanApplicable?: number;
+  slug?: string;
+  metaTitle?: string;
+  metaDescription?: string;
   tags?: string[];
   isAddressHidden?: boolean;
   googleMapsUrl?: string;
@@ -180,6 +183,7 @@ export interface PropertyListing {
   baths: number;
   sqft: number;
   image: string;
+  slug?: string;
 }
 
 export interface SupabasePropertyRecord {

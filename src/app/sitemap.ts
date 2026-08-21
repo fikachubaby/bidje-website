@@ -27,7 +27,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const stateSlugs = Object.keys(VALID_STATES);
     const categorySlugs = Object.keys(VALID_CATEGORIES);
 
-    // /properties/location/[state]
     const stateRoutes: MetadataRoute.Sitemap = stateSlugs.map((state) => ({
         url: `${BASE_URL}/properties/location/${state}`,
         lastModified: currentDate,
@@ -35,7 +34,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.8,
     }));
 
-    // /properties/location/[state]/category/[category]
     const stateCategoryRoutes: MetadataRoute.Sitemap = stateSlugs.flatMap((state) =>
         categorySlugs.map((category) => ({
             url: `${BASE_URL}/properties/location/${state}/category/${category}`,
@@ -45,7 +43,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }))
     );
 
-    // /properties/location/[state]/[district]
     const districtRoutes: MetadataRoute.Sitemap = stateSlugs.flatMap((state) => {
         const districts = Object.keys(VALID_DISTRICTS[state] ?? {});
         return districts.map((district) => ({
@@ -56,7 +53,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }));
     });
 
-    // /properties/location/[state]/[district]/[category]
     const districtCategoryRoutes: MetadataRoute.Sitemap = stateSlugs.flatMap((state) => {
         const districts = Object.keys(VALID_DISTRICTS[state] ?? {});
         return districts.flatMap((district) =>
@@ -72,7 +68,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     let propertyRoutes: MetadataRoute.Sitemap = [];
     try {
         const BATCH_SIZE = 200;
-        const MAX_PROPERTIES = 5000; // safety cap so a runaway loop can't hang the build
+        const MAX_PROPERTIES = 5000;
         let page = 1;
 
         while (propertyRoutes.length < MAX_PROPERTIES) {
@@ -87,8 +83,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                 const rawDate = property.createdAt;
                 const lastModified = rawDate ? new Date(rawDate) : currentDate;
 
+                // Use slug for SEO, fallback to ID if slug is missing
+                const identifier = property.slug || property.id;
+
                 return {
-                    url: `${BASE_URL}/properties/${property.id}`,
+                    url: `${BASE_URL}/properties/${identifier}`,
                     lastModified: isNaN(lastModified.getTime()) ? currentDate : lastModified,
                     changeFrequency: 'weekly' as const,
                     priority: 0.7,

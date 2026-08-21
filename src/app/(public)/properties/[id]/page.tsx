@@ -1,6 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import {
     BedDouble,
@@ -17,9 +16,10 @@ import { Navbar } from "@/components/layout/Navbar";
 import { BidjeRatingCard } from "@/components/property/BidjeRatingCard";
 import { FavouriteButton } from "@/components/property/FavouriteButton";
 import { formatPrice } from "@/lib/utils";
-import { getPropertyById } from "@/lib/properties/property-service";
+import { getPropertyByIdOrSlug } from "@/lib/properties/property-service";
 import { translate as t } from "@/lib/i18n/getTranslation";
 import { PropertyGallery } from "@/components/property/PropertyGallery";
+import { DEFAULT_PROPERTY_IMAGE } from "@/app/(dashboard)/properties/utils";
 
 interface PropertyDetailPageProps {
     params: Promise<{ id: string }>;
@@ -27,8 +27,8 @@ interface PropertyDetailPageProps {
 }
 
 export async function generateMetadata({ params }: PropertyDetailPageProps): Promise<Metadata> {
-    const { id } = await params;
-    const property = await getPropertyById(id);
+    const { id: identifier } = await params;
+    const property = await getPropertyByIdOrSlug(identifier);
 
     if (!property) {
         return {
@@ -41,9 +41,10 @@ export async function generateMetadata({ params }: PropertyDetailPageProps): Pro
         ? property.description.slice(0, 160)
         : `Check out ${property.title} located in ${property.location}. Price: ${formatPrice(property.price, property.currency)}.`;
 
-    const images = property.images && property.images.length > 0
-        ? property.images
-        : [property.imageUrl || "/placeholder-property.jpg"];
+    const hasImages = property.images && property.images.length > 0;
+    const images = hasImages
+        ? property.images!
+        : [property.imageUrl && property.imageUrl.trim() !== "" ? property.imageUrl : DEFAULT_PROPERTY_IMAGE];
 
     return {
         title,
@@ -64,9 +65,15 @@ export async function generateMetadata({ params }: PropertyDetailPageProps): Pro
 }
 
 export default async function PropertyDetailPage({ params, searchParams }: PropertyDetailPageProps) {
-    const { id } = await params;
+    const { id: identifier } = await params;
     const resolvedSearchParams = await searchParams;
-    const property = await getPropertyById(id);
+    const property = await getPropertyByIdOrSlug(identifier);
+
+    console.log("DEBUG PROPERTY FETCH:", {
+        identifierFromURL: identifier,
+        fetchedSlug: property?.slug,
+        fetchedId: property?.id
+    });
 
     if (!property) {
         notFound();
@@ -81,22 +88,34 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
         }
     });
     const searchString = paramsObj.toString();
+
+    // Permanent SEO Redirect if accessed via raw UUID
+    if (property.slug && identifier === property.id) {
+        const targetUrl = searchString
+            ? `/properties/${property.slug}?${searchString}`
+            : `/properties/${property.slug}`;
+        redirect(targetUrl);
+    }
+
     const backUrl = searchString ? `/properties?${searchString}` : "/properties";
 
-    const rawImages = property.images && property.images.length > 0
-        ? property.images
-        : [property.imageUrl || "/placeholder-property.jpg"];
+    const hasValidImages = property.images && property.images.length > 0;
+    const rawImages = hasValidImages
+        ? property.images!
+        : [property.imageUrl && property.imageUrl.trim() !== "" ? property.imageUrl : DEFAULT_PROPERTY_IMAGE];
 
     const images = rawImages.slice(0, 15);
-
     const bidjeScore = property.bidjeScore ?? 85;
+
+    // Use slug for Schema URL to maximize SEO impact
+    const canonicalIdentifier = property.slug || property.id;
 
     const jsonLd = {
         "@context": "https://schema.org",
         "@type": "RealEstateListing",
         "name": property.title,
         "description": property.description,
-        "url": `https://www.bidje.com/properties/${property.id}`,
+        "url": `https://www.bidje.com/properties/${canonicalIdentifier}`,
         "datePosted": property.createdAt,
         "price": property.price,
         "priceCurrency": property.currency || "MYR",
@@ -126,6 +145,11 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
             }
         }
     };
+
+    // Make Offer URL utilizing the canonical identifier
+    const makeOfferRoute = searchString
+        ? `/properties/${canonicalIdentifier}/make-offer?${searchString}`
+        : `/properties/${canonicalIdentifier}/make-offer`;
 
     return (
         <main className="min-h-screen bg-neutral-50 text-black">
@@ -286,7 +310,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
                                 </p>
 
                                 <Link
-                                    href={searchString ? `/properties/${property.id}/make-offer?${searchString}` : `/properties/${property.id}/make-offer`}
+                                    href={makeOfferRoute}
                                     className="mt-5 block w-full rounded-xl border-2 border-black bg-[#ffd400] py-3.5 text-center text-sm font-black shadow-[3px_3px_0_0_#000] transition hover:-translate-y-0.5 hover:bg-[#ffe24b]"
                                 >
                                     {t("Main.subHeading.subH6")}

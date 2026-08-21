@@ -6,7 +6,8 @@ import HowItWorks from "@/components/home/HowItWorks";
 import { Navbar } from "@/components/layout/Navbar";
 import Statistics from "@/components/home/Statistics";
 import { FeaturedListings } from "@/components/home/FeaturedListings";
-import { CategoryBrowser } from "@/components/home/CategoryBrowser";
+import { PropertyBrowseTabs } from "@/components/home/PropertyBrowseTabs";
+import type { DBProperty, DBPropertyImage } from "@/types/property";
 
 export default async function HomePage() {
   const cookieStore = await cookies();
@@ -23,10 +24,25 @@ export default async function HomePage() {
   );
 
   const { data: { user } } = await supabase.auth.getUser();
-
   if (user) {
     redirect("/dashboard");
   }
+
+  // Fetch a reasonable pool of live, published properties for the browse widget.
+  // We over-fetch a bit (60) since it's split three ways (type / hot / urgent) client-side.
+  const { data: browseProperties, error } = await supabase
+    .from("properties")
+    .select(`
+      id, title, asking_price, full_address, state, district,
+      property_type, area_sqft, bedrooms, bathrooms,
+      is_featured, urgent_sale, status, bidje_score,
+      property_images ( image_url, is_cover, display_order )
+    `)
+    .in("status", ["Published"])
+    .order("created_at", { ascending: false })
+    .limit(60);
+
+  console.log("browseProperties:", browseProperties?.length, "error:", error);
 
   return (
     <main className="min-h-screen bg-white text-black">
@@ -34,7 +50,7 @@ export default async function HomePage() {
       <HeroSearch />
       <FeaturedListings />
       <Statistics />
-      <CategoryBrowser />
+      <PropertyBrowseTabs properties={browseProperties ?? []} />
       <HowItWorks />
     </main>
   );

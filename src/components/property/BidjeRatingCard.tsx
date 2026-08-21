@@ -1,11 +1,7 @@
+import { getRatingLabel } from "@/lib/utils/score";
+
 interface BidjeRatingCardProps {
   score: number;
-}
-
-function getRatingLabel(score: number): string {
-  if (score >= 80) return "Good Buy";
-  if (score >= 65) return "Fair Value";
-  return "Review Carefully";
 }
 
 export function BidjeRatingCard({ score }: BidjeRatingCardProps) {

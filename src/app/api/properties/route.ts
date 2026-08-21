@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { searchProperties, getPropertyById } from "@/lib/properties/property-service";
+import { searchProperties, getPropertyByIdOrSlug } from "@/lib/properties/property-service";
 import type { PropertyCategory } from "@/types/property";
 
 export async function GET(
@@ -11,7 +11,7 @@ export async function GET(
   // Case 1: GET /api/properties/[id]
   if (slug && slug.length === 1) {
     const id = slug[0];
-    const property = await getPropertyById(id);
+    const property = await getPropertyByIdOrSlug(id);
 
     if (!property) {
       return NextResponse.json(

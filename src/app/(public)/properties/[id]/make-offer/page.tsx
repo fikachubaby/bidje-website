@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 import { MakeOfferClient } from "@/components/property/MakeOfferClient";
-import { getPropertyById } from "@/lib/properties/property-service";
+import { getPropertyByIdOrSlug } from "@/lib/properties/property-service";
 import { Navbar } from "@/components/layout/Navbar";
 import { translate as t } from "@/lib/i18n/getTranslation";
 
@@ -14,7 +14,7 @@ interface MakeOfferPageProps {
 export default async function MakeOfferPage({ params, searchParams }: MakeOfferPageProps) {
   const { id } = await params;
   const resolvedSearchParams = await searchParams;
-  const property = await getPropertyById(id);
+  const property = await getPropertyByIdOrSlug(id);
 
   if (!property) {
     notFound();
