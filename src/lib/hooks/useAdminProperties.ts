@@ -213,11 +213,11 @@ export function useAdminOffers(isAuthenticated: boolean) {
     };
 
     const updateOfferStatus = useCallback(
-        async (id: string, status: OfferStatus) => {
+        async (id: string, status: OfferStatus, remark?: string) => {
             const res = await fetch(`/api/admin/offers/${id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status }),
+                body: JSON.stringify({ status, remark }),
             });
             if (!res.ok) throw new Error("Failed to update offer status");
             await fetchOffers();

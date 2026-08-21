@@ -144,23 +144,33 @@ export function useOfferHistory(userId: string, isMember: boolean): UseOfferHist
                     .update({
                         ic_upload_url: icPath,
                         payment_proof_url: proofPathValue,
-                        status: "Pending",
+                        status: "Under Verification",
                     })
                     .eq("id", offerId)
                     .eq("user_id", uid)
-                    .select("id, ic_upload_url, payment_proof_url");
+                    .select("id, ic_upload_url, payment_proof_url, status");
 
                 if (error) throw error;
                 if (!data || data.length === 0) {
                     throw new Error("No matching offer was found to update. Please select an offer from the list.");
                 }
 
-                const updated = data[0] as { id: string; ic_upload_url: string | null; payment_proof_url: string | null };
+                const updated = data[0] as {
+                    id: string;
+                    ic_upload_url: string | null;
+                    payment_proof_url: string | null;
+                    status: string | null;
+                };
 
                 setOfferHistory((prev) =>
                     prev.map((item) =>
                         item.id === String(updated.id)
-                            ? { ...item, icDocumentUrl: updated.ic_upload_url, paymentProofUrl: updated.payment_proof_url }
+                            ? {
+                                ...item,
+                                icDocumentUrl: updated.ic_upload_url,
+                                paymentProofUrl: updated.payment_proof_url,
+                                status: (updated.status as OfferHistoryItem["status"]) ?? item.status
+                            }
                             : item
                     )
                 );

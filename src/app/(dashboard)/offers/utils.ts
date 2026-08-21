@@ -37,11 +37,12 @@ export function mapOfferRowToHistoryItem(row: RawOfferRow, isMember: boolean): O
         propertyId,
         propertyTitle,
         offeredAmount: `RM ${Number(row.offer_price ?? 0).toLocaleString()}`,
-        status: String(row.status ?? "Pending"),
+        status: String(row.status ?? "Submitted"),
         dateSubmitted: row.submitted_at ? String(row.submitted_at).split("T")[0] : "",
         icDocumentUrl: typeof row.ic_upload_url === "string" ? row.ic_upload_url : null,
         paymentProofUrl: typeof row.payment_proof_url === "string" ? row.payment_proof_url : null,
-        invoiceUrl: null, // filled in by the hook once invoices are fetched
+        invoiceUrl: null,
         propertyData,
+        verificationRemark: typeof row.verification_remark === "string" ? row.verification_remark : null,
     };
 }

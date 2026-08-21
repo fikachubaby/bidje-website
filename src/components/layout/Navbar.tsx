@@ -8,16 +8,6 @@ import { supabase } from "@/lib/supabase/supabase";
 import { useRouter } from "next/navigation";
 import { translate as t } from "@/lib/i18n/getTranslation";
 
-const FEATURED_LOCATIONS = [
-  { name: "Kuala Lumpur", slug: "kuala-lumpur" },
-  { name: "Selangor", slug: "selangor" },
-  { name: "Perak", slug: "perak" },
-  { name: "Melaka", slug: "melaka" },
-  { name: "Negeri Sembilan", slug: "negeri-sembilan" },
-  { name: "Pulau Pinang", slug: "pulau-pinang" },
-  { name: "Kedah", slug: "kedah" },
-];
-
 export function Navbar() {
   const { user, loading } = useSession();
   const router = useRouter();
@@ -48,41 +38,6 @@ export function Navbar() {
           <Link href="/properties" className="hover:text-[#ffd400] transition-colors">
             {t("Properties.search.browse")}
           </Link>
-
-          {/* pSEO Location Dropdown */}
-          <div
-            className="relative"
-            onMouseEnter={() => setLocationDropdownOpen(true)}
-            onMouseLeave={() => setLocationDropdownOpen(false)}
-          >
-            <button
-              className="flex items-center gap-1 hover:text-[#ffd400] transition-colors py-2"
-              aria-expanded={locationDropdownOpen}
-              aria-haspopup="true"
-            >
-              <span>{t("Properties.fields.locations")}</span>
-              <ChevronDown className="h-4 w-4" />
-            </button>
-
-            {locationDropdownOpen && (
-              <div className="absolute left-0 top-full w-56 rounded-xl border-2 border-black bg-white p-2 text-black shadow-[4px_4px_0_0_#000] transition-all">
-                <div className="px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-neutral-400">
-                  {t("Properties.fields.targetLocation")}
-                </div>
-                {FEATURED_LOCATIONS.map((loc) => (
-                  <Link
-                    key={loc.slug}
-                    href={`/properties/location/${loc.slug}`}
-                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold hover:bg-[#ffd400]"
-                    onClick={() => setLocationDropdownOpen(false)}
-                  >
-                    <MapPin className="h-3.5 w-3.5 text-neutral-600" />
-                    {loc.name}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
 
           {/* Valuation & Trust link */}
           <Link href="/about-score" className="flex items-center gap-1.5 hover:text-[#ffd400] transition-colors">
@@ -156,23 +111,6 @@ export function Navbar() {
             >
               {t("Properties.search.browse")}
             </Link>
-
-            <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
-              <span className="text-xs font-black uppercase text-white/50 tracking-wider">
-                {t("Properties.fields.locations")}
-              </span>
-              {FEATURED_LOCATIONS.map((loc) => (
-                <Link
-                  key={loc.slug}
-                  href={`/properties/location/${loc.slug}`}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 text-sm text-neutral-300 hover:text-[#ffd400]"
-                >
-                  <MapPin className="h-4 w-4 text-[#ffd400]" />
-                  {loc.name}
-                </Link>
-              ))}
-            </div>
 
             <Link
               href="/about-score"

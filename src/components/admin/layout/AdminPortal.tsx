@@ -115,9 +115,9 @@ export default function AdminPortal() {
   }, [router]);
 
   const handleUpdateOffer = useCallback(
-    async (id: string, status: OfferStatus) => {
+    async (id: string, status: OfferStatus, remark?: string) => {
       try {
-        await updateOfferStatus(id, status);
+        await updateOfferStatus(id, status, remark);
         if (status === "Accepted") {
           const offer = offers.find((item) => item.id === id);
           if (offer) await updateStatus(offer.propertyId, "Under Offer");

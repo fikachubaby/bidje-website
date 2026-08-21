@@ -10,6 +10,34 @@ interface OfferHistoryModalProps {
     onClose: () => void;
 }
 
+const TERMINAL_STATUSES = ["Accepted", "Rejected", "Verification Rejected"];
+
+function statusDotColor(status: string) {
+    if (status === "Accepted" || status === "Verified") return "bg-emerald-600";
+    if (status === "Rejected" || status === "Verification Rejected") return "bg-red-600";
+    return "bg-amber-500";
+}
+
+function statusDescription(status: string) {
+    switch (status) {
+        case "Submitted":
+        case "Pending Documents":
+            return "Awaiting IC and payment proof upload.";
+        case "Under Verification":
+            return "Documents received — awaiting admin review.";
+        case "Verification Rejected":
+            return "Documents were rejected. See remark below for what to fix.";
+        case "Verified":
+            return "Documents verified. Awaiting final offer decision.";
+        case "Accepted":
+            return "Offer was accepted.";
+        case "Rejected":
+            return "Offer was declined.";
+        default:
+            return `Offer was marked as ${status}.`;
+    }
+}
+
 export function OfferHistoryModal({ offer, onClose }: OfferHistoryModalProps) {
     if (!offer) return null;
 
@@ -41,16 +69,22 @@ export function OfferHistoryModal({ offer, onClose }: OfferHistoryModalProps) {
                     </div>
 
                     <div className="relative flex items-start gap-4">
-                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white text-xs font-bold ring-4 ring-white ${offer.status === "Accepted" ? "bg-emerald-600" : offer.status === "Rejected" ? "bg-red-600" : "bg-amber-500"
-                            }`}>
+                        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white text-xs font-bold ring-4 ring-white ${statusDotColor(offer.status)}`}>
                             2
                         </span>
                         <div>
                             <p className="text-sm font-bold text-neutral-900">Current Status: {offer.status}</p>
-                            <p className="text-xs text-neutral-400">Last updated status state</p>
-                            <p className="text-xs text-neutral-600 mt-1">
-                                {offer.status === "Pending" ? "Awaiting admin review and verification check." : `Offer was successfully marked as ${offer.status}.`}
+                            <p className="text-xs text-neutral-400">
+                                {TERMINAL_STATUSES.includes(offer.status) ? "Final state" : "In progress"}
                             </p>
+                            <p className="text-xs text-neutral-600 mt-1">
+                                {statusDescription(offer.status)}
+                            </p>
+                            {offer.status === "Verification Rejected" && offer.verificationRemark && (
+                                <p className="mt-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
+                                    <strong>Admin remark:</strong> {offer.verificationRemark}
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>

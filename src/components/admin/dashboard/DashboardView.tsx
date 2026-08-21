@@ -11,6 +11,8 @@ import { submitOfferToSupabase } from "@/lib/offers/submitOffer";
 import { clearPendingOffer } from "@/lib/offers/pendingOffer";
 import type { DashboardViewProps } from "@/types/admin";
 
+const OPEN_OFFER_STATUSES = ["Submitted", "Pending Documents", "Under Verification", "Verification Rejected", "Verified"];
+
 export function DashboardView({
   properties,
   totalPropertiesCount,
@@ -49,7 +51,7 @@ export function DashboardView({
   const published = properties.filter((p) => p.status === "Published").length;
   const underOffer = properties.filter((p) => p.status === "Under Offer").length;
   const sold = properties.filter((p) => p.status === "Sold").length;
-  const pendingOffers = offers.filter((o) => o.status === "Pending").length;
+  const pendingOffers = offers.filter((o) => OPEN_OFFER_STATUSES.includes(o.status)).length;
 
   const recent = [...properties]
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())

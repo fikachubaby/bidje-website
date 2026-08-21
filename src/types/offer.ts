@@ -1,8 +1,19 @@
 import { PendingOfferDraft, FormData, FormErrors } from "@/lib/offers/pendingOffer";
 import type { PropertyListing } from "@/types/property";
 
+export const OFFER_STATUSES = [
+    "Submitted",
+    "Pending Documents",
+    "Under Verification",
+    "Verification Rejected",
+    "Verified",
+    "Accepted",
+    "Rejected",
+] as const;
+
 export type { FormData, FormErrors };
-export type OfferStatus = "Pending" | "Accepted" | "Rejected";
+
+export type OfferStatus = (typeof OFFER_STATUSES)[number];
 export interface SubmitOfferModalProps {
     open: boolean;
     onClose: () => void;
@@ -26,6 +37,7 @@ export interface BuyerOffer {
     icDocumentUrl?: string;
     paymentProofUrl?: string;
     invoiceUrl?: string | null;
+    verificationRemark?: string | null;
     history?: OfferHistoryItem[];
 }
 
@@ -43,13 +55,14 @@ export interface OfferHistoryItem {
     paymentProofUrl?: string | null;
     invoiceUrl?: string | null;
     propertyData: PropertyListing | null;
+    verificationRemark: string | null;
 }
 
 export interface SupabaseOfferRecord {
     id: string;
     property_id?: string | null;
     offer_price?: number | null;
-    status?: "Pending" | "Accepted" | "Rejected" | null;
+    status?: OfferStatus | null;
     submitted_at?: string | null;
     ic_upload_url?: string | null;
     payment_proof_url?: string | null;
@@ -60,10 +73,28 @@ export interface SupabaseOfferRecord {
 export interface RawOfferRow {
     id?: unknown;
     property_id?: unknown;
+    user_id?: unknown;
     offer_price?: unknown;
     status?: unknown;
     submitted_at?: unknown;
     ic_upload_url?: unknown;
     payment_proof_url?: unknown;
+    verification_remark?: unknown;
+    verified_at?: unknown;
     properties?: unknown;
+    profiles?: unknown; // joined buyer profile (full_name, email)
+}
+
+export interface AdminOfferItem {
+    id: string;
+    propertyId: string;
+    propertyTitle: string;
+    buyerName: string;
+    buyerEmail: string;
+    offeredAmount: string;
+    status: OfferStatus;
+    dateSubmitted: string;
+    icDocumentUrl: string | null;
+    paymentProofUrl: string | null;
+    verificationRemark: string | null;
 }

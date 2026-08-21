@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
         let query = supabaseAdmin
             .from("offers")
-            .select("*, properties(id, title, asking_price, minimum_acceptable_price)", { count: "exact" });
+            .select("*, properties!offers_property_id_fkey(id, title, asking_price, minimum_acceptable_price)", { count: "exact" });
 
         if (status && status !== "All") {
             query = query.eq("status", status);
@@ -45,9 +45,11 @@ export async function GET(request: Request) {
 
         const formatted = (offers || []).map((o) => {
             const profile = profileMap.get(o.user_id);
+            const property = Array.isArray(o.properties) ? o.properties[0] : o.properties;
             return {
                 id: o.id,
                 propertyId: o.property_id,
+                propertyTitle: property?.title || "Untitled Property",
                 buyerName: profile?.full_name || "Unknown",
                 buyerPhone: o.contact_phone || profile?.phone || "",
                 buyerEmail: profile?.email || "",
@@ -57,6 +59,7 @@ export async function GET(request: Request) {
                 createdAt: o.submitted_at,
                 icDocumentUrl: o.ic_upload_url || undefined,
                 paymentProofUrl: o.payment_proof_url || undefined,
+                verificationRemark: o.verification_remark || null,
             };
         });
 
@@ -85,6 +88,7 @@ export async function GET(request: Request) {
             },
         });
     } catch (err: unknown) {
+        console.error("GET /api/admin/offers failed:", err);
         const msg = err instanceof Error ? err.message : "Failed to fetch offers";
         return NextResponse.json({ error: msg }, { status: 500 });
     }
