@@ -7,7 +7,6 @@ import {
     Maximize2,
     MapPin,
     ShieldCheck,
-    TrendingUp,
     ArrowLeft,
     ChevronRight
 } from "lucide-react";
@@ -20,6 +19,9 @@ import { getPropertyByIdOrSlug } from "@/lib/properties/property-service";
 import { translate as t } from "@/lib/i18n/getTranslation";
 import { PropertyGallery } from "@/components/property/PropertyGallery";
 import { DEFAULT_PROPERTY_IMAGE } from "@/app/(dashboard)/properties/utils";
+
+import { PropertyAddressCard, LocationMapCard } from "@/components/property/PropertyAddressGate";
+import { checkIsSubscriber } from "@/lib/auth/check-subscriber-server";
 
 interface PropertyDetailPageProps {
     params: Promise<{ id: string }>;
@@ -69,11 +71,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
     const resolvedSearchParams = await searchParams;
     const property = await getPropertyByIdOrSlug(identifier);
 
-    console.log("DEBUG PROPERTY FETCH:", {
-        identifierFromURL: identifier,
-        fetchedSlug: property?.slug,
-        fetchedId: property?.id
-    });
+    const isSubscriber = await checkIsSubscriber();
 
     if (!property) {
         notFound();
@@ -89,7 +87,6 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
     });
     const searchString = paramsObj.toString();
 
-    // Permanent SEO Redirect if accessed via raw UUID
     if (property.slug && identifier === property.id) {
         const targetUrl = searchString
             ? `/properties/${property.slug}?${searchString}`
@@ -106,63 +103,18 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
 
     const images = rawImages.slice(0, 15);
     const bidjeScore = property.bidjeScore ?? 85;
-
-    // Use slug for Schema URL to maximize SEO impact
     const canonicalIdentifier = property.slug || property.id;
 
-    const jsonLd = {
-        "@context": "https://schema.org",
-        "@type": "RealEstateListing",
-        "name": property.title,
-        "description": property.description,
-        "url": `https://www.bidje.com/properties/${canonicalIdentifier}`,
-        "datePosted": property.createdAt,
-        "price": property.price,
-        "priceCurrency": property.currency || "MYR",
-        "mainEntity": {
-            "@type": "SingleFamilyResidence",
-            "name": property.title,
-            "description": property.description,
-            "image": images,
-            "address": {
-                "@type": "PostalAddress",
-                "addressLocality": property.location,
-                "addressCountry": "MY"
-            },
-            "floorSize": property.areaSqft ? {
-                "@type": "QuantitativeValue",
-                "value": property.areaSqft,
-                "unitCode": "FTK"
-            } : undefined,
-            "numberOfRooms": property.bedrooms,
-            "numberOfBathroomsTotal": property.bathrooms,
-            "offers": {
-                "@type": "Offer",
-                "price": property.price,
-                "priceCurrency": property.currency || "MYR",
-                "availability": "https://schema.org/InStock",
-                "validFrom": property.createdAt
-            }
-        }
-    };
-
-    // Make Offer URL utilizing the canonical identifier
     const makeOfferRoute = searchString
         ? `/properties/${canonicalIdentifier}/make-offer?${searchString}`
         : `/properties/${canonicalIdentifier}/make-offer`;
 
     return (
         <main className="min-h-screen bg-neutral-50 text-black">
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-            />
-
             <Navbar />
 
             <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-
-                {/* Back Link & Breadcrumb Navigation */}
+                {/* Navigation Breadcrumb */}
                 <nav className="mb-6 flex items-center justify-between">
                     <Link
                         href={backUrl}
@@ -181,7 +133,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
                     </div>
                 </nav>
 
-                {/* Header Info */}
+                {/* Header Section */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
                     <div>
                         <div className="flex items-center gap-2">
@@ -212,17 +164,21 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
                     </div>
                 </div>
 
+                {/* Dynamic Address Banner */}
+                <PropertyAddressCard
+                    fullAddress={property.fullAddress}
+                    isSubscriber={isSubscriber}
+                />
+
                 {/* Media Gallery Grid */}
                 <div className="mt-6">
                     <PropertyGallery images={images} title={property.title} />
                 </div>
 
-                {/* Main Content Layout */}
+                {/* Content Layout */}
                 <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
-                    {/* Left Column: Details & Overview */}
+                    {/* Left Column */}
                     <div className="space-y-8 lg:col-span-2">
-
-                        {/* Highlights Grid */}
                         <div className="grid grid-cols-2 gap-4 rounded-2xl border border-neutral-200 bg-white p-5 sm:grid-cols-4">
                             <div className="flex items-center gap-3">
                                 <div className="rounded-xl bg-neutral-100 p-3">
@@ -265,43 +221,17 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
                             </div>
                         </div>
 
-                        {/* Description */}
                         <div className="rounded-2xl border border-neutral-200 bg-white p-6">
                             <h2 className="text-lg font-bold">{t("Properties.overview")}</h2>
                             <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-neutral-700">
                                 {property.description || "No description provided for this listing."}
                             </p>
                         </div>
-
-                        {/* Additional Specifications */}
-                        <div className="rounded-2xl border border-neutral-200 bg-white p-6">
-                            <h2 className="text-lg font-bold">{t("Properties.keySpecs")}</h2>
-                            <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
-                                <div className="flex justify-between border-b border-neutral-100 py-2">
-                                    <dt className="text-neutral-500">{t("Properties.propertyType")}</dt>
-                                    <dd className="font-semibold">{property.category}</dd>
-                                </div>
-                                <div className="flex justify-between border-b border-neutral-100 py-2">
-                                    <dt className="text-neutral-500">{t("Properties.bumiStatus")}</dt>
-                                    <dd className="font-semibold">{property.bumiStatus || "Non-Bumi"}</dd>
-                                </div>
-                                <div className="flex justify-between border-b border-neutral-100 py-2">
-                                    <dt className="text-neutral-500">{t("Properties.fields.landSize")}</dt>
-                                    <dd className="font-semibold">{property.landSize || "N/A"}</dd>
-                                </div>
-                                <div className="flex justify-between border-b border-neutral-100 py-2">
-                                    <dt className="text-neutral-500">{t("SubmitOfferModal.verifyOffer")}</dt>
-                                    <dd className="font-semibold">{property.verifiedOfferCount ?? 0} {t("Main.status.active")}</dd>
-                                </div>
-                            </dl>
-                        </div>
                     </div>
 
-                    {/* Right Column: Investment Analysis & Action Sticky Card */}
+                    {/* Right Column Sidebar */}
                     <div className="space-y-6">
                         <div className="sticky top-6 space-y-6">
-
-                            {/* Make Offer Call-to-Action Box */}
                             <div className="rounded-2xl border-2 border-black bg-white p-6 shadow-[4px_4px_0_0_#000]">
                                 <p className="text-xs font-bold uppercase tracking-wide text-neutral-500">Ready to buy?</p>
                                 <p className="mt-1 text-2xl font-black">{t("Main.subHeading.subH4")}</p>
@@ -315,39 +245,16 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
                                 >
                                     {t("Main.subHeading.subH6")}
                                 </Link>
-
-                                <p className="mt-3 text-center text-[11px] font-semibold text-neutral-500">
-                                    {t("Main.subHeading.subH7")}
-                                </p>
                             </div>
 
-                            {/* Investment Rating Widget */}
                             <BidjeRatingCard score={bidjeScore} />
 
-                            {/* Estimated Market Valuation Card */}
-                            {(property.marketValue || property.maxLoanApplicable) && (
-                                <div className="rounded-2xl border border-neutral-200 bg-white p-6">
-                                    <div className="flex items-center gap-2">
-                                        <TrendingUp className="h-5 w-5 text-neutral-700" />
-                                        <h3 className="font-bold text-black">{t("Main.subHeading.subH8")}</h3>
-                                    </div>
-
-                                    <div className="mt-4 space-y-3 text-sm">
-                                        {property.marketValue && (
-                                            <div className="flex justify-between">
-                                                <span className="text-neutral-500">{t("Main.subHeading.subH9")}</span>
-                                                <span className="font-bold">{formatPrice(property.marketValue)}</span>
-                                            </div>
-                                        )}
-                                        {property.maxLoanApplicable && (
-                                            <div className="flex justify-between">
-                                                <span className="text-neutral-500">{t("Main.subHeading.subH10")}</span>
-                                                <span className="font-bold">{formatPrice(property.maxLoanApplicable)}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
+                            {/* Dynamic Map Component */}
+                            <LocationMapCard
+                                fullAddress={property.fullAddress}
+                                googleMapsUrl={property.googleMapsUrl}
+                                isSubscriber={isSubscriber}
+                            />
                         </div>
                     </div>
                 </div>

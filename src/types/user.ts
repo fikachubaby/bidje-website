@@ -1,5 +1,7 @@
 export type UserRole = 'visitor' | 'subscriber' | 'staff' | 'agent' | 'admin' | string;
 
+export const SUBSCRIBER_ROLES: UserRole[] = ['subscriber', 'staff', 'agent', 'admin'];
+
 export interface Role {
     id: string;
     name: string;
