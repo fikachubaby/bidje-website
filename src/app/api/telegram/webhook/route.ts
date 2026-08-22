@@ -133,7 +133,7 @@ export async function POST(request: Request) {
 
         const isPhotoMessage = Boolean(msg.photo && msg.photo.length > 0);
         const messageIdsForUpdate = isPhotoMessage
-            ? [msg.message_id]
+            ? await collectAlbumMessageIds(msg.message_id, msg.media_group_id ?? null)
             : existingRow?.telegram_message_ids ?? [msg.message_id];
         const hasCaptionForUpdate = isPhotoMessage
             ? true
@@ -242,7 +242,7 @@ async function linkPendingPhotosToCode(code: string, mediaGroupId: string | null
 
     const { error } = await supabaseAdmin
         .from("telegram_pending_photos")
-        .update({ telegram_code: code })
+        .update({ telegram_code: code, resolved: true })
         .eq("media_group_id", mediaGroupId)
         .is("telegram_code", null)
         .eq("resolved", false);
@@ -250,4 +250,29 @@ async function linkPendingPhotosToCode(code: string, mediaGroupId: string | null
     if (error) {
         console.error(`[telegram-webhook] failed to link pending photos for group ${mediaGroupId}:`, error);
     }
+}
+
+/**
+ * For an album (media_group_id present), fetch the message IDs of the sibling
+ * photo messages that were buffered before the caption message arrived, so
+ * telegram_message_ids reflects the WHOLE album, not just the caption message.
+ */
+async function collectAlbumMessageIds(
+    captionMessageId: number,
+    mediaGroupId: string | null
+): Promise<number[]> {
+    if (!mediaGroupId) return [captionMessageId];
+
+    const { data: siblings, error } = await supabaseAdmin
+        .from("telegram_pending_photos")
+        .select("message_id")
+        .eq("media_group_id", mediaGroupId);
+
+    if (error) {
+        console.error(`[telegram-webhook] failed to collect album siblings for group ${mediaGroupId}:`, error);
+        return [captionMessageId];
+    }
+
+    const ids = new Set<number>([captionMessageId, ...(siblings ?? []).map((s) => s.message_id)]);
+    return Array.from(ids).sort((a, b) => a - b);
 }

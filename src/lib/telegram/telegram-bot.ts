@@ -189,20 +189,23 @@ export async function syncPropertyToTelegram(
         const previousPhotoCount = property.telegramHasCaption ? (messageIds?.length ?? 0) : 0;
         const photosChanged = previousPhotoCount !== photoUrls.length;
 
+        // Keep the old message ids around only long enough to clean them up
+        // *after* a successful repost. Never delete before the new post exists.
+        const staleMessageIds = messageIds && messageIds.length > 0 && photosChanged ? messageIds : null;
+
         if (messageIds && messageIds.length > 0 && !photosChanged) {
             await editListingCaption(messageIds[0], caption, hasCaption);
-        } else if (messageIds && messageIds.length > 0 && photosChanged) {
-            await deleteMessages(messageIds);
-            const result = await postNewListing(caption, photoUrls);
-            messageIds = result.messageIds;
-            hasCaption = result.hasCaption;
         } else {
+            // Covers both "no existing messages" and "photos changed" cases.
+            // Post the new listing FIRST so a failure here never destroys a working one.
             const result = await postNewListing(caption, photoUrls);
             messageIds = result.messageIds;
             hasCaption = result.hasCaption;
         }
 
-        await supabaseAdmin
+        // Persist the new state before attempting any deletion, so a delete
+        // failure never leaves the DB pointing at messages we're about to remove.
+        const { error: updateError } = await supabaseAdmin
             .from("properties")
             .update({
                 telegram_code: code,
@@ -213,6 +216,17 @@ export async function syncPropertyToTelegram(
                 sync_origin: "website",
             })
             .eq("id", property.id);
+
+        if (updateError) {
+            console.error(`Failed to persist Telegram sync state for property ${property.id}:`, updateError);
+            // Don't attempt to delete stale messages if we couldn't confirm the
+            // new state was saved — better to leave a duplicate than lose everything.
+            return;
+        }
+
+        if (staleMessageIds) {
+            await deleteMessages(staleMessageIds);
+        }
     } catch (err) {
         console.error(`Telegram sync failed for property ${property.id}:`, err);
     }
