@@ -9,6 +9,10 @@ export const VIEW_META: Record<AdminView, { title: string; subtitle: string }> =
         title: "Property Manager",
         subtitle: "Add, edit, publish, duplicate, or delete listings.",
     },
+    "property-requests": {
+        title: "Property Listing Requests",
+        subtitle: "Manage incoming property listing requests submitted by property owners.",
+    },
     subscribers: {
         title: "Subscribers",
         subtitle: "Manage newsletter and alert subscribers.",

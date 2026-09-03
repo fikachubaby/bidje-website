@@ -24,7 +24,7 @@ export type BumiStatusType = "Bumi" | "Non Bumi" | "Both" | "Unknown";
 export const BUMI_STATUSES: BumiStatusType[] = ["Bumi", "Non Bumi", "Both", "Unknown"];
 
 export type AdminView =
-  | "dashboard" | "properties" | "subscribers" | "offers" | "subscribers"
+  | "dashboard" | "properties" | "subscribers" | "offers" | "subscribers" | "property-requests"
   | "imports" | "users" | "audit-logs" | "profile" | "ads" | "legals" | "financials";
 
 export const PROPERTY_TYPES = [

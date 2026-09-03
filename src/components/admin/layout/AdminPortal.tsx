@@ -20,6 +20,7 @@ import { AdminAdsView } from "@/components/admin/views/AdminAdsView";
 import { LegalView } from "@/components/admin/consultant/LegalView"
 import { FinancialView } from "@/components/admin/consultant/FinancialView"
 import { FlaggedPhotosReview } from "@/components/admin/property/FlaggedPhotosReview";
+import { PropertyRequestsView } from "@/components/admin/property-requests/PropertyRequestsView";
 
 import { useSession } from "@/lib/auth/useSession";
 import { useAdminProperties, useAdminOffers } from "@/lib/hooks/useAdminProperties";
@@ -209,6 +210,8 @@ export default function AdminPortal() {
               />
             </>
           )}
+
+          {activeView === "property-requests" && <PropertyRequestsView />}
 
           {activeView === "offers" && (
             <OffersView

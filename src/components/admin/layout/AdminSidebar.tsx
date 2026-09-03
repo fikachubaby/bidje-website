@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Settings, ChevronDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ClipboardList } from "lucide-react";
 import { ADMIN_NAV_ITEMS, ADMIN_SETTINGS_ITEMS } from "@/constants/admin-navigation";
 import type { AdminSidebarProps } from "@/types/admin";
 import { translate as t } from "@/lib/i18n/getTranslation";
