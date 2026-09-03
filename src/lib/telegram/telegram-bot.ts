@@ -132,6 +132,7 @@ export function generateTelegramCode(propertyId: string): string {
 
 interface SyncableProperty {
     id: string;
+    status?: string | null;
     telegramCode: string | null;
     telegramChatId: string | null;
     telegramMessageIds: number[] | null;
@@ -166,6 +167,10 @@ export async function syncPropertyToTelegram(
     property: SyncableProperty,
     photoUrls: string[]
 ): Promise<void> {
+    if (property.status && property.status !== "Published") {
+        return;
+    }
+
     try {
         const code = property.telegramCode || generateTelegramCode(property.id);
         const caption = buildTelegramCaption({
@@ -186,7 +191,9 @@ export async function syncPropertyToTelegram(
         let messageIds = property.telegramMessageIds;
         let hasCaption = property.telegramHasCaption ?? photoUrls.length > 0;
 
-        const previousPhotoCount = property.telegramHasCaption ? (messageIds?.length ?? 0) : 0;
+        const previousPhotoCount = messageIds && property.telegramHasCaption === true
+            ? messageIds.length
+            : (messageIds && property.telegramHasCaption === false ? 0 : photoUrls.length);
         const photosChanged = previousPhotoCount !== photoUrls.length;
 
         // Keep the old message ids around only long enough to clean them up

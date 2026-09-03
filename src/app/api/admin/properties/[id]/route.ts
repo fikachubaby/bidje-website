@@ -90,6 +90,7 @@ export async function PUT(
         await syncPropertyToTelegram(
             {
                 id: property.id,
+                status: property.status,
                 telegramCode: property.telegram_code,
                 telegramChatId: property.telegram_chat_id,
                 telegramMessageIds: property.telegram_message_ids,
@@ -137,6 +138,37 @@ export async function PATCH(
             .single();
 
         if (error) throw error;
+
+        const { data: imageRows } = await supabaseAdmin
+            .from("property_images")
+            .select("image_url, display_order")
+            .eq("property_id", id)
+            .order("display_order", { ascending: true });
+
+        const images = (imageRows ?? []).map((r) => r.image_url);
+
+        await syncPropertyToTelegram(
+            {
+                id: property.id,
+                status: property.status,
+                telegramCode: property.telegram_code,
+                telegramChatId: property.telegram_chat_id,
+                telegramMessageIds: property.telegram_message_ids,
+                telegramHasCaption: property.telegram_has_caption,
+                title: property.title,
+                fullAddress: property.full_address,
+                mapsUrl: property.google_maps_url,
+                propertyType: property.property_type,
+                tenure: property.tenure,
+                bedrooms: property.bedrooms,
+                bathrooms: property.bathrooms,
+                builtUpSize: property.built_up_size,
+                landSize: property.land_size,
+                askingPrice: Number(property.asking_price),
+                description: property.description,
+            },
+            images
+        );
 
         return NextResponse.json({ success: true, property });
     } catch (err: unknown) {

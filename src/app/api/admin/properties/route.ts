@@ -14,7 +14,8 @@ export async function GET(request: Request) {
         const page = parseInt(searchParams.get("page") || "1", 10);
         const limit = parseInt(searchParams.get("limit") || "10", 10);
         const search = searchParams.get("search")?.trim() || "";
-        const status = searchParams.get("status") || "All";
+        const statusParam = searchParams.get("status") || "All";
+        const status = statusParam === "All" ? "All" : statusParam.charAt(0).toUpperCase() + statusParam.slice(1).toLowerCase();
 
         const from = (page - 1) * limit;
         const to = from + limit - 1;
@@ -29,7 +30,7 @@ export async function GET(request: Request) {
 
         if (search) {
             query = query.or(
-                `title.ilike.%${search}%,full_address.ilike.%${search}%,district.ilike.%${search}%,state.ilike.%${search}%,property_type.ilike.%${search}%,telegram_code.ilike.${search}%`
+                `title.ilike.%${search}%,full_address.ilike.%${search}%,district.ilike.%${search}%,state.ilike.%${search}%,property_type.ilike.%${search}%,telegram_code.ilike.%${search}%`
             );
         }
 
@@ -180,6 +181,7 @@ export async function POST(request: Request) {
             await syncPropertyToTelegram(
                 {
                     id: property.id,
+                    status: property.status,
                     telegramCode: null,
                     telegramChatId: null,
                     telegramMessageIds: null,

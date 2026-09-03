@@ -131,6 +131,10 @@ export async function POST(request: Request) {
 
         const fields = extractFieldsFromText(text, code);
 
+        const ALLOWED_TENURE = ["Freehold", "Leasehold"];
+        const tenureValue = fields.tenure || existingRow?.tenure || "Leasehold";
+        const safeTenure = ALLOWED_TENURE.includes(tenureValue) ? tenureValue : "Leasehold";
+
         const isPhotoMessage = Boolean(msg.photo && msg.photo.length > 0);
         const messageIdsForUpdate = isPhotoMessage
             ? await collectAlbumMessageIds(msg.message_id, msg.media_group_id ?? null)
@@ -149,7 +153,7 @@ export async function POST(request: Request) {
             state: fields.state || existingRow?.state || "Unknown",
             district: fields.district || existingRow?.district || null,
             property_type: fields.propertyType || existingRow?.property_type || "Residential",
-            tenure: fields.tenure || existingRow?.tenure || "Leasehold",
+            tenure: safeTenure,
             bumi_status: ["Bumi", "Non Bumi"].includes(fields.bumiStatus)
                 ? fields.bumiStatus
                 : existingRow?.bumi_status || "Unknown",

@@ -1,4 +1,3 @@
-// src/components/admin/layout/AdminPortal.tsx
 "use client";
 
 import { useCallback, useState } from "react";
@@ -23,7 +22,7 @@ import { FlaggedPhotosReview } from "@/components/admin/property/FlaggedPhotosRe
 import { PropertyRequestsView } from "@/components/admin/property-requests/PropertyRequestsView";
 
 import { useSession } from "@/lib/auth/useSession";
-import { useAdminProperties, useAdminOffers } from "@/lib/hooks/useAdminProperties";
+import { useAdminProperties, useAdminOffers } from "@/hooks/useAdminProperties";
 import { supabase } from "@/lib/supabase/supabase";
 import { VIEW_META } from "@/config/adminMeta";
 
