@@ -13,9 +13,10 @@ import { submitOfferToSupabase } from "@/lib/offers/submitOffer";
 import type { FormData, FormErrors } from "@/lib/offers/pendingOffer";
 import { checkEmailExists } from "@/lib/offers/checkEmail";
 import { supabase } from "@/lib/supabase/supabase";
+import { useOfferPartners } from "@/hooks/useOfferPartners";
 
 import { SubmitOfferModalProps } from "@/types/offer";
-import { PURCHASE_METHODS, initialForm } from "./SubmitOfferModal.constants";
+import { PURCHASE_METHODS, initialForm } from "../../constants/submit-offer";
 import { formatOfferInput, validateForm } from "@/lib/offers/validateOffer";
 import { Field, inputClass } from "@/components/ui/Field";
 import { translate as t } from "@/lib/i18n/getTranslation";
@@ -39,51 +40,8 @@ export function SubmitOfferModal({
   const [submitted, setSubmitted] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [legalFirms, setLegalFirms] = useState<{ id: string; name: string }[]>([]);
-  const [financingConsultants, setFinancingConsultants] = useState<{ id: string; name: string }[]>([]);
 
-  useEffect(() => {
-    if (!open) return;
-
-    async function fetchPartners() {
-      try {
-        const { data: legalData, error: legalError } = await supabase
-          .from("legal_firms")
-          .select("id, name")
-          .eq("is_active", true)
-          .order("name", { ascending: true });
-
-        if (legalError) {
-          console.error("Supabase error fetching legal firms:", legalError.message);
-        } else if (legalData && legalData.length > 0) {
-          setLegalFirms(legalData);
-        } else {
-          const { data: fallbackLegal } = await supabase
-            .from("legal_firms")
-            .select("id, name")
-            .order("name", { ascending: true });
-
-          if (fallbackLegal) setLegalFirms(fallbackLegal);
-        }
-
-        const { data: consultantData, error: consultantError } = await supabase
-          .from("financing_consultants")
-          .select("id, name")
-          .eq("is_active", true)
-          .order("name", { ascending: true });
-
-        if (consultantError) {
-          console.error("Supabase error fetching consultants:", consultantError.message);
-        } else if (consultantData) {
-          setFinancingConsultants(consultantData);
-        }
-      } catch (err) {
-        console.error("Unexpected error fetching partner dropdowns:", err);
-      }
-    }
-
-    fetchPartners();
-  }, [open]);
+  const { legalFirms, financingConsultants, loading: partnersLoading } = useOfferPartners(open);
 
   // Auto-fill user details if logged in
   useEffect(() => {
@@ -358,8 +316,11 @@ export function SubmitOfferModal({
                   value={form.financingConsultantId || ""}
                   onChange={(e) => updateField("financingConsultantId", e.target.value)}
                   className={inputClass(errors.financingConsultantId)}
+                  disabled={partnersLoading}
                 >
-                  <option value="">Select financing consultant (Optional)</option>
+                  <option value="">
+                    {partnersLoading ? "Loading consultants..." : "Select financing consultant (Optional)"}
+                  </option>
                   {financingConsultants.map((consultant) => (
                     <option key={consultant.id} value={consultant.id}>
                       {consultant.name}
@@ -374,8 +335,11 @@ export function SubmitOfferModal({
                   value={form.legalFirmId || ""}
                   onChange={(e) => updateField("legalFirmId", e.target.value)}
                   className={inputClass(errors.legalFirmId)}
+                  disabled={partnersLoading}
                 >
-                  <option value="">Select legal firm (Optional)</option>
+                  <option value="">
+                    {partnersLoading ? "Loading firms..." : "Select legal firm (Optional)"}
+                  </option>
                   {legalFirms.map((firm) => (
                     <option key={firm.id} value={firm.id}>
                       {firm.name}
