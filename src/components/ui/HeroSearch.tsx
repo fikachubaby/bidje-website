@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import {
   BadgeCheck,
   ChevronDown,
-  ChevronRight,
   FileCheck2,
   House,
   MapPin,

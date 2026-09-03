@@ -77,7 +77,7 @@ export function LegalAddModal({ isOpen, onClose, onSuccess, editFirm }: LegalAdd
             }
 
             const successMsg = editFirm?.id ? "Legal firm updated successfully!" : "Legal firm added successfully!";
-            
+
             onClose();
             onSuccess(successMsg);
         } catch (err: unknown) {
@@ -89,30 +89,30 @@ export function LegalAddModal({ isOpen, onClose, onSuccess, editFirm }: LegalAdd
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
-                <div className="flex items-center justify-between pb-4 border-b border-neutral-200">
+        <div className="modal-overlay">
+            <div className="modal-container">
+                <div className="modal-header">
                     <h3 className="text-lg font-bold text-neutral-900">
                         {editFirm ? "Edit Legal Firm" : "Add New Legal Firm"}
                     </h3>
                     <button
                         type="button"
                         onClick={onClose}
-                        className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+                        className="modal-close-btn"
                     >
                         <X className="h-5 w-5" />
                     </button>
                 </div>
 
                 {errorMessage && (
-                    <div className="mt-4 rounded-lg bg-red-50 p-3 text-xs font-medium text-red-600 border border-red-200">
+                    <div className="mt-4 alert-danger">
                         {errorMessage}
                     </div>
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                     <div>
-                        <label className="block text-xs font-bold uppercase text-neutral-600 mb-1">Firm Name *</label>
+                        <label className="form-label-uppercase">Firm Name *</label>
                         <FormInput
                             required
                             value={formData.name}
@@ -123,7 +123,7 @@ export function LegalAddModal({ isOpen, onClose, onSuccess, editFirm }: LegalAdd
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
-                            <label className="block text-xs font-bold uppercase text-neutral-600 mb-1">Contact Person</label>
+                            <label className="form-label-uppercase">Contact Person</label>
                             <FormInput
                                 value={formData.contactPerson}
                                 onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
@@ -131,7 +131,7 @@ export function LegalAddModal({ isOpen, onClose, onSuccess, editFirm }: LegalAdd
                             />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold uppercase text-neutral-600 mb-1">Phone Number</label>
+                            <label className="form-label-uppercase">Phone Number</label>
                             <FormInput
                                 value={formData.phone}
                                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -141,7 +141,7 @@ export function LegalAddModal({ isOpen, onClose, onSuccess, editFirm }: LegalAdd
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold uppercase text-neutral-600 mb-1">Email Address</label>
+                        <label className="form-label-uppercase">Email Address</label>
                         <FormInput
                             type="email"
                             value={formData.email}
@@ -151,7 +151,7 @@ export function LegalAddModal({ isOpen, onClose, onSuccess, editFirm }: LegalAdd
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold uppercase text-neutral-600 mb-1">Office Address</label>
+                        <label className="form-label-uppercase">Office Address</label>
                         <FormInput
                             value={formData.address}
                             onChange={(e) => setFormData({ ...formData, address: e.target.value })}
@@ -172,7 +172,7 @@ export function LegalAddModal({ isOpen, onClose, onSuccess, editFirm }: LegalAdd
                         </label>
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200">
+                    <div className="modal-footer">
                         <Button type="button" variant="secondary" onClick={onClose}>
                             Cancel
                         </Button>

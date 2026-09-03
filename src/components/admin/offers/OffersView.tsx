@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -8,20 +7,19 @@ import {
   Phone,
   XCircle,
   Search,
-  ChevronLeft,
-  ChevronRight,
   Eye,
   Clock,
   History,
   ShieldCheck,
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
-import { Button } from "@/components/ui/ButtonProps";
 import { FormInput, FormSelect } from "@/components/admin/ui/FormField";
 import { StatusBadge } from "@/components/admin/ui/StatusBadge";
-import { validateOfferPrice } from "@/lib/offers/validateOffer";
+import { PaginationDashboard } from "@/components/common/PaginationDashboard";
 import { OfferDetailsModal } from "@/components/ui/OfferDetailsModal";
 import { OfferHistoryModal } from "@/components/ui/OfferHistoryModal";
+import { RejectRemarkModal } from "@/components/admin/offers/RejectRemarkModal";
+import { useOffersView } from "@/hooks/useOffersView";
 import type { AdminProperty } from "@/types/property";
 import type { BuyerOffer, OfferStatus } from "@/types/offer";
 
@@ -37,60 +35,7 @@ interface OffersViewProps {
   setSearch: (search: string) => void;
   statusFilter: OfferStatus | "All";
   setStatusFilter: (status: OfferStatus | "All") => void;
-  // CHANGED: remark is now optional 3rd arg so verification rejection can persist a reason
   onUpdateStatus: (id: string, status: OfferStatus, remark?: string) => void;
-}
-
-// Small local modal for capturing a rejection remark (verification-reject or offer-reject)
-function RejectRemarkModal({
-  open,
-  title,
-  onCancel,
-  onConfirm,
-}: {
-  open: boolean;
-  title: string;
-  onCancel: () => void;
-  onConfirm: (remark: string) => void;
-}) {
-  const [remark, setRemark] = useState("");
-  if (!open) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
-        <h3 className="text-base font-bold text-neutral-900">{title}</h3>
-        <p className="mt-1 text-xs text-neutral-500">
-          This reason will be shown to the buyer. Be specific (e.g. &quot;IC is
-          blurry, please re-upload&quot;).
-        </p>
-        <textarea
-          value={remark}
-          onChange={(e) => setRemark(e.target.value)}
-          rows={3}
-          className="mt-3 w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-400 focus:outline-none"
-          placeholder="Reason for rejection..."
-        />
-        <div className="mt-4 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-lg border border-neutral-200 px-3 py-1.5 text-xs font-semibold hover:bg-neutral-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            disabled={!remark.trim()}
-            onClick={() => onConfirm(remark.trim())}
-            className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-40"
-          >
-            Confirm Rejection
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 export function OffersView({
@@ -107,56 +52,24 @@ export function OffersView({
   setStatusFilter,
   onUpdateStatus,
 }: OffersViewProps) {
-  const [offerErrors, setOfferErrors] = useState<Record<string, string>>({});
-  const [selectedOfferForDetails, setSelectedOfferForDetails] = useState<BuyerOffer | null>(null);
-  const [selectedOfferForHistory, setSelectedOfferForHistory] = useState<BuyerOffer | null>(null);
-  // Tracks which offer + which stage (verification/offer) is being rejected, to drive the remark modal
-  const [rejectTarget, setRejectTarget] = useState<{ id: string; stage: "verification" | "offer" } | null>(null);
-
-  function isPendingTooLong(createdAt: string): boolean {
-    const hoursElapsed = (new Date().getTime() - new Date(createdAt).getTime()) / (1000 * 60 * 60);
-    return hoursElapsed > 48;
-  }
-
-  // Admin Action 1: approve documents -> moves to "Verified", awaiting offer decision
-  function handleApproveVerification(offerId: string) {
-    onUpdateStatus(offerId, "Verified");
-  }
-
-  // Admin Action 2: final accept — only reachable once status is "Verified"
-  function handleAcceptOffer(offer: BuyerOffer, property: AdminProperty | undefined) {
-    if (property) {
-      const result = validateOfferPrice({
-        offerPrice: offer.amount,
-        minimumPrice: property.minimumPrice,
-      });
-
-      if (!result.valid) {
-        setOfferErrors((prev) => ({ ...prev, [offer.id]: result.error! }));
-        return;
-      }
-    }
-
-    setOfferErrors((prev) => {
-      const next = { ...prev };
-      delete next[offer.id];
-      return next;
-    });
-    onUpdateStatus(offer.id, "Accepted");
-  }
-
-  function handleConfirmReject(remark: string) {
-    if (!rejectTarget) return;
-    const targetStatus: OfferStatus =
-      rejectTarget.stage === "verification" ? "Verification Rejected" : "Rejected";
-    onUpdateStatus(rejectTarget.id, targetStatus, remark);
-    setRejectTarget(null);
-  }
+  const {
+    offerErrors,
+    selectedOfferForDetails,
+    setSelectedOfferForDetails,
+    selectedOfferForHistory,
+    setSelectedOfferForHistory,
+    rejectTarget,
+    setRejectTarget,
+    isPendingTooLong,
+    handleApproveVerification,
+    handleAcceptOffer,
+    handleConfirmReject,
+  } = useOffersView({ onUpdateStatus });
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row">
-        <div className="flex flex-1 items-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3 shadow-sm">
+        <div className="search-input-wrapper">
           <Search className="h-5 w-5 shrink-0 text-neutral-400" />
           <FormInput
             value={search}
@@ -181,16 +94,16 @@ export function OffersView({
         </FormSelect>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+      <div className="admin-table-container">
         <div className="overflow-x-auto">
-          <table className="min-w-[1020px] w-full text-left text-sm">
-            <thead className="border-b border-neutral-200 bg-neutral-50">
+          <table className="min-w-255 w-full text-left text-sm">
+            <thead className="admin-table-head">
               <tr>
-                <th className="px-5 py-4 font-bold text-neutral-600">Buyer Details</th>
-                <th className="px-5 py-4 font-bold text-neutral-600">Property</th>
-                <th className="px-5 py-4 font-bold text-neutral-600">Offer Amount</th>
-                <th className="px-5 py-4 font-bold text-neutral-600">Status & Reminder</th>
-                <th className="px-5 py-4 font-bold text-neutral-600">Actions</th>
+                <th className="admin-table-th">Buyer Details</th>
+                <th className="admin-table-th">Property</th>
+                <th className="admin-table-th">Offer Amount</th>
+                <th className="admin-table-th">Status & Reminder</th>
+                <th className="admin-table-th">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -215,10 +128,10 @@ export function OffersView({
                     isPendingTooLong(offer.createdAt);
 
                   return (
-                    <tr key={offer.id} className="border-b border-neutral-100 last:border-0 align-top">
+                    <tr key={offer.id} className="admin-table-tr align-top">
                       <td className="px-5 py-4">
                         <p className="font-bold text-neutral-900">{offer.buyerName}</p>
-                        <div className="mt-1 flex flex-col gap-1 text-xs text-neutral-500">
+                        <div className="mt-1 flex flex-col gap-1 dashboard-subtext text-xs">
                           <span className="flex items-center gap-1.5">
                             <Phone className="h-3.5 w-3.5" /> {offer.buyerPhone}
                           </span>
@@ -235,7 +148,7 @@ export function OffersView({
                           {property ? property.name : "Property unavailable"}
                         </p>
                         {property && (
-                          <p className="text-xs text-neutral-400 mt-0.5">
+                          <p className="mt-0.5 text-xs text-neutral-400">
                             {property.district}, {property.state}
                           </p>
                         )}
@@ -244,7 +157,7 @@ export function OffersView({
                       <td className="px-5 py-4">
                         <p className="font-black text-neutral-900">{formatPrice(offer.amount)}</p>
                         {property?.minimumPrice && (
-                          <p className="text-xs text-neutral-400 mt-0.5">
+                          <p className="mt-0.5 text-xs text-neutral-400">
                             Min: {formatPrice(property.minimumPrice)}
                           </p>
                         )}
@@ -259,12 +172,12 @@ export function OffersView({
                         <div className="space-y-1.5">
                           <StatusBadge status={offer.status} />
                           {offer.status === "Verification Rejected" && offer.verificationRemark && (
-                            <p className="max-w-[220px] text-xs text-red-600">
+                            <p className="max-w-55 text-xs text-red-600">
                               {offer.verificationRemark}
                             </p>
                           )}
                           {needsAttention && (
-                            <div className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 border border-amber-200">
+                            <div className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
                               <Clock className="h-3.5 w-3.5 shrink-0 text-amber-600" />
                               <span>Pending &gt; 48h</span>
                             </div>
@@ -277,58 +190,57 @@ export function OffersView({
                           <button
                             type="button"
                             onClick={() => setSelectedOfferForDetails(offer)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 px-2.5 py-1.5 text-xs font-semibold hover:bg-neutral-50"
+                            className="admin-btn-action-default"
                           >
                             <Eye className="h-3.5 w-3.5" /> Details
                           </button>
-                          
-                            <a href={`tel:${offer.buyerPhone}`}
-                            className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 px-2.5 py-1.5 text-xs font-semibold hover:bg-neutral-50"
-                          >
+
+                          <a href={`tel:${offer.buyerPhone}`} className="admin-btn-action-default">
                             <Phone className="h-3.5 w-3.5" /> Call
                           </a>
+
                           <button
                             type="button"
                             onClick={() => setSelectedOfferForHistory(offer)}
-                            className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 px-2.5 py-1.5 text-xs font-semibold hover:bg-neutral-50"
+                            className="admin-btn-action-default"
                           >
                             <History className="h-3.5 w-3.5" /> History
                           </button>
 
-                          {/* STAGE 1: Verify Documents — only when docs are in for review */}
+                          {/* STAGE 1: Verify Documents */}
                           {offer.status === "Under Verification" && (
                             <>
                               <button
                                 type="button"
                                 onClick={() => handleApproveVerification(offer.id)}
-                                className="inline-flex items-center gap-1 rounded-lg bg-teal-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-teal-700"
+                                className="admin-btn-action-primary"
                               >
                                 <ShieldCheck className="h-3.5 w-3.5" /> Approve Verification
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setRejectTarget({ id: offer.id, stage: "verification" })}
-                                className="inline-flex items-center gap-1 rounded-lg bg-red-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
+                                className="admin-btn-action-danger"
                               >
                                 <XCircle className="h-3.5 w-3.5" /> Reject Verification
                               </button>
                             </>
                           )}
 
-                          {/* STAGE 2: Offer Evaluation — only after documents are verified */}
+                          {/* STAGE 2: Offer Evaluation */}
                           {offer.status === "Verified" && (
                             <>
                               <button
                                 type="button"
                                 onClick={() => handleAcceptOffer(offer, property)}
-                                className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
+                                className="admin-btn-action-success"
                               >
                                 <CheckCircle2 className="h-3.5 w-3.5" /> Accept Offer
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setRejectTarget({ id: offer.id, stage: "offer" })}
-                                className="inline-flex items-center gap-1 rounded-lg bg-red-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-red-700"
+                                className="admin-btn-action-danger"
                               >
                                 <XCircle className="h-3.5 w-3.5" /> Reject Offer
                               </button>
@@ -345,33 +257,18 @@ export function OffersView({
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-2">
-        <p className="text-sm text-neutral-500">
-          Showing page <span className="font-semibold text-neutral-800">{page}</span> of{" "}
-          <span className="font-semibold text-neutral-800">{totalPages}</span> (Total: {totalCount} offers)
-        </p>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            onClick={() => setPage(Math.max(page - 1, 1))}
-            disabled={page <= 1 || loading}
-          >
-            <ChevronLeft className="h-4 w-4 mr-1" /> Previous
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => setPage(Math.min(page + 1, totalPages))}
-            disabled={page >= totalPages || loading}
-          >
-            Next <ChevronRight className="h-4 w-4 ml-1" />
-          </Button>
-        </div>
-      </div>
+      <PaginationDashboard
+        currentPage={page}
+        totalPages={totalPages}
+        totalItems={totalCount}
+        pageSize={10}
+        onPageChange={setPage}
+      />
 
       <OfferDetailsModal
         offer={selectedOfferForDetails}
         onClose={() => setSelectedOfferForDetails(null)}
-        onViewDocument={(title, url) => window.open(url, "_blank")}
+        onViewDocument={(_, url) => window.open(url, "_blank")}
       />
 
       <OfferHistoryModal
@@ -389,6 +286,6 @@ export function OffersView({
         onCancel={() => setRejectTarget(null)}
         onConfirm={handleConfirmReject}
       />
-    </div >
+    </div>
   );
 }

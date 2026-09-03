@@ -76,24 +76,21 @@ export function DashboardView({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <article className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm lg:col-span-2">
-          <h2 className="text-xl font-black text-neutral-900">Recent properties</h2>
-          <p className="mt-1 text-sm text-neutral-500">Latest updated listings in your CMS.</p>
+        <article className="dashboard-card lg:col-span-2">
+          <h2 className="dashboard-heading">Recent properties</h2>
+          <p className="mt-1 dashboard-subtext">Latest updated listings in your CMS.</p>
 
           <div className="mt-6 divide-y divide-neutral-100">
             {recent.length === 0 ? (
-              <p className="py-8 text-center text-sm text-neutral-500">
+              <p className="py-8 text-center dashboard-subtext">
                 No properties yet. Add your first listing to get started.
               </p>
             ) : (
               recent.map((property) => (
-                <div
-                  key={property.id}
-                  className="flex flex-wrap items-center justify-between gap-4 py-4 first:pt-0 last:pb-0"
-                >
+                <div key={property.id} className="dashboard-row">
                   <div className="min-w-0">
                     <p className="truncate font-bold text-neutral-900">{property.name}</p>
-                    <p className="text-sm text-neutral-500">
+                    <p className="dashboard-subtext">
                       {property.district}, {property.state} · {property.propertyType}
                     </p>
                   </div>
@@ -107,23 +104,23 @@ export function DashboardView({
           </div>
         </article>
 
-        <article className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-black text-neutral-900">Quick stats</h2>
+        <article className="dashboard-card">
+          <h2 className="dashboard-heading">Quick stats</h2>
           <dl className="mt-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <dt className="text-sm text-neutral-500">Draft listings</dt>
+            <div className="dashboard-stat-item">
+              <dt className="dashboard-subtext">Draft listings</dt>
               <dd className="font-black">{properties.filter((p) => p.status === "Draft").length}</dd>
             </div>
-            <div className="flex items-center justify-between">
-              <dt className="text-sm text-neutral-500">Sold</dt>
+            <div className="dashboard-stat-item">
+              <dt className="dashboard-subtext">Sold</dt>
               <dd className="font-black">{sold}</dd>
             </div>
-            <div className="flex items-center justify-between">
-              <dt className="text-sm text-neutral-500">Total offers</dt>
+            <div className="dashboard-stat-item">
+              <dt className="dashboard-subtext">Total offers</dt>
               <dd className="font-black">{offers.length}</dd>
             </div>
-            <div className="flex items-center justify-between">
-              <dt className="text-sm text-neutral-500">Accepted offers</dt>
+            <div className="dashboard-stat-item">
+              <dt className="dashboard-subtext">Accepted offers</dt>
               <dd className="font-black">
                 {offers.filter((o) => o.status === "Accepted").length}
               </dd>

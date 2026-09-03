@@ -68,13 +68,6 @@ export function SubscriberManagement() {
 
     return (
         <div className="space-y-6 p-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-xl font-black text-neutral-900">Subscription Requests</h2>
-                    <p className="text-sm text-neutral-500">Review and manage member subscription upgrade applications.</p>
-                </div>
-            </div>
-
             <SubscriberList
                 requests={requests}
                 loading={loading}

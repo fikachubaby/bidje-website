@@ -15,7 +15,7 @@ export const VIEW_META: Record<AdminView, { title: string; subtitle: string }> =
     },
     subscribers: {
         title: "Subscribers",
-        subtitle: "Manage newsletter and alert subscribers.",
+        subtitle: "Review and manage member subscription upgrade applications.",
     },
     offers: {
         title: "Buyer Offers",

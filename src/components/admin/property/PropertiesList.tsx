@@ -56,7 +56,7 @@ export function PropertiesList({
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row">
-        <div className="flex flex-1 items-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3 shadow-sm">
+        <div className="search-input-wrapper">
           <Search className="h-5 w-5 shrink-0 text-neutral-400" />
           <FormInput
             value={search}
@@ -79,16 +79,16 @@ export function PropertiesList({
         </FormSelect>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+      <div className="admin-table-container">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[800px] text-left text-sm">
-            <thead className="border-b border-neutral-200 bg-neutral-50">
+            <thead className="admin-table-head">
               <tr>
-                <th className="px-5 py-4 font-bold text-neutral-600">Property</th>
-                <th className="px-5 py-4 font-bold text-neutral-600">Location</th>
-                <th className="px-5 py-4 font-bold text-neutral-600">Price</th>
-                <th className="px-5 py-4 font-bold text-neutral-600">Status</th>
-                <th className="px-5 py-4 font-bold text-neutral-600">Actions</th>
+                <th className="admin-table-th">Property</th>
+                <th className="admin-table-th">Location</th>
+                <th className="admin-table-th">Price</th>
+                <th className="admin-table-th">Status</th>
+                <th className="admin-table-th">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -106,7 +106,7 @@ export function PropertiesList({
                 </tr>
               ) : (
                 properties.map((property) => (
-                  <tr key={property.id} className="border-b border-neutral-100 transition-colors last:border-0 hover:bg-neutral-50/50">
+                  <tr key={property.id} className="admin-table-tr transition-colors hover:bg-neutral-50/50">
                     <td className="px-5 py-4">
                       <button
                         type="button"
@@ -115,11 +115,11 @@ export function PropertiesList({
                       >
                         {property.name}
                       </button>
-                      <p className="mt-0.5 text-xs text-neutral-500">
+                      <p className="mt-0.5 dashboard-subtext text-xs">
                         {property.propertyType} · {property.tenure}
                       </p>
                       {property.telegramCode && (
-                        <p className="mt-1 text-xs font-mono font-semibold text-neutral-600">
+                        <p className="mt-1 font-mono text-xs font-semibold text-neutral-600">
                           {property.telegramCode}
                         </p>
                       )}
@@ -145,7 +145,7 @@ export function PropertiesList({
                         <button
                           type="button"
                           onClick={() => onEdit(property)}
-                          className="rounded-lg border border-neutral-200 p-2 hover:bg-neutral-50"
+                          className="admin-action-btn"
                           aria-label="Edit property"
                         >
                           <Edit3 className="h-4 w-4" />
@@ -153,7 +153,7 @@ export function PropertiesList({
                         <button
                           type="button"
                           onClick={() => onDuplicate(property)}
-                          className="rounded-lg border border-neutral-200 p-2 hover:bg-neutral-50"
+                          className="admin-action-btn"
                           aria-label="Duplicate property"
                         >
                           <Copy className="h-4 w-4" />
@@ -161,7 +161,7 @@ export function PropertiesList({
                         <button
                           type="button"
                           onClick={() => onDelete(property.id)}
-                          className="rounded-lg border border-neutral-200 p-2 hover:bg-red-50 hover:text-red-600"
+                          className="admin-action-btn-danger"
                           aria-label="Delete property"
                         >
                           <Trash2 className="h-4 w-4" />
