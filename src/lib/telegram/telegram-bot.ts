@@ -298,3 +298,17 @@ export function extractGoogleMapsUrl(text: string): string | null {
     const match = text.match(/https?:\/\/(?:maps\.google\.com|maps\.app\.goo\.gl|goo\.gl\/maps|share\.google|(?:www\.)?google\.com\/maps)[^\s\n]+/i);
     return match ? match[0].trim() : null;
 }
+
+/** Send a simple notification text message to the configured Telegram chat/group. */
+export async function sendTelegramNotification(text: string): Promise<void> {
+    const chatId = process.env.TELEGRAM_GROUP_CHAT_ID;
+    if (!chatId) {
+        console.warn("TELEGRAM_GROUP_CHAT_ID is not configured.");
+        return;
+    }
+    await tgFetch("sendMessage", {
+        chat_id: chatId,
+        text,
+        parse_mode: "Markdown",
+    });
+}
