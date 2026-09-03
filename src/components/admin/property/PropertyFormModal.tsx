@@ -1,9 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import { ImagePlus, Trash2, Loader2, Upload, FileText } from "lucide-react";
+import { Trash2, Loader2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/ButtonProps";
-import { toast } from "sonner";
 import {
   FormField,
   FormInput,
@@ -11,236 +9,54 @@ import {
   FormTextarea,
 } from "@/components/admin/ui/FormField";
 import { Modal } from "@/components/admin/ui/Modal";
+import { ImageDropzone } from "@/components/admin/property/ImageDropzone";
 import {
   PROPERTY_TYPES,
   PROPERTY_STATUSES,
   TENURE_TYPES,
   BUMI_STATUSES,
-  type AdminPropertyInput,
   type PropertyStatus,
   type PropertyType,
   type PropertyFormModalProps,
+  type AdminPropertyInput,
 } from "@/types/property";
-import {
-  formatWithCommas,
-  parseCommaNumber,
-  emptyPropertyInput,
-} from "@/lib/utils/property-utils";
-import { validatePropertyForm } from "@/lib/validations/validator";
+import { formatWithCommas, parseCommaNumber } from "@/lib/utils/property-utils";
+import { usePropertyForm } from "@/hooks/usePropertyForm";
 
-export function PropertyFormModal({
-  open,
-  editingProperty,
-  onClose,
-  onSave,
-}: PropertyFormModalProps) {
-  const [form, setForm] = useState<AdminPropertyInput>(emptyPropertyInput);
-  const [priceInput, setPriceInput] = useState("");
-  const [debtInput, setDebtInput] = useState("");
-  const [minPriceInput, setMinPriceInput] = useState("");
-  const [imageInput, setImageInput] = useState("");
-  const [error, setError] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
-  const [docUploading, setDocUploading] = useState(false);
-  const [docUploadError, setDocUploadError] = useState("");
-  const [minPriceTouched, setMinPriceTouched] = useState(false);
-  const [saving, setSaving] = useState(false);
+export function PropertyFormModal(props: PropertyFormModalProps) {
+  const { open, onClose } = props;
+  const {
+    form,
+    setForm,
+    priceInput,
+    setPriceInput,
+    debtInput,
+    setDebtInput,
+    minPriceInput,
+    setMinPriceInput,
+    error,
+    uploading,
+    uploadError,
+    docUploading,
+    docUploadError,
+    saving,
+    setMinPriceTouched,
+    addImageUrl,
+    removeImage,
+    removeDocument,
+    handleFileUpload,
+    handleDocumentUpload,
+    handleSubmit,
+    isEditing,
+  } = usePropertyForm(props);
 
-  useEffect(() => {
-    if (!open) return;
-
-    if (editingProperty) {
-      const p = editingProperty.price || 0;
-      const d = editingProperty.outstandingDebt || 0;
-      const mp = editingProperty.minimumPrice || 0;
-
-      setForm({
-        ...emptyPropertyInput,
-        ...editingProperty,
-        images: Array.isArray(editingProperty.images) ? editingProperty.images : [],
-        documents: Array.isArray(editingProperty.documents) ? editingProperty.documents : [],
-        tags: Array.isArray(editingProperty.tags) ? editingProperty.tags : [],
-      });
-
-      setPriceInput(formatWithCommas(p));
-      setDebtInput(formatWithCommas(d));
-      setMinPriceInput(formatWithCommas(mp));
-    } else {
-      setForm(emptyPropertyInput);
-      setPriceInput("");
-      setDebtInput("");
-      setMinPriceInput("");
-    }
-
-    setImageInput("");
-    setError("");
-    setUploadError("");
-    setDocUploadError("");
-    setMinPriceTouched(false);
-  }, [open, editingProperty]);
-
-  useEffect(() => {
-    if (!minPriceTouched) {
-      const computed = Math.max(0, (form.price || 0) - (form.outstandingDebt || 0));
-      setForm((prev) => ({ ...prev, minimumPrice: computed }));
-      setMinPriceInput(formatWithCommas(computed));
-    }
-  }, [form.price, form.outstandingDebt, minPriceTouched]);
-
-  function handleClose() {
-    onClose();
-  }
-
-  function addImage(e?: React.MouseEvent | React.KeyboardEvent) {
-    if (e) e.preventDefault();
-    const url = imageInput.trim();
-    if (!url) return;
-
-    setForm((prev) => ({
-      ...prev,
-      images: [...(prev.images || []), url],
-    }));
-    setImageInput("");
-  }
-
-  function removeImage(index: number) {
-    setForm((prev) => ({
-      ...prev,
-      images: (prev.images || []).filter((_, i) => i !== index),
-    }));
-  }
-
-  function removeDocument(index: number) {
-    setForm((prev) => ({
-      ...prev,
-      documents: (prev.documents || []).filter((_, i) => i !== index),
-    }));
-  }
-
-  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    setUploading(true);
-    setUploadError("");
-    const uploadedUrls: string[] = [];
-
-    for (const file of Array.from(files)) {
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const res = await fetch("/api/admin/upload", {
-          method: "POST",
-          body: formData,
-        });
-        const data = await res.json();
-
-        if (!res.ok) {
-          setUploadError(data.error || `Failed to upload ${file.name}`);
-          continue;
-        }
-
-        uploadedUrls.push(data.url);
-      } catch {
-        setUploadError(`Failed to upload ${file.name}`);
-      }
-    }
-
-    if (uploadedUrls.length > 0) {
-      setForm((prev) => ({
-        ...prev,
-        images: [...(prev.images || []), ...uploadedUrls],
-      }));
-    }
-
-    setUploading(false);
-    e.target.value = "";
-  }
-
-  async function handleDocumentUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    setDocUploading(true);
-    setDocUploadError("");
-    const uploadedUrls: string[] = [];
-
-    for (const file of Array.from(files)) {
-      if (file.type !== "application/pdf") {
-        setDocUploadError("Only PDF files are allowed for property documents.");
-        continue;
-      }
-
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const res = await fetch("/api/admin/upload", {
-          method: "POST",
-          body: formData,
-        });
-        const data = await res.json();
-
-        if (!res.ok) {
-          setDocUploadError(data.error || `Failed to upload ${file.name}`);
-          continue;
-        }
-
-        uploadedUrls.push(data.url);
-      } catch {
-        setDocUploadError(`Failed to upload ${file.name}`);
-      }
-    }
-
-    if (uploadedUrls.length > 0) {
-      setForm((prev) => ({
-        ...prev,
-        documents: [...(prev.documents || []), ...uploadedUrls],
-      }));
-    }
-
-    setDocUploading(false);
-    e.target.value = "";
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (saving) return;
-
-    const validationError = validatePropertyForm(form);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    setError("");
-
-    try {
-      setSaving(true);
-      await onSave({
-        ...form,
-        images: form.images || [],
-        documents: form.documents || [],
-        tags: form.tags || [],
-      });
-      toast.success(isEditing ? "Property updated successfully" : "Property created successfully");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save property");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const isEditing = Boolean(editingProperty);
   const currentImages = form.images || [];
   const currentDocuments = form.documents || [];
 
   return (
     <Modal
       open={open}
-      onClose={handleClose}
+      onClose={onClose}
       wide
       title={isEditing ? "Edit property" : "Add property"}
       description="Complete all listing details. Save as Draft or publish immediately."
@@ -265,9 +81,7 @@ export function PropertyFormModal({
               setPriceInput(rawVal);
               setForm({ ...form, price: parseCommaNumber(rawVal) });
             }}
-            onBlur={() => {
-              setPriceInput(formatWithCommas(form.price));
-            }}
+            onBlur={() => setPriceInput(formatWithCommas(form.price))}
             placeholder="e.g. 400,000"
           />
         </FormField>
@@ -282,9 +96,7 @@ export function PropertyFormModal({
               setDebtInput(rawVal);
               setForm({ ...form, outstandingDebt: parseCommaNumber(rawVal) });
             }}
-            onBlur={() => {
-              setDebtInput(formatWithCommas(form.outstandingDebt));
-            }}
+            onBlur={() => setDebtInput(formatWithCommas(form.outstandingDebt))}
             placeholder="e.g. 20,000"
           />
         </FormField>
@@ -304,9 +116,7 @@ export function PropertyFormModal({
               setMinPriceInput(rawVal);
               setForm({ ...form, minimumPrice: parseCommaNumber(rawVal) });
             }}
-            onBlur={() => {
-              setMinPriceInput(formatWithCommas(form.minimumPrice));
-            }}
+            onBlur={() => setMinPriceInput(formatWithCommas(form.minimumPrice))}
             placeholder="e.g. 380,000"
           />
         </FormField>
@@ -481,81 +291,16 @@ export function PropertyFormModal({
         <FormField
           label="Images"
           wide
-          hint="Upload photos, or paste an image URL. First image becomes the cover photo."
+          hint="Upload photos by drag & drop, file selection, or URL. First image is used as cover."
         >
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <label
-              className={`flex cursor-pointer items-center gap-2 rounded-xl border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 ${uploading ? "pointer-events-none opacity-60" : ""
-                }`}
-            >
-              {uploading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Upload className="h-4 w-4" />
-              )}
-              {uploading ? "Uploading…" : "Upload photos"}
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                multiple
-                className="hidden"
-                onChange={handleFileUpload}
-                disabled={uploading}
-              />
-            </label>
-
-            <span className="text-xs text-neutral-400">or</span>
-
-            <FormInput
-              value={imageInput}
-              onChange={(e) => setImageInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addImage();
-                }
-              }}
-              placeholder="Paste an image URL"
-              className="mt-0 flex-1 min-w-[200px]"
-            />
-            <Button type="button" variant="secondary" onClick={addImage}>
-              <ImagePlus className="h-4 w-4" />
-              Add
-            </Button>
-          </div>
-
-          {uploadError && <p className="mt-2 text-sm text-red-600">{uploadError}</p>}
-
-          {currentImages.length > 0 && (
-            <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {currentImages.map((url, index) => (
-                <li
-                  key={`${url}-${index}`}
-                  className="group relative overflow-hidden rounded-xl border border-neutral-200"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={url}
-                    alt={`Property photo ${index + 1}`}
-                    className="h-24 w-full object-cover"
-                  />
-                  {index === 0 && (
-                    <span className="absolute left-1 top-1 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
-                      Cover
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => removeImage(index)}
-                    className="absolute right-1 top-1 rounded-lg bg-black/60 p-1 text-white opacity-0 transition-opacity hover:bg-red-600 group-hover:opacity-100"
-                    aria-label="Remove image"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+          <ImageDropzone
+            images={currentImages}
+            uploading={uploading}
+            uploadError={uploadError}
+            onUploadFiles={handleFileUpload}
+            onAddUrl={addImageUrl}
+            onRemoveImage={removeImage}
+          />
         </FormField>
 
         <FormField
@@ -652,7 +397,7 @@ export function PropertyFormModal({
         </FormField>
 
         <div className="flex justify-end gap-3 md:col-span-2">
-          <Button type="button" variant="secondary" onClick={handleClose}>
+          <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
           <Button type="submit" disabled={saving}>
