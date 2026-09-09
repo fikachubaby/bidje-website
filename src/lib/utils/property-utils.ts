@@ -35,6 +35,7 @@ export function generateSlug(title: string): string {
 
 // --- Form State Defaults & Transformers ---
 export const emptyPropertyInput: AdminPropertyInput = {
+    title: "",
     name: "",
     price: 0,
     address: "",
@@ -62,6 +63,7 @@ export const emptyPropertyInput: AdminPropertyInput = {
 
 export function toPropertyInput(property: AdminProperty): AdminPropertyInput {
     return {
+        title: property.title || "",
         name: property.name || "",
         price: property.price || 0,
         address: property.address || "",

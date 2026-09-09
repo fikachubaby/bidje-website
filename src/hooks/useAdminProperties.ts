@@ -105,6 +105,7 @@ export function useAdminProperties(isAuthenticated: boolean) {
     const duplicateProperty = useCallback(
         async (property: AdminProperty) => {
             const duplicateInput: AdminPropertyInput = {
+                title: property.title,
                 name: `${property.name} (Copy)`,
                 price: property.price,
                 address: property.address,
