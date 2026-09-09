@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
         let query = supabaseAdmin
             .from("offers")
-            .select("*, properties!offers_property_id_fkey(id, title, asking_price, minimum_acceptable_price)", { count: "exact" });
+            .select("*, properties!offers_property_id_fkey(*)", { count: "exact" });
 
         if (status && status !== "All") {
             query = query.eq("status", status);
@@ -45,11 +45,33 @@ export async function GET(request: Request) {
 
         const formatted = (offers || []).map((o) => {
             const profile = profileMap.get(o.user_id);
-            const property = Array.isArray(o.properties) ? o.properties[0] : o.properties;
+            const propertyRaw = Array.isArray(o.properties) ? o.properties[0] : o.properties;
+
+            const property = propertyRaw
+                ? {
+                    id: propertyRaw.id,
+                    name: propertyRaw.title || propertyRaw.name || "Untitled Property",
+                    title: propertyRaw.title || propertyRaw.name || "Untitled Property",
+                    price: Number(propertyRaw.asking_price || propertyRaw.price || 0),
+                    minimumPrice: propertyRaw.minimum_acceptable_price ? Number(propertyRaw.minimum_acceptable_price) : undefined,
+                    district: propertyRaw.district || "",
+                    state: propertyRaw.state || "",
+                    address: propertyRaw.address || "",
+                    status: propertyRaw.status || "Available",
+                    propertyType: propertyRaw.property_type || "",
+                    tenure: propertyRaw.tenure || "",
+                    bumiStatus: propertyRaw.bumi_status || "Non-Bumi",
+                    images: Array.isArray(propertyRaw.images) ? propertyRaw.images : [],
+                    createdAt: propertyRaw.created_at || "",
+                    updatedAt: propertyRaw.updated_at || "",
+                }
+                : undefined;
+
             return {
                 id: o.id,
                 propertyId: o.property_id,
                 propertyTitle: property?.title || "Untitled Property",
+                property,
                 buyerName: profile?.full_name || "Unknown",
                 buyerPhone: o.contact_phone || profile?.phone || "",
                 buyerEmail: profile?.email || "",

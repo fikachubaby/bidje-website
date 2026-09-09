@@ -8,7 +8,7 @@ import type { AdminProperty } from "@/types/property";
 interface PropertyPreviewModalProps {
     property: AdminProperty;
     onClose: () => void;
-    onEdit: (property: AdminProperty) => void;
+    onEdit?: (property: AdminProperty) => void;
 }
 
 export function PropertyPreviewModal({
@@ -79,14 +79,16 @@ export function PropertyPreviewModal({
                     >
                         Close
                     </button>
-                    <button
-                        type="button"
-                        onClick={() => onEdit(property)}
-                        className="flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-neutral-800"
-                    >
-                        <Edit3 className="h-4 w-4" />
-                        Edit Property
-                    </button>
+                    {onEdit && (
+                        <button
+                            type="button"
+                            onClick={() => onEdit(property)}
+                            className="flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-neutral-800"
+                        >
+                            <Edit3 className="h-4 w-4" />
+                            Edit Property
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

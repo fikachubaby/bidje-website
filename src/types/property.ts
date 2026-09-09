@@ -34,7 +34,7 @@ export const PROPERTY_TYPES = [
 export type PropertyType = (typeof PROPERTY_TYPES)[number];
 
 export const PROPERTY_STATUSES = [
-  "Draft", "Published", "Under Offer", "Sold", "Active", "Archived"
+  "Draft", "Published", "Under Offer", "Sold", "Archived"
 ] as const;
 export type PropertyStatus = (typeof PROPERTY_STATUSES)[number];
 
@@ -159,6 +159,7 @@ export interface AdminProperty {
   metaTitle?: string;
   metaDescription?: string;
   telegramCode?: string;
+  title: string;
 }
 
 export type AdminPropertyInput = Omit<

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -11,6 +12,7 @@ import {
   Clock,
   History,
   ShieldCheck,
+  Building2,
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { FormInput, FormSelect } from "@/components/admin/ui/FormField";
@@ -19,6 +21,7 @@ import { PaginationDashboard } from "@/components/common/PaginationDashboard";
 import { OfferDetailsModal } from "@/components/ui/OfferDetailsModal";
 import { OfferHistoryModal } from "@/components/ui/OfferHistoryModal";
 import { RejectRemarkModal } from "@/components/admin/offers/RejectRemarkModal";
+import { PropertyPreviewModal } from "@/components/admin/property/PropertyPreviewModal";
 import { useOffersView } from "@/hooks/useOffersView";
 import type { AdminProperty } from "@/types/property";
 import type { BuyerOffer, OfferStatus } from "@/types/offer";
@@ -65,6 +68,9 @@ export function OffersView({
     handleAcceptOffer,
     handleConfirmReject,
   } = useOffersView({ onUpdateStatus });
+
+  // State for Property Details Modal
+  const [selectedPropertyForDetails, setSelectedPropertyForDetails] = useState<AdminProperty | null>(null);
 
   return (
     <div className="space-y-6">
@@ -121,7 +127,17 @@ export function OffersView({
                 </tr>
               ) : (
                 offers.map((offer) => {
-                  const property = properties.find((item) => item.id === offer.propertyId);
+                  // Resolve property from props array OR embedded offer property from API
+                  const property: AdminProperty | undefined =
+                    properties.find((item) => item.id === offer.propertyId) ||
+                    (offer as { property?: AdminProperty }).property;
+
+                  const propertyName =
+                    property?.name ||
+                    (property as unknown as { title?: string })?.title ||
+                    (offer as { propertyTitle?: string }).propertyTitle ||
+                    "Property unavailable";
+
                   const offerError = offerErrors[offer.id];
                   const needsAttention =
                     (offer.status === "Under Verification" || offer.status === "Submitted") &&
@@ -144,13 +160,24 @@ export function OffersView({
                       </td>
 
                       <td className="px-5 py-4">
-                        <p className="font-semibold text-neutral-900">
-                          {property ? property.name : "Property unavailable"}
-                        </p>
-                        {property && (
-                          <p className="mt-0.5 text-xs text-neutral-400">
-                            {property.district}, {property.state}
-                          </p>
+                        {property ? (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPropertyForDetails(property)}
+                            className="group text-left font-semibold text-neutral-900 hover:text-brand transition-colors focus:outline-none"
+                          >
+                            <span className="flex items-center gap-1.5 underline decoration-neutral-300 group-hover:decoration-brand">
+                              <Building2 className="h-3.5 w-3.5 text-neutral-400 group-hover:text-brand" />
+                              {propertyName}
+                            </span>
+                            <p className="mt-0.5 text-xs text-neutral-400 no-underline font-normal">
+                              {property.district && property.state
+                                ? `${property.district}, ${property.state}`
+                                : "Click to view details"}
+                            </p>
+                          </button>
+                        ) : (
+                          <p className="font-semibold text-neutral-400 italic">Property unavailable</p>
                         )}
                       </td>
 
@@ -207,7 +234,6 @@ export function OffersView({
                             <History className="h-3.5 w-3.5" /> History
                           </button>
 
-                          {/* STAGE 1: Verify Documents */}
                           {offer.status === "Under Verification" && (
                             <>
                               <button
@@ -227,7 +253,6 @@ export function OffersView({
                             </>
                           )}
 
-                          {/* STAGE 2: Offer Evaluation */}
                           {offer.status === "Verified" && (
                             <>
                               <button
@@ -286,6 +311,13 @@ export function OffersView({
         onCancel={() => setRejectTarget(null)}
         onConfirm={handleConfirmReject}
       />
+
+      {selectedPropertyForDetails && (
+        <PropertyPreviewModal
+          property={selectedPropertyForDetails}
+          onClose={() => setSelectedPropertyForDetails(null)}
+        />
+      )}
     </div>
   );
 }
