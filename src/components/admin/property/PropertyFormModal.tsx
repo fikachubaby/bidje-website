@@ -300,6 +300,7 @@ export function PropertyFormModal(props: PropertyFormModalProps) {
             onUploadFiles={handleFileUpload}
             onAddUrl={addImageUrl}
             onRemoveImage={removeImage}
+            onReorderImages={(newImages) => setForm({ ...form, images: newImages })}
           />
         </FormField>
 

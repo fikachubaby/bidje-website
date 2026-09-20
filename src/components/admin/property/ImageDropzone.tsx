@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, DragEvent, ChangeEvent } from "react";
-import { UploadCloud, ImagePlus, Loader2, Trash2 } from "lucide-react";
+import { UploadCloud, ImagePlus, Loader2, Trash2, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/ButtonProps";
 import { FormInput } from "@/components/admin/ui/FormField";
 
@@ -12,6 +12,7 @@ interface ImageDropzoneProps {
     onUploadFiles: (files: FileList | File[]) => void;
     onAddUrl: (url: string) => void;
     onRemoveImage: (index: number) => void;
+    onReorderImages?: (newImages: string[]) => void;
 }
 
 export function ImageDropzone({
@@ -21,9 +22,11 @@ export function ImageDropzone({
     onUploadFiles,
     onAddUrl,
     onRemoveImage,
+    onReorderImages,
 }: ImageDropzoneProps) {
     const [isDragging, setIsDragging] = useState(false);
     const [imageUrlInput, setImageUrlInput] = useState("");
+    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
     const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
         e.preventDefault();
@@ -62,6 +65,29 @@ export function ImageDropzone({
         }
     };
 
+    /* Item Reordering Drag Handlers */
+    const handleItemDragStart = (index: number) => {
+        setDraggedIndex(index);
+    };
+
+    const handleItemDragOver = (e: DragEvent<HTMLLIElement>, targetIndex: number) => {
+        e.preventDefault();
+        if (draggedIndex === null || draggedIndex === targetIndex) return;
+
+        const updatedImages = [...images];
+        const [movedImage] = updatedImages.splice(draggedIndex, 1);
+        updatedImages.splice(targetIndex, 0, movedImage);
+
+        setDraggedIndex(targetIndex);
+        if (onReorderImages) {
+            onReorderImages(updatedImages);
+        }
+    };
+
+    const handleItemDragEnd = () => {
+        setDraggedIndex(null);
+    };
+
     return (
         <div className="space-y-3">
             {/* Drag and Drop Zone */}
@@ -70,8 +96,8 @@ export function ImageDropzone({
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 className={`relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 transition-colors ${isDragging
-                        ? "border-blue-500 bg-blue-50/50"
-                        : "border-neutral-200 bg-neutral-50/50 hover:bg-neutral-50"
+                    ? "border-blue-500 bg-blue-50/50"
+                    : "border-neutral-200 bg-neutral-50/50 hover:bg-neutral-50"
                     }`}
             >
                 <input
@@ -125,25 +151,39 @@ export function ImageDropzone({
 
             {uploadError && <p className="text-xs font-semibold text-red-600">{uploadError}</p>}
 
-            {/* Image Preview Grid */}
+            {/* Image Preview Grid with Drag Reordering */}
             {images.length > 0 && (
                 <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     {images.map((url, index) => (
                         <li
                             key={`${url}-${index}`}
-                            className="group relative overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100"
+                            draggable
+                            onDragStart={() => handleItemDragStart(index)}
+                            onDragOver={(e) => handleItemDragOver(e, index)}
+                            onDragEnd={handleItemDragEnd}
+                            className={`group relative overflow-hidden rounded-xl border border-neutral-200 bg-neutral-100 cursor-grab active:cursor-grabbing transition-shadow ${draggedIndex === index ? "opacity-50 ring-2 ring-blue-500" : ""
+                                }`}
                         >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                                 src={url}
                                 alt={`Property photo ${index + 1}`}
-                                className="h-24 w-full object-cover"
+                                className="h-24 w-full object-cover pointer-events-none"
                             />
+
+                            {/* Cover Badge */}
                             {index === 0 && (
                                 <span className="absolute left-1.5 top-1.5 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm">
                                     Cover
                                 </span>
                             )}
+
+                            {/* Drag Indicator Icon */}
+                            <div className="absolute bottom-1.5 left-1.5 rounded-md bg-black/40 p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                <GripVertical className="h-3.5 w-3.5" />
+                            </div>
+
+                            {/* Remove Button */}
                             <button
                                 type="button"
                                 onClick={() => onRemoveImage(index)}

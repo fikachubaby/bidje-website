@@ -1,4 +1,3 @@
-// src/components/admin/property/FlaggedPhotosReview.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
