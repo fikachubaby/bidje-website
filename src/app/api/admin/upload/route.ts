@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
 import { requireStaffSession } from "@/lib/auth/requireStaffSession";
 
-const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8MB
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 8MB
 const ALLOWED_TYPES = [
     "image/jpeg",
     "image/png",
     "image/webp",
     "image/gif",
     "application/pdf",
+    "video/mp4",
 ];
 
 export async function POST(request: Request) {

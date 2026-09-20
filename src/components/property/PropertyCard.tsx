@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Bath, BedDouble, MapPin, ImageOff } from "lucide-react";
+import { Bath, BedDouble, MapPin, ImageOff, Video } from "lucide-react";
 
 import { FavouriteButton } from "@/components/property/FavouriteButton";
 import type { Property } from "@/types/property";
@@ -19,6 +19,13 @@ function getRatingLabel(score: number): string {
   return "Review Carefully";
 }
 
+// Helper to detect if a media URL is an MP4 video
+function isVideoUrl(url?: string | null): boolean {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  return lower.includes(".mp4") || lower.startsWith("data:video/mp4");
+}
+
 export function PropertyCard({ property, searchString = "" }: PropertyCardProps) {
   // Use property.slug if available, otherwise fallback to property.id
   const identifier = property.slug || property.id;
@@ -31,10 +38,11 @@ export function PropertyCard({ property, searchString = "" }: PropertyCardProps)
     (property.imageUrl && property.imageUrl.trim() !== "") ||
     (Array.isArray(property.images) && property.images.length > 0 && property.images[0]?.trim() !== "");
 
-  const image = hasValidImages
+  const mediaUrl = hasValidImages
     ? (property.imageUrl || property.images?.[0])
     : "/placeholder-property.jpg";
 
+  const isVideo = isVideoUrl(mediaUrl);
   const score = property.bidjeScore ?? 85;
   const ratingLabel = getRatingLabel(score);
 
@@ -42,15 +50,32 @@ export function PropertyCard({ property, searchString = "" }: PropertyCardProps)
     <article className="group flex flex-col overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-[0_10px_35px_rgba(0,0,0,0.07)] transition duration-300 hover:-translate-y-1.5 hover:border-[#ffd400] hover:shadow-[0_20px_45px_rgba(0,0,0,0.12)]">
       <div className="relative">
         <Link href={detailUrl} className="block">
-          <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
+          <div className="relative aspect-4/3 overflow-hidden bg-neutral-100">
             {hasValidImages ? (
-              <Image
-                src={image!}
-                alt={property.title || "Property image"}
-                fill
-                className="object-cover transition duration-700 group-hover:scale-105"
-                sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-              />
+              isVideo ? (
+                <div className="relative h-full w-full bg-black">
+                  <video
+                    src={mediaUrl!}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                  />
+                  {/* Video Indicator Badge */}
+                  <div className="absolute right-3 top-3 z-10 rounded-lg bg-black/60 p-1.5 text-white backdrop-blur-md">
+                    <Video className="h-4 w-4" />
+                  </div>
+                </div>
+              ) : (
+                <Image
+                  src={mediaUrl!}
+                  alt={property.title || "Property image"}
+                  fill
+                  className="object-cover transition duration-700 group-hover:scale-105"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                />
+              )
             ) : (
               <div className="flex h-full w-full flex-col items-center justify-center bg-neutral-100 text-neutral-400 transition duration-700 group-hover:scale-105">
                 <ImageOff className="h-10 w-10 stroke-1 mb-2" />
@@ -58,7 +83,7 @@ export function PropertyCard({ property, searchString = "" }: PropertyCardProps)
               </div>
             )}
 
-            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/70 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-black/70 to-transparent pointer-events-none" />
 
             <span className="absolute left-4 top-4 rounded-full bg-[#ffd400] px-3 py-1.5 text-[11px] font-black uppercase tracking-wide text-black">
               {formatCategory(property.category)}

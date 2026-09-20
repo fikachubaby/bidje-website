@@ -8,7 +8,6 @@ interface PropertyListingGridProps {
     totalCount: number;
     totalPages: number;
     currentPage: number;
-    /** e.g. "/properties/location/selangor/category/landed" — page param is appended as ?page=N */
     basePath: string;
     emptyMessage?: string;
 }
