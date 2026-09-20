@@ -8,13 +8,11 @@ import type { OfferHistoryItem } from "@/types/offer";
 interface OfferSubmitFormProps {
     userId: string;
     offerHistory: OfferHistoryItem[];
-    /** Pre-selected offer id, e.g. set by clicking "Select Offer" on a featured listing. */
     selectedOfferId: string;
     onSelectedOfferIdChange: (id: string) => void;
     onSubmit: (params: { offerId: string; userId: string; icFile: File; paymentProofFile: File | null }) => Promise<{ success: true } | { success: false; message: string }>;
 }
 
-/** Upload form for IC + payment proof against an existing offer. */
 export function OfferSubmitForm({
     userId,
     offerHistory,

@@ -63,7 +63,7 @@ export default function HeroSearch() {
 
   return (
     <section className="relative bg-black text-white">
-      <div className="relative min-h-[700px]">
+      <div className="relative min-h-137.5 lg:min-h-175 pb-16 lg:pb-36">
         {/* Optimized Background Image using Next/Image for compression and LCP performance */}
         <Image
           src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1800&q=85"
@@ -112,7 +112,7 @@ export default function HeroSearch() {
         </div>
 
         {/* Server-Side Search Form Box */}
-        <div className="absolute inset-x-0 -bottom-[110px] sm:-bottom-[90px] z-30">
+        <div className="relative z-30 -mt-8 sm:-mt-12 lg:-mt-24 px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
             <form
               action="/properties"
