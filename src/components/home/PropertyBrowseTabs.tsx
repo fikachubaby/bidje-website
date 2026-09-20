@@ -13,6 +13,7 @@ import type {
 } from "@/types/property";
 import { PROPERTY_TYPES } from "@/types/property";
 import { isHotDeal } from "@/lib/utils/score";
+import { PaginationDashboard } from "@/components/common/PaginationDashboard";
 
 type TabKey = "type" | "hot" | "urgent";
 
@@ -23,7 +24,7 @@ const TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
 ];
 
 export type RawBrowseProperty = Pick<
-DBProperty,
+    DBProperty,
     | "id"
     | "title"
     | "asking_price"
@@ -39,11 +40,11 @@ DBProperty,
     | "status"
     | "slug"
     | "bidje_score"
-    > & {
-        property_images?: Pick < DBPropertyImage, "image_url" | "is_cover" | "display_order" > [] | null;
-    };
+> & {
+    property_images?: Pick<DBPropertyImage, "image_url" | "is_cover" | "display_order">[] | null;
+};
 
-function getHotDeals(properties: RawBrowseProperty[], limit = 9) {
+function getHotDeals(properties: RawBrowseProperty[], limit = 60) {
     const goodBuys = properties.filter((p) => isHotDeal(p.bidje_score));
 
     if (goodBuys.length >= 3) {
@@ -91,6 +92,10 @@ export function PropertyBrowseTabs({ properties = [] }: { properties?: RawBrowse
     const [activeTab, setActiveTab] = useState<TabKey>("type");
     const [activeType, setActiveType] = useState<PropertyType | "All">("All");
 
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const [pageSize, setPageSize] = useState<number>(6);
+
     const availableTypes = useMemo(() => {
         const present = new Set(properties.map((p) => p.property_type));
         return PROPERTY_TYPES.filter((t) => present.has(t));
@@ -107,6 +112,25 @@ export function PropertyBrowseTabs({ properties = [] }: { properties?: RawBrowse
             ? properties
             : properties.filter((p) => p.property_type === activeType);
     }, [properties, activeTab, activeType]);
+
+    // Handlers to reset page on filter change
+    const handleTabChange = (key: TabKey) => {
+        setActiveTab(key);
+        setCurrentPage(1);
+    };
+
+    const handleTypeChange = (type: PropertyType | "All") => {
+        setActiveType(type);
+        setCurrentPage(1);
+    };
+
+    // Pagination Calculations
+    const totalItems = filtered.length;
+    const totalPages = Math.ceil(totalItems / pageSize) || 1;
+    const paginatedProperties = useMemo(() => {
+        const start = (currentPage - 1) * pageSize;
+        return filtered.slice(start, start + pageSize);
+    }, [filtered, currentPage, pageSize]);
 
     return (
         <section className="bg-white py-16 sm:py-24 border-b border-neutral-100">
@@ -127,10 +151,10 @@ export function PropertyBrowseTabs({ properties = [] }: { properties?: RawBrowse
                         return (
                             <button
                                 key={tab.key}
-                                onClick={() => setActiveTab(tab.key)}
+                                onClick={() => handleTabChange(tab.key)}
                                 className={`flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-bold transition-colors ${isActive
-                                    ? "border-black bg-black text-white"
-                                    : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400"
+                                        ? "border-black bg-black text-white"
+                                        : "border-neutral-200 bg-white text-neutral-700 hover:border-neutral-400"
                                     }`}
                             >
                                 <Icon className="h-4 w-4" />
@@ -143,10 +167,10 @@ export function PropertyBrowseTabs({ properties = [] }: { properties?: RawBrowse
                 {activeTab === "type" && availableTypes.length > 0 && (
                     <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
                         <button
-                            onClick={() => setActiveType("All")}
+                            onClick={() => handleTypeChange("All")}
                             className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors ${activeType === "All"
-                                ? "bg-[#ffd400] text-black"
-                                : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                                    ? "bg-[#ffd400] text-black"
+                                    : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
                                 }`}
                         >
                             All Types
@@ -154,10 +178,10 @@ export function PropertyBrowseTabs({ properties = [] }: { properties?: RawBrowse
                         {availableTypes.map((type) => (
                             <button
                                 key={type}
-                                onClick={() => setActiveType(type)}
+                                onClick={() => handleTypeChange(type)}
                                 className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-colors ${activeType === type
-                                    ? "bg-[#ffd400] text-black"
-                                    : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                                        ? "bg-[#ffd400] text-black"
+                                        : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
                                     }`}
                             >
                                 {type}
@@ -166,14 +190,15 @@ export function PropertyBrowseTabs({ properties = [] }: { properties?: RawBrowse
                     </div>
                 )}
 
+                {/* Property Grid */}
                 <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {filtered.length === 0 && (
+                    {paginatedProperties.length === 0 && (
                         <p className="col-span-full text-center text-sm text-neutral-500">
                             No listings available in this category yet.
                         </p>
                     )}
 
-                    {filtered.slice(0, 9).map((property) => {
+                    {paginatedProperties.map((property) => {
                         const imageUrl = coverImageUrl(property.property_images);
                         return (
                             <Link
@@ -217,6 +242,24 @@ export function PropertyBrowseTabs({ properties = [] }: { properties?: RawBrowse
                         );
                     })}
                 </div>
+
+                {/* Pagination Controls */}
+                {totalItems > 0 && (
+                    <div className="mt-8 rounded-2xl border border-neutral-200 overflow-hidden">
+                        <PaginationDashboard
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            totalItems={totalItems}
+                            pageSize={pageSize}
+                            pageSizeOptions={[6, 12, 24, 48]}
+                            onPageChange={(page) => setCurrentPage(page)}
+                            onPageSizeChange={(size) => {
+                                setPageSize(size);
+                                setCurrentPage(1);
+                            }}
+                        />
+                    </div>
+                )}
             </div>
         </section>
     );

@@ -4,7 +4,6 @@ import { cookies } from "next/headers";
 import HeroSearch from "@/components/ui/HeroSearch";
 import HowItWorks from "@/components/home/HowItWorks";
 import { Navbar } from "@/components/layout/Navbar";
-import Statistics from "@/components/home/Statistics";
 import { FeaturedListings } from "@/components/home/FeaturedListings";
 import { PropertyBrowseTabs } from "@/components/home/PropertyBrowseTabs";
 import SubscriptionBanner from "@/components/home/SubscriptionBanner";
@@ -49,7 +48,6 @@ export default async function HomePage() {
       <Navbar />
       <HeroSearch />
       <FeaturedListings />
-      <Statistics />
       <SubscriptionBanner />
       <PropertyBrowseTabs properties={browseProperties ?? []} />
       <HowItWorks />
