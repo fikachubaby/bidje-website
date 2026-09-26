@@ -10,47 +10,43 @@ export function useSession() {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const fetchProfile = async (userId: string) => {
-        const { data, error } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", userId)
-            .single();
-
-        if (!error && data) {
-            setProfile(data as Profile);
-        } else {
-            setProfile(null);
-        }
-    };
-
     useEffect(() => {
-        const initializeSession = async () => {
-            const { data } = await supabase.auth.getSession();
-            const currentUser = data.session?.user ?? null;
-            setUser(currentUser);
+        let isMounted = true;
 
-            if (currentUser) {
-                await fetchProfile(currentUser.id);
+        const fetchProfile = async (userId: string) => {
+            const { data, error } = await supabase
+                .from("profiles")
+                .select("*")
+                .eq("id", userId)
+                .single();
+
+            if (isMounted) {
+                setProfile(!error && data ? (data as Profile) : null);
             }
-            setLoading(false);
         };
-
-        initializeSession();
 
         const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
             const currentUser = session?.user ?? null;
-            setUser(currentUser);
+
+            if (isMounted) {
+                setUser(currentUser);
+            }
 
             if (currentUser) {
                 await fetchProfile(currentUser.id);
-            } else {
+            } else if (isMounted) {
                 setProfile(null);
             }
-            setLoading(false);
+
+            if (isMounted) {
+                setLoading(false);
+            }
         });
 
-        return () => listener.subscription.unsubscribe();
+        return () => {
+            isMounted = false;
+            listener.subscription.unsubscribe();
+        };
     }, []);
 
     const isSubscriber = Boolean(profile && SUBSCRIBER_ROLES.includes(profile.role));

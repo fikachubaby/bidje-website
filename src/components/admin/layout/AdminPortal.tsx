@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { translate as t } from "@/lib/i18n/getTranslation";
 import { AdminSidebar } from "@/components/admin/layout/AdminSidebar";
 import { AdminHeader } from "@/components/admin/layout/AdminHeader";
@@ -38,6 +38,7 @@ import type { OfferStatus } from "@/types/offer";
 
 export default function AdminPortal() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, loading: sessionLoading } = useSession();
 
   const {
@@ -71,10 +72,19 @@ export default function AdminPortal() {
     updateOfferStatus,
   } = useAdminOffers(Boolean(user));
 
-  const [activeView, setActiveView] = useState<AdminView>("dashboard");
+  const activeView = (searchParams.get("view") as AdminView) || "dashboard";
   const [mobileNav, setMobileNav] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingProperty, setEditingProperty] = useState<AdminProperty | null>(null);
+
+  const setActiveView = useCallback(
+    (view: AdminView) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("view", view);
+      router.push(`?${params.toString()}`, { scroll: false });
+    },
+    [router, searchParams]
+  );
 
   const handleOpenCreate = useCallback(() => {
     setEditingProperty(null);

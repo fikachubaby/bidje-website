@@ -93,7 +93,7 @@ export function FinancialAddModal({
                     <button
                         type="button"
                         onClick={onClose}
-                        className="rounded-lg p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600"
+                        className="modal-close-icon-btn"
                     >
                         <X className="h-5 w-5" />
                     </button>
@@ -101,7 +101,7 @@ export function FinancialAddModal({
 
                 <form onSubmit={handleSubmit} className="mt-4 space-y-4">
                     {error && (
-                        <div className="rounded-lg bg-red-50 p-3 text-xs font-medium text-red-600">
+                        <div className="alert-error">
                             {error}
                         </div>
                     )}
@@ -128,14 +128,14 @@ export function FinancialAddModal({
                             type="button"
                             onClick={onClose}
                             disabled={submitting}
-                            className="rounded-lg border border-neutral-200 px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                            className="btn-modal-cancel"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="rounded-lg bg-neutral-900 px-4 py-2 text-xs font-semibold text-white hover:bg-neutral-800 disabled:opacity-50"
+                            className="btn-modal-submit"
                         >
                             {submitting ? "Saving..." : editConsultant ? "Update Consultant" : "Create Consultant"}
                         </button>

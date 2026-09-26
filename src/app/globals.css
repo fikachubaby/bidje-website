@@ -97,6 +97,10 @@ body {
   @apply rounded-lg p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700;
 }
 
+.modal-close-icon-btn {
+  @apply rounded-lg p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600;
+}
+
 .form-label-uppercase {
   @apply mb-1 block text-xs font-bold uppercase text-neutral-600;
 }
@@ -105,7 +109,20 @@ body {
   @apply rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-600;
 }
 
+.alert-error {
+  @apply rounded-lg bg-red-50 p-3 text-xs font-medium text-red-600;
+}
+
+.btn-modal-cancel {
+  @apply rounded-lg border border-neutral-200 px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50;
+}
+
+.btn-modal-submit {
+  @apply rounded-lg bg-neutral-900 px-4 py-2 text-xs font-semibold text-white hover:bg-neutral-800 disabled:opacity-50;
+}
+
 @layer utilities {
+
   /* Action Buttons inside Admin Tables */
   .admin-btn-action-default {
     @apply inline-flex items-center gap-1 rounded-lg border border-neutral-200 px-2.5 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors;
