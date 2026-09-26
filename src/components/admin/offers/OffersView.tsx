@@ -15,6 +15,7 @@ import {
   Building2,
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { useReminders } from "@/hooks/useReminders";
 import { FormInput, FormSelect } from "@/components/admin/ui/FormField";
 import { StatusBadge } from "@/components/admin/ui/StatusBadge";
 import { PaginationDashboard } from "@/components/common/PaginationDashboard";
@@ -71,6 +72,7 @@ export function OffersView({
 
   // State for Property Details Modal
   const [selectedPropertyForDetails, setSelectedPropertyForDetails] = useState<AdminProperty | null>(null);
+  const { createReminder } = useReminders();
 
   return (
     <div className="space-y-6">
@@ -292,8 +294,10 @@ export function OffersView({
 
       <OfferDetailsModal
         offer={selectedOfferForDetails}
+        properties={properties}
         onClose={() => setSelectedOfferForDetails(null)}
         onViewDocument={(_, url) => window.open(url, "_blank")}
+        onCreateReminder={createReminder}
       />
 
       <OfferHistoryModal
@@ -316,6 +320,7 @@ export function OffersView({
         <PropertyPreviewModal
           property={selectedPropertyForDetails}
           onClose={() => setSelectedPropertyForDetails(null)}
+          onCreateReminder={createReminder}
         />
       )}
     </div>

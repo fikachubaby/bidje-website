@@ -49,4 +49,8 @@ export const VIEW_META: Record<AdminView, { title: string; subtitle: string }> =
         title: "Financial Consultants",
         subtitle: "Manage financial consultants and update their status",
     },
+    reminders: {
+        title: "Reminder Properties",
+        subtitle: "Manage legal, renovation, and follow-up deadlines across properties and offers.",
+    },
 };

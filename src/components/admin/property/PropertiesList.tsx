@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/admin/ui/StatusBadge";
 import { PaginationDashboard } from "@/components/common/PaginationDashboard";
 import { PropertyPreviewModal } from "@/components/admin/property/PropertyPreviewModal";
 import { formatPrice } from "@/lib/utils";
+import { useReminders } from "@/hooks/useReminders";
 import { PROPERTY_STATUSES, type AdminProperty, type PropertyStatus } from "@/types/property";
 
 interface PropertiesListProps {
@@ -45,6 +46,7 @@ export function PropertiesList({
   onDuplicate,
 }: PropertiesListProps) {
   const [previewProperty, setPreviewProperty] = useState<AdminProperty | null>(null);
+  const { createReminder } = useReminders();
 
   return (
     <div className="space-y-6">
@@ -188,6 +190,7 @@ export function PropertiesList({
         <PropertyPreviewModal
           property={previewProperty}
           onClose={() => setPreviewProperty(null)}
+          onCreateReminder={createReminder}
           onEdit={(property) => {
             setPreviewProperty(null);
             onEdit(property);

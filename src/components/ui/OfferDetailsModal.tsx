@@ -1,17 +1,25 @@
 "use client";
 
-import { FileText, ExternalLink, XCircle } from "lucide-react";
+import { useState } from "react";
+import { FileText, ExternalLink, XCircle, BellPlus } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/ButtonProps";
+import { AddReminderModal } from "@/components/admin/reminders/AddReminderModal";
 import type { BuyerOffer } from "@/types/offer";
+import type { AdminProperty } from "@/types/property";
+import type { ReminderFormInput } from "@/types/reminder";
 
 interface OfferDetailsModalProps {
     offer: BuyerOffer | null;
+    properties: AdminProperty[];
     onClose: () => void;
     onViewDocument: (title: string, url: string) => void;
+    onCreateReminder: (input: ReminderFormInput) => Promise<void>;
 }
 
-export function OfferDetailsModal({ offer, onClose, onViewDocument }: OfferDetailsModalProps) {
+export function OfferDetailsModal({ offer, properties, onClose, onViewDocument, onCreateReminder }: OfferDetailsModalProps) {
+    const [showReminderModal, setShowReminderModal] = useState(false);
+
     if (!offer) return null;
 
     return (
@@ -88,12 +96,27 @@ export function OfferDetailsModal({ offer, onClose, onViewDocument }: OfferDetai
                     </div>
                 </div>
 
-                <div className="mt-6 flex justify-end">
+                <div className="mt-6 flex justify-between">
+                    <Button variant="ghost" onClick={() => setShowReminderModal(true)}>
+                        <BellPlus className="h-4 w-4" />
+                        Add Reminder
+                    </Button>
                     <Button variant="secondary" onClick={onClose}>
                         Close
                     </Button>
                 </div>
             </div>
+
+            {showReminderModal && (
+                <AddReminderModal
+                    properties={properties}
+                    offers={[offer]}
+                    defaultPropertyId={offer.propertyId}
+                    defaultOfferId={offer.id}
+                    onClose={() => setShowReminderModal(false)}
+                    onSubmit={onCreateReminder}
+                />
+            )}
         </div>
     );
 }

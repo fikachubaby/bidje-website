@@ -9,6 +9,8 @@ import { StatusBadge } from "@/components/admin/ui/StatusBadge";
 import { supabase } from "@/lib/supabase/supabase";
 import { submitOfferToSupabase } from "@/lib/offers/submitOffer";
 import { clearPendingOffer } from "@/lib/offers/pendingOffer";
+import { useReminders } from "@/hooks/useReminders";
+import { formatDueIn } from "@/lib/reminders";
 import type { DashboardViewProps } from "@/types/admin";
 
 const OPEN_OFFER_STATUSES = ["Submitted", "Pending Documents", "Under Verification", "Verification Rejected", "Verified"];
@@ -19,6 +21,8 @@ export function DashboardView({
   offers,
   onAddProperty,
 }: DashboardViewProps) {
+  const { reminders, loading: remindersLoading, sendNow } = useReminders();
+
   useEffect(() => {
     async function processPendingOffer() {
       const rawPending = sessionStorage.getItem("bidje:pendingOffer");
@@ -58,6 +62,15 @@ export function DashboardView({
     .slice(0, 5);
 
   const displayTotalProperties = totalPropertiesCount ?? properties.length;
+
+  const upcomingReminders = reminders
+    .filter((r) => r.status === "scheduled")
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+    .slice(0, 5);
+
+  const overdueCount = reminders.filter(
+    (r) => r.status === "scheduled" && new Date(r.dueDate).getTime() < Date.now()
+  ).length;
 
   return (
     <div className="space-y-8">
@@ -128,6 +141,53 @@ export function DashboardView({
           </dl>
         </article>
       </div>
+
+      <article className="dashboard-card">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="dashboard-heading">Upcoming reminders</h2>
+            <p className="mt-1 dashboard-subtext">
+              Legal, renovation, and follow-up deadlines across your properties.
+              {overdueCount > 0 && (
+                <span className="ml-2 font-bold text-red-600">{overdueCount} overdue</span>
+              )}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 divide-y divide-neutral-100">
+          {remindersLoading ? (
+            <p className="py-8 text-center dashboard-subtext">Loading reminders...</p>
+          ) : upcomingReminders.length === 0 ? (
+            <p className="py-8 text-center dashboard-subtext">
+              No scheduled reminders. Add one from a property or offer page.
+            </p>
+          ) : (
+            upcomingReminders.map((r) => (
+              <div key={r.id} className="dashboard-row">
+                <div className="min-w-0">
+                  <p className="truncate font-bold text-neutral-900">{r.title}</p>
+                  <p className="dashboard-subtext">
+                    {r.propertyTitle ?? "—"} · {r.investorName ?? r.investorEmail}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className={`font-black ${new Date(r.dueDate).getTime() < Date.now() ? "text-red-600" : "text-neutral-900"}`}>
+                    {formatDueIn(r.dueDate)}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => sendNow(r.id)}
+                    className="mt-1 text-xs font-bold text-blue-600 hover:underline"
+                  >
+                    Send now
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </article>
     </div>
   );
 }

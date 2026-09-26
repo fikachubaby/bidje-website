@@ -1,21 +1,28 @@
 "use client";
 
-import { Edit3, X } from "lucide-react";
+import { useState } from "react";
+import { BellPlus, Edit3, X } from "lucide-react";
 import { StatusBadge } from "@/components/admin/ui/StatusBadge";
 import { formatPrice } from "@/lib/utils";
+import { AddReminderModal } from "@/components/admin/reminders/AddReminderModal";
 import type { AdminProperty } from "@/types/property";
+import type { ReminderFormInput } from "@/types/reminder";
 
 interface PropertyPreviewModalProps {
     property: AdminProperty;
     onClose: () => void;
     onEdit?: (property: AdminProperty) => void;
+    onCreateReminder: (input: ReminderFormInput) => Promise<void>;
 }
 
 export function PropertyPreviewModal({
     property,
     onClose,
     onEdit,
+    onCreateReminder,
 }: PropertyPreviewModalProps) {
+    const [showReminderModal, setShowReminderModal] = useState(false);
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
             <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
@@ -71,26 +78,46 @@ export function PropertyPreviewModal({
                 </div>
 
                 {/* Action Controls */}
-                <div className="flex items-center justify-end gap-3 border-t border-neutral-100 pt-4">
+                <div className="flex items-center justify-between border-t border-neutral-100 pt-4">
                     <button
                         type="button"
-                        onClick={onClose}
-                        className="rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-bold text-neutral-700 hover:bg-neutral-50"
+                        onClick={() => setShowReminderModal(true)}
+                        className="flex items-center gap-2 rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-bold text-neutral-700 hover:bg-neutral-50"
                     >
-                        Close
+                        <BellPlus className="h-4 w-4" />
+                        Add Reminder
                     </button>
-                    {onEdit && (
+
+                    <div className="flex items-center gap-3">
                         <button
                             type="button"
-                            onClick={() => onEdit(property)}
-                            className="flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-neutral-800"
+                            onClick={onClose}
+                            className="rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-bold text-neutral-700 hover:bg-neutral-50"
                         >
-                            <Edit3 className="h-4 w-4" />
-                            Edit Property
+                            Close
                         </button>
-                    )}
+                        {onEdit && (
+                            <button
+                                type="button"
+                                onClick={() => onEdit(property)}
+                                className="flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-neutral-800"
+                            >
+                                <Edit3 className="h-4 w-4" />
+                                Edit Property
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
+
+            {showReminderModal && (
+                <AddReminderModal
+                    properties={[property]}
+                    defaultPropertyId={property.id}
+                    onClose={() => setShowReminderModal(false)}
+                    onSubmit={onCreateReminder}
+                />
+            )}
         </div>
     );
 }
