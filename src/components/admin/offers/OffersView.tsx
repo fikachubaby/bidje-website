@@ -24,8 +24,9 @@ import { OfferHistoryModal } from "@/components/ui/OfferHistoryModal";
 import { RejectRemarkModal } from "@/components/admin/offers/RejectRemarkModal";
 import { PropertyPreviewModal } from "@/components/admin/property/PropertyPreviewModal";
 import { useOffersView } from "@/hooks/useOffersView";
-import type { AdminProperty } from "@/types/property";
+import type { AdminProperty, PropertyStatus } from "@/types/property";
 import type { BuyerOffer, OfferStatus } from "@/types/offer";
+import { DealTypeConfirmModal } from "@/components/admin/ui/DealTypeConfirmModal";
 
 interface OffersViewProps {
   offers: BuyerOffer[];
@@ -40,6 +41,7 @@ interface OffersViewProps {
   statusFilter: OfferStatus | "All";
   setStatusFilter: (status: OfferStatus | "All") => void;
   onUpdateStatus: (id: string, status: OfferStatus, remark?: string) => void;
+  onPropertyStatusChange: (propertyId: string, status: PropertyStatus) => void;
 }
 
 export function OffersView({
@@ -55,6 +57,7 @@ export function OffersView({
   statusFilter,
   setStatusFilter,
   onUpdateStatus,
+  onPropertyStatusChange,
 }: OffersViewProps) {
   const {
     offerErrors,
@@ -68,7 +71,16 @@ export function OffersView({
     handleApproveVerification,
     handleAcceptOffer,
     handleConfirmReject,
-  } = useOffersView({ onUpdateStatus });
+    dealTypeModal,
+    confirmingDealType,
+    handleConfirmDealType,
+    handleSkipDealType,
+  } = useOffersView({
+    onUpdateStatus,
+    onOfferAccepted: (offer) => {
+      onPropertyStatusChange(offer.propertyId, "Under Offer");
+    },
+  });
 
   // State for Property Details Modal
   const [selectedPropertyForDetails, setSelectedPropertyForDetails] = useState<AdminProperty | null>(null);
@@ -321,6 +333,16 @@ export function OffersView({
           property={selectedPropertyForDetails}
           onClose={() => setSelectedPropertyForDetails(null)}
           onCreateReminder={createReminder}
+        />
+      )}
+
+      {dealTypeModal && (
+        <DealTypeConfirmModal
+          propertyTitle={dealTypeModal.propertyTitle}
+          suggestion={dealTypeModal.suggestion}
+          submitting={confirmingDealType}
+          onConfirm={handleConfirmDealType}
+          onSkip={handleSkipDealType}
         />
       )}
     </div>

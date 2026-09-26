@@ -12,10 +12,8 @@ const ALLOWED_STATUSES = [
     "Rejected",
 ];
 
-// Statuses where a remark must be persisted and the buyer notified
 const REMARK_REQUIRED_STATUSES = ["Verification Rejected", "Rejected"];
 
-// PATCH /api/admin/offers/[id]
 export async function PATCH(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
@@ -25,7 +23,7 @@ export async function PATCH(
 
     try {
         const { id } = await params;
-        const { status, remark } = await request.json();
+        const { status, remark, dealTypeCode } = await request.json();
 
         if (!ALLOWED_STATUSES.includes(status)) {
             return NextResponse.json(
@@ -65,23 +63,48 @@ export async function PATCH(
 
         if (error) throw error;
 
-        // Scenario A: notify buyer when verification is rejected
-        if (status === "Verification Rejected") {
-            // TODO: no email-sending utility found in the codebase yet.
-            // Wire this to whatever you use for buyer-facing notifications
-            // (Resend/SendGrid, a Supabase Edge Function, or a
-            // `notifications` table your buyer UI polls). Example if you
-            // add a notifications table:
-            //
-            // await supabaseAdmin.from("notifications").insert({
-            //     user_id: offer.user_id,
-            //     type: "offer_verification_rejected",
-            //     message: remark.trim(),
-            //     offer_id: id,
-            // });
+        let dealTypeSuggestion = null;
+
+        // Scenario B: offer accepted — suggest legal deal type, instantiate stages
+        if (status === "Accepted") {
+            const { data: suggestionRows, error: suggestError } = await supabaseAdmin.rpc(
+                "suggest_deal_type",
+                {
+                    p_property_id: offer.property_id,
+                    p_purchase_method: offer.purchase_method,
+                }
+            );
+
+            if (suggestError) {
+                console.error("suggest_deal_type failed:", suggestError);
+            } else {
+                dealTypeSuggestion = suggestionRows?.[0] ?? null;
+            }
+
+            // If the frontend already confirmed a deal type (second call after staff review),
+            // instantiate the legal case stages now.
+            if (dealTypeCode) {
+                const finalSuggestion = dealTypeSuggestion ?? {};
+                await supabaseAdmin.rpc("instantiate_legal_stages", {
+                    p_offer_id: id,
+                    p_deal_type: dealTypeCode,
+                    p_needs_leasehold_consent: finalSuggestion.needs_leasehold_consent ?? false,
+                    p_needs_bumi_consent: finalSuggestion.needs_bumi_consent ?? false,
+                });
+
+                await supabaseAdmin
+                    .from("offers")
+                    .update({ deal_type_code: dealTypeCode })
+                    .eq("id", id);
+            }
         }
 
-        return NextResponse.json({ success: true, offer });
+        // Scenario A: notify buyer when verification is rejected
+        if (status === "Verification Rejected") {
+            // TODO: wire to your buyer-facing notification mechanism
+        }
+
+        return NextResponse.json({ success: true, offer, dealTypeSuggestion });
     } catch (err: unknown) {
         console.error("PATCH /api/admin/offers/[id] failed:", err);
         const msg = err instanceof Error ? err.message : "Failed to update offer status";

@@ -1,4 +1,7 @@
+"use client";
+
 import { useState, useEffect, useCallback } from "react";
+import { toast } from "sonner";
 
 export interface LegalFirm {
     id: string;
@@ -22,19 +25,7 @@ export function useLegalView() {
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [selectedFirmForEdit, setSelectedFirmForEdit] = useState<LegalFirm | null>(null);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-    const showToast = (message: string) => {
-        setSuccessMessage(message);
-    };
-
-    useEffect(() => {
-        if (!successMessage) return;
-        const timer = setTimeout(() => {
-            setSuccessMessage(null);
-        }, 4000);
-        return () => clearTimeout(timer);
-    }, [successMessage]);
+    const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
     const fetchFirms = useCallback(async () => {
         setLoading(true);
@@ -54,9 +45,11 @@ export function useLegalView() {
                 setTotalPages(data.totalPages || 1);
             } else {
                 console.error("Failed to load firms:", data.error);
+                toast.error(data.error || "Failed to load legal firms");
             }
         } catch (error) {
             console.error("Failed to fetch legal firms", error);
+            toast.error("Failed to load legal firms");
         } finally {
             setLoading(false);
         }
@@ -66,8 +59,13 @@ export function useLegalView() {
         fetchFirms();
     }, [fetchFirms]);
 
-    const handleDelete = async (id: string, name: string) => {
-        if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+    const requestDelete = (id: string, name: string) => {
+        setDeleteTarget({ id, name });
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteTarget) return;
+        const { id, name } = deleteTarget;
 
         try {
             const res = await fetch(`/api/admin/legals?id=${id}`, {
@@ -75,16 +73,21 @@ export function useLegalView() {
             });
 
             if (res.ok) {
-                showToast("Legal firm deleted successfully!");
+                toast.success(`"${name}" deleted successfully`);
                 fetchFirms();
             } else {
                 const data = await res.json();
-                alert(data.error || "Failed to delete firm");
+                toast.error(data.error || "Failed to delete firm");
             }
         } catch (error) {
             console.error("Error deleting firm:", error);
+            toast.error("Failed to delete firm");
+        } finally {
+            setDeleteTarget(null);
         }
     };
+
+    const cancelDelete = () => setDeleteTarget(null);
 
     const handleSearchChange = (value: string) => {
         setSearch(value);
@@ -112,7 +115,7 @@ export function useLegalView() {
     };
 
     const handleModalSuccess = (msg: string) => {
-        showToast(msg);
+        toast.success(msg);
         fetchFirms();
     };
 
@@ -125,12 +128,14 @@ export function useLegalView() {
         totalCount,
         search,
         statusFilter,
-        successMessage,
+        deleteTarget,
         isAddModalOpen,
         selectedFirmForEdit,
         handleSearchChange,
         handleStatusFilterChange,
-        handleDelete,
+        requestDelete,
+        confirmDelete,
+        cancelDelete,
         handleOpenAddModal,
         handleOpenEditModal,
         handleCloseModal,

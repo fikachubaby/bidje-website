@@ -31,6 +31,7 @@ import type {
   AdminProperty,
   AdminPropertyInput,
   AdminView,
+  PropertyStatus,
 } from "@/types/property";
 
 import type { OfferStatus } from "@/types/offer";
@@ -119,15 +120,22 @@ export default function AdminPortal() {
     async (id: string, status: OfferStatus, remark?: string) => {
       try {
         await updateOfferStatus(id, status, remark);
-        if (status === "Accepted") {
-          const offer = offers.find((item) => item.id === id);
-          if (offer) await updateStatus(offer.propertyId, "Under Offer");
-        }
       } catch {
         alert("Failed to update offer status");
       }
     },
-    [offers, updateStatus, updateOfferStatus]
+    [updateOfferStatus]
+  );
+
+  const handlePropertyStatusChange = useCallback(
+    async (propertyId: string, status: PropertyStatus) => {
+      try {
+        await updateStatus(propertyId, status);
+      } catch {
+        alert("Failed to update property status");
+      }
+    },
+    [updateStatus]
   );
 
   if (sessionLoading) {
@@ -231,6 +239,7 @@ export default function AdminPortal() {
               statusFilter={offersStatusFilter}
               setStatusFilter={setOffersStatusFilter}
               onUpdateStatus={handleUpdateOffer}
+              onPropertyStatusChange={handlePropertyStatusChange}
             />
           )}
 
