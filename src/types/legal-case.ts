@@ -35,4 +35,6 @@ export interface LegalCaseStage {
     propertyTitle?: string;
     buyerName?: string;
     legalFirmName?: string;
+    aiSummary?: string | null;
+    aiSummaryGeneratedAt?: string | null;
 }

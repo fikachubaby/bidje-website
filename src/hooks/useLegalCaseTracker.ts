@@ -75,5 +75,16 @@ export function useLegalCaseTracker() {
         }
     };
 
-    return { stages, loading, fetchStages, moveStage, markBlocked, unblock };
+    const regenerateSummary = async (stageId: string) => {
+        try {
+            const res = await fetch(`/api/legal-cases/${stageId}/summarize`, { method: "POST" });
+            if (!res.ok) throw new Error("Failed to generate summary");
+            toast.success("AI summary generated");
+            await fetchStages();
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed to generate summary");
+        }
+    };
+
+    return { stages, loading, fetchStages, moveStage, markBlocked, unblock, regenerateSummary };
 }

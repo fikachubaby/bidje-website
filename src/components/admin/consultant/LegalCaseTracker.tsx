@@ -17,7 +17,7 @@ function isOverdue(stage: LegalCaseStage): boolean {
 }
 
 export function LegalCaseTracker() {
-    const { stages, loading, moveStage, markBlocked, unblock } = useLegalCaseTracker();
+    const { stages, loading, moveStage, markBlocked, unblock, regenerateSummary } = useLegalCaseTracker();
     const [draggedId, setDraggedId] = useState<string | null>(null);
     const [blockingId, setBlockingId] = useState<string | null>(null);
     const [blockReason, setBlockReason] = useState("");
@@ -88,10 +88,10 @@ export function LegalCaseTracker() {
                                         draggable={STAGE_CATEGORY_ORDER.indexOf(category) === colIndex}
                                         onDragStart={() => setDraggedId(stage.id)}
                                         className={`rounded-xl border bg-white p-3 shadow-sm cursor-grab active:cursor-grabbing ${stage.status === "blocked"
-                                                ? "border-red-300 bg-red-50"
-                                                : overdue
-                                                    ? "border-amber-300"
-                                                    : "border-neutral-200"
+                                            ? "border-red-300 bg-red-50"
+                                            : overdue
+                                                ? "border-amber-300"
+                                                : "border-neutral-200"
                                             }`}
                                     >
                                         <p className="font-semibold text-sm text-neutral-900 truncate">
@@ -132,6 +132,22 @@ export function LegalCaseTracker() {
                                                 className="mt-2 text-[11px] font-bold text-red-600 hover:underline"
                                             >
                                                 Flag as blocked
+                                            </button>
+                                        )}
+
+                                        {stage.aiSummary && (
+                                            <div className="mt-2 rounded-lg bg-indigo-50 border border-indigo-100 px-2 py-1.5">
+                                                <p className="text-[11px] font-bold text-indigo-700">AI Summary</p>
+                                                <p className="mt-0.5 text-[11px] text-indigo-600">{stage.aiSummary}</p>
+                                            </div>
+                                        )}
+                                        {(stage.status === "blocked" || isOverdue(stage)) && (
+                                            <button
+                                                type="button"
+                                                onClick={() => regenerateSummary(stage.id)}
+                                                className="mt-1.5 text-[11px] font-bold text-indigo-600 hover:underline"
+                                            >
+                                                {stage.aiSummary ? "Regenerate summary" : "Generate AI summary"}
                                             </button>
                                         )}
                                     </div>

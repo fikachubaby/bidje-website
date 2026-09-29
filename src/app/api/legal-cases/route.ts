@@ -43,6 +43,8 @@ export async function GET() {
         propertyTitle: s.offers?.properties?.title,
         buyerName: s.offers?.profiles?.full_name,
         legalFirmName: s.legal_firms?.name,
+        aiSummary: s.ai_summary,
+        aiSummaryGeneratedAt: s.ai_summary_generated_at,
     }));
 
     return NextResponse.json({ stages: mapped });
