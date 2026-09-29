@@ -24,6 +24,14 @@ async function tgFetch(method: string, body: Record<string, unknown>) {
     return data.result;
 }
 
+const CONTACT_FOOTER = [
+    `Note ## : For privacy concern please contact us for more pictures and details`,
+    ``,
+    `Interested to buy property for your future? Contact us now!`,
+    `+60137098606 (Fikri/Ina/Haziq)`,
+    `www.dealhartanah.com`,
+].join("\n");
+
 /** Build the caption text matching the client's listing template. */
 export function buildTelegramCaption(property: {
     telegramCode: string;
@@ -56,8 +64,6 @@ export function buildTelegramCaption(property: {
     if (property.landSize) lines.push(`Land Area : ${property.landSize}`);
     lines.push(`PRICE : RM${property.askingPrice.toLocaleString()}`);
 
-    // Amenities / Access / Additional Information block, as typed or as
-    // captured verbatim from the original Telegram import.
     const trimmedDescription = property.description?.trim();
     if (trimmedDescription) {
         lines.push(``, trimmedDescription);
@@ -93,8 +99,7 @@ export async function postNewListing(
     };
 }
 
-/** Edit an existing listing's text — routes to the correct Telegram method
- *  depending on whether the original message was a photo (caption) or plain text. */
+/** Edit an existing listing's text (photo caption or plain text). */
 export async function editListingCaption(
     messageId: number,
     caption: string,
@@ -150,24 +155,26 @@ interface SyncableProperty {
     description?: string | null;
 }
 
-const CONTACT_FOOTER = [
-    `Note ## : For privacy concern please contact us for more pictures and details`,
-    ``,
-    `Interested to buy property for your future? Contact us now!`,
-    `+60137098606 (Fikri/Ina/Haziq)`,
-    `www.dealhartanah.com`,
-].join("\n");
-
 /**
- * Push a website-side create/update to Telegram, then persist the resulting
- * message id(s) back onto the property row. Never throws Telegram is a
- * secondary system, a failed sync shouldn't fail the property save.
+ * Post a website-created property to the Telegram group ONCE.
+ * If the property is already in Telegram (imported from the group, or posted
+ * earlier), do nothing: later photo/detail edits on the website never repost.
+ * Never throws; Telegram is secondary and must not fail the property save.
  */
 export async function syncPropertyToTelegram(
     property: SyncableProperty,
     photoUrls: string[]
 ): Promise<void> {
     if (property.status && property.status !== "Published") {
+        return;
+    }
+
+    // Already in the group: imported from Telegram (client's own code,
+    // not WEB-...) or already posted from the website (has message ids).
+    const alreadyInTelegram =
+        !!property.telegramMessageIds?.length ||
+        (!!property.telegramCode && !property.telegramCode.startsWith("WEB-"));
+    if (alreadyInTelegram) {
         return;
     }
 
@@ -188,37 +195,15 @@ export async function syncPropertyToTelegram(
             description: property.description,
         });
 
-        let messageIds = property.telegramMessageIds;
-        let hasCaption = property.telegramHasCaption ?? photoUrls.length > 0;
+        const result = await postNewListing(caption, photoUrls);
 
-        const previousPhotoCount = messageIds && property.telegramHasCaption === true
-            ? messageIds.length
-            : (messageIds && property.telegramHasCaption === false ? 0 : photoUrls.length);
-        const photosChanged = previousPhotoCount !== photoUrls.length;
-
-        // Keep the old message ids around only long enough to clean them up
-        // *after* a successful repost. Never delete before the new post exists.
-        const staleMessageIds = messageIds && messageIds.length > 0 && photosChanged ? messageIds : null;
-
-        if (messageIds && messageIds.length > 0 && !photosChanged) {
-            await editListingCaption(messageIds[0], caption, hasCaption);
-        } else {
-            // Covers both "no existing messages" and "photos changed" cases.
-            // Post the new listing FIRST so a failure here never destroys a working one.
-            const result = await postNewListing(caption, photoUrls);
-            messageIds = result.messageIds;
-            hasCaption = result.hasCaption;
-        }
-
-        // Persist the new state before attempting any deletion, so a delete
-        // failure never leaves the DB pointing at messages we're about to remove.
         const { error: updateError } = await supabaseAdmin
             .from("properties")
             .update({
                 telegram_code: code,
                 telegram_chat_id: process.env.TELEGRAM_GROUP_CHAT_ID,
-                telegram_message_ids: messageIds,
-                telegram_has_caption: hasCaption,
+                telegram_message_ids: result.messageIds,
+                telegram_has_caption: result.hasCaption,
                 telegram_last_synced_at: new Date().toISOString(),
                 sync_origin: "website",
             })
@@ -226,20 +211,13 @@ export async function syncPropertyToTelegram(
 
         if (updateError) {
             console.error(`Failed to persist Telegram sync state for property ${property.id}:`, updateError);
-            // Don't attempt to delete stale messages if we couldn't confirm the
-            // new state was saved — better to leave a duplicate than lose everything.
-            return;
-        }
-
-        if (staleMessageIds) {
-            await deleteMessages(staleMessageIds);
         }
     } catch (err) {
         console.error(`Telegram sync failed for property ${property.id}:`, err);
     }
 }
 
-/** Delete one or more messages (used when reposting a listing whose photos changed). */
+/** Delete one or more messages. */
 export async function deleteMessages(messageIds: number[]): Promise<void> {
     const chatId = process.env.TELEGRAM_GROUP_CHAT_ID;
     for (const messageId of messageIds) {
@@ -266,11 +244,42 @@ export async function downloadTelegramPhoto(fileId: string): Promise<Buffer> {
     return Buffer.from(await bytesRes.arrayBuffer());
 }
 
-/** Download a Telegram photo and upload it to Supabase Storage under a property's folder. */
+/** Make sure the property has exactly one cover image (unique index safe). */
+async function ensureCover(propertyId: string) {
+    const { data: cover } = await supabaseAdmin
+        .from("property_images")
+        .select("id")
+        .eq("property_id", propertyId)
+        .eq("is_cover", true)
+        .limit(1)
+        .maybeSingle();
+    if (cover) return;
+
+    const { data: first } = await supabaseAdmin
+        .from("property_images")
+        .select("id")
+        .eq("property_id", propertyId)
+        .order("display_order", { ascending: true })
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+    if (first) {
+        // If a concurrent call already set a cover, the unique index rejects this; ignore.
+        await supabaseAdmin.from("property_images").update({ is_cover: true }).eq("id", first.id);
+    }
+}
+
+/**
+ * Download a Telegram photo, upload it to Supabase Storage, and add it to
+ * property_images. Safe to call twice for the same photo.
+ * The third argument is kept only so existing callers (e.g. the admin
+ * "resolve" route) still compile; it is ignored, order is computed here.
+ */
 export async function uploadTelegramPhotoToStorage(
     propertyId: string,
     fileId: string,
-    displayOrder: number
+    _displayOrder?: number
 ): Promise<string> {
     const bytes = await downloadTelegramPhoto(fileId);
     const path = `properties/${propertyId}/${fileId}.jpg`;
@@ -285,20 +294,79 @@ export async function uploadTelegramPhotoToStorage(
     const { data: publicUrlData } = supabaseAdmin.storage
         .from("property-images")
         .getPublicUrl(path);
+    const publicUrl = publicUrlData.publicUrl;
 
-    await supabaseAdmin.from("property_images").insert({
+    const { data: existing } = await supabaseAdmin
+        .from("property_images")
+        .select("id")
+        .eq("property_id", propertyId)
+        .eq("image_url", publicUrl)
+        .maybeSingle();
+    if (existing) return publicUrl;
+
+    const { data: last } = await supabaseAdmin
+        .from("property_images")
+        .select("display_order")
+        .eq("property_id", propertyId)
+        .order("display_order", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    const { error: insertError } = await supabaseAdmin.from("property_images").insert({
         property_id: propertyId,
-        image_url: publicUrlData.publicUrl,
-        display_order: displayOrder,
-        is_cover: displayOrder === 0,
+        image_url: publicUrl,
+        display_order: (last?.display_order ?? -1) + 1,
+        is_cover: false,
     });
+    if (insertError) {
+        throw new Error(`property_images insert failed: ${insertError.message}`);
+    }
 
-    return publicUrlData.publicUrl;
+    await ensureCover(propertyId);
+    return publicUrl;
+}
+
+/**
+ * Attach every unresolved buffered photo that carries this code to the property.
+ * Each row is claimed atomically first, so concurrent webhooks never double-process it.
+ */
+export async function attachPendingPhotosForCode(propertyId: string, code: string): Promise<void> {
+    const { data: rows, error } = await supabaseAdmin
+        .from("telegram_pending_photos")
+        .select("id, file_id")
+        .eq("telegram_code", code)
+        .eq("resolved", false)
+        .order("message_id", { ascending: true });
+
+    if (error) {
+        console.error(`Failed to load pending photos for code ${code}:`, error);
+        return;
+    }
+
+    for (const row of rows ?? []) {
+        const { data: claimed } = await supabaseAdmin
+            .from("telegram_pending_photos")
+            .update({ resolved: true, needs_manual_review: false })
+            .eq("id", row.id)
+            .eq("resolved", false)
+            .select("id");
+        if (!claimed?.length) continue;
+
+        try {
+            await uploadTelegramPhotoToStorage(propertyId, row.file_id);
+        } catch (err) {
+            console.error(`Attach failed for pending photo ${row.id}:`, err);
+            // Release it so it shows up in the manual review box.
+            await supabaseAdmin
+                .from("telegram_pending_photos")
+                .update({ resolved: false })
+                .eq("id", row.id);
+        }
+    }
 }
 
 /**
  * Safely extracts a Google Maps URL from a raw Telegram post text.
- * Matches standard Google Maps links (e.g., maps.app.goo.gl, google.com/maps, goo.gl/maps).
  */
 export function extractGoogleMapsUrl(text: string): string | null {
     if (!text) return null;

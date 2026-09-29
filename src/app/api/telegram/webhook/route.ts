@@ -4,6 +4,9 @@ import {
     detectPropertyCode,
     extractFieldsFromText,
 } from "@/lib/telegram/telegram-import";
+import { attachPendingPhotosForCode } from "@/lib/telegram/telegram-bot";
+
+export const maxDuration = 60; // albums mean many downloads
 
 interface TelegramUpdate {
     message?: TgMessage;
@@ -67,21 +70,44 @@ export async function POST(request: Request) {
         const text = msg.caption ?? msg.text ?? "";
         const code = text ? detectPropertyCode(text) : null;
 
+        // ---------- PHOTOS ----------
         if (msg.photo && msg.photo.length > 0) {
             const largest = msg.photo[msg.photo.length - 1];
+            const mediaGroupId = msg.media_group_id ?? null;
+
+            // Album photos without a caption borrow the code from a sibling.
+            const photoCode = code ?? (await findGroupCode(mediaGroupId));
+
             await bufferIncomingPhoto({
                 fileId: largest.file_id,
                 messageId: msg.message_id,
                 chatId: String(msg.chat.id),
-                mediaGroupId: msg.media_group_id ?? null,
-                code,
+                mediaGroupId,
+                code: photoCode,
             });
 
+            if (photoCode) {
+                if (mediaGroupId) await backfillGroupCode(photoCode, mediaGroupId);
+
+                // Property already exists? Attach right away.
+                // If not, the photo waits and is attached when the details post creates the property.
+                const { data: prop } = await supabaseAdmin
+                    .from("properties")
+                    .select("id")
+                    .eq("telegram_code", photoCode)
+                    .maybeSingle();
+                if (prop) await attachPendingPhotosForCode(prop.id, photoCode);
+            }
+
             if (!code) {
-                return NextResponse.json({ ok: true, action: "photo-buffered" });
+                return NextResponse.json({
+                    ok: true,
+                    action: photoCode ? "photo-attached-or-waiting" : "photo-buffered",
+                });
             }
         }
 
+        // ---------- TEXT / DETAILS ----------
         if (!text.trim() && !msg.photo) {
             return NextResponse.json({ ok: true });
         }
@@ -201,7 +227,10 @@ export async function POST(request: Request) {
             propertyId = upserted.id;
         }
 
-        await linkPendingPhotosToCode(code, msg.media_group_id ?? null);
+        // Give uncoded album siblings the code, then attach every waiting photo
+        // for this code to the property. This is what removes the manual review step.
+        if (msg.media_group_id) await backfillGroupCode(code, msg.media_group_id);
+        await attachPendingPhotosForCode(propertyId, code);
 
         return NextResponse.json({ ok: true, code, action: existingRow ? "updated" : "created", isEdit, propertyId });
     } catch (err) {
@@ -210,7 +239,7 @@ export async function POST(request: Request) {
     }
 }
 
-/** Buffer a photo reference only — no download, no storage upload. Fast and safe under load. */
+/** Save a photo reference. Idempotent, so Telegram retries and edits don't duplicate rows. */
 async function bufferIncomingPhoto(params: {
     fileId: string;
     messageId: number;
@@ -220,46 +249,53 @@ async function bufferIncomingPhoto(params: {
 }) {
     const { fileId, messageId, chatId, mediaGroupId, code } = params;
 
-    const { error } = await supabaseAdmin.from("telegram_pending_photos").insert({
-        media_group_id: mediaGroupId,
-        message_id: messageId,
-        file_id: fileId,
-        chat_id: chatId,
-        telegram_code: code,
-        resolved: false,
-        needs_manual_review: false,
-    });
+    const { error } = await supabaseAdmin.from("telegram_pending_photos").upsert(
+        {
+            media_group_id: mediaGroupId,
+            message_id: messageId,
+            file_id: fileId,
+            chat_id: chatId,
+            telegram_code: code,
+            resolved: false,
+            needs_manual_review: false,
+        },
+        { onConflict: "chat_id,message_id", ignoreDuplicates: true }
+    );
 
     if (error) {
         console.error(`[telegram-webhook] failed to buffer photo (message ${messageId}):`, error);
     }
 }
 
-/**
- * When a code becomes known (via the caption message), backfill it onto any
- * sibling photos from the same album that were buffered earlier with
- * telegram_code = null (this happens when Telegram delivers non-caption
- * album photos before the caption photo).
- */
-async function linkPendingPhotosToCode(code: string, mediaGroupId: string | null) {
-    if (!mediaGroupId) return;
+/** Find a code already known for this album (from its captioned photo). */
+async function findGroupCode(mediaGroupId: string | null): Promise<string | null> {
+    if (!mediaGroupId) return null;
+    const { data } = await supabaseAdmin
+        .from("telegram_pending_photos")
+        .select("telegram_code")
+        .eq("media_group_id", mediaGroupId)
+        .not("telegram_code", "is", null)
+        .limit(1)
+        .maybeSingle();
+    return data?.telegram_code ?? null;
+}
 
+/** Copy the code onto uncoded siblings of the same album. Never marks anything resolved. */
+async function backfillGroupCode(code: string, mediaGroupId: string) {
     const { error } = await supabaseAdmin
         .from("telegram_pending_photos")
-        .update({ telegram_code: code, resolved: true })
+        .update({ telegram_code: code })
         .eq("media_group_id", mediaGroupId)
         .is("telegram_code", null)
         .eq("resolved", false);
-
     if (error) {
-        console.error(`[telegram-webhook] failed to link pending photos for group ${mediaGroupId}:`, error);
+        console.error(`[telegram-webhook] backfill failed for group ${mediaGroupId}:`, error);
     }
 }
 
 /**
- * For an album (media_group_id present), fetch the message IDs of the sibling
- * photo messages that were buffered before the caption message arrived, so
- * telegram_message_ids reflects the WHOLE album, not just the caption message.
+ * For an album, collect the message IDs of all its photo messages so
+ * telegram_message_ids reflects the whole album, not just the caption message.
  */
 async function collectAlbumMessageIds(
     captionMessageId: number,
