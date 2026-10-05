@@ -4,7 +4,10 @@ import {
     detectPropertyCode,
     extractFieldsFromText,
 } from "@/lib/telegram/telegram-import";
-import { attachPendingPhotosForCode } from "@/lib/telegram/telegram-bot";
+import {
+    attachPendingPhotosForCode,
+    matchAndAttachUncodedPhotos,
+} from "@/lib/telegram/telegram-photo-matcher";
 
 export const maxDuration = 60; // albums mean many downloads
 
@@ -97,6 +100,14 @@ export async function POST(request: Request) {
                     .eq("telegram_code", photoCode)
                     .maybeSingle();
                 if (prop) await attachPendingPhotosForCode(prop.id, photoCode);
+            } else {
+                // Photo has no code (the client posts details after the photos).
+                // If its details post is already saved (out-of-order delivery),
+                // match by position now.
+                await matchAndAttachUncodedPhotos({
+                    chatId: String(msg.chat.id),
+                    deadline: Date.now() + 40_000,
+                });
             }
 
             if (!code) {
@@ -227,10 +238,16 @@ export async function POST(request: Request) {
             propertyId = upserted.id;
         }
 
-        // Give uncoded album siblings the code, then attach every waiting photo
-        // for this code to the property. This is what removes the manual review step.
+        // 1. Photos that already carry this code (album with a captioned photo).
         if (msg.media_group_id) await backfillGroupCode(code, msg.media_group_id);
         await attachPendingPhotosForCode(propertyId, code);
+
+        // 2. Photos with no code: the client posts photos first, then details,
+        //    so match the uncoded photos sitting just before this details post.
+        await matchAndAttachUncodedPhotos({
+            chatId: String(msg.chat.id),
+            deadline: Date.now() + 45_000,
+        });
 
         return NextResponse.json({ ok: true, code, action: existingRow ? "updated" : "created", isEdit, propertyId });
     } catch (err) {

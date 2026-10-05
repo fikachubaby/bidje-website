@@ -318,51 +318,13 @@ export async function uploadTelegramPhotoToStorage(
         display_order: (last?.display_order ?? -1) + 1,
         is_cover: false,
     });
-    if (insertError) {
+    // 23505 = the image was inserted by a concurrent run: already there, not a failure.
+    if (insertError && insertError.code !== "23505") {
         throw new Error(`property_images insert failed: ${insertError.message}`);
     }
 
     await ensureCover(propertyId);
     return publicUrl;
-}
-
-/**
- * Attach every unresolved buffered photo that carries this code to the property.
- * Each row is claimed atomically first, so concurrent webhooks never double-process it.
- */
-export async function attachPendingPhotosForCode(propertyId: string, code: string): Promise<void> {
-    const { data: rows, error } = await supabaseAdmin
-        .from("telegram_pending_photos")
-        .select("id, file_id")
-        .eq("telegram_code", code)
-        .eq("resolved", false)
-        .order("message_id", { ascending: true });
-
-    if (error) {
-        console.error(`Failed to load pending photos for code ${code}:`, error);
-        return;
-    }
-
-    for (const row of rows ?? []) {
-        const { data: claimed } = await supabaseAdmin
-            .from("telegram_pending_photos")
-            .update({ resolved: true, needs_manual_review: false })
-            .eq("id", row.id)
-            .eq("resolved", false)
-            .select("id");
-        if (!claimed?.length) continue;
-
-        try {
-            await uploadTelegramPhotoToStorage(propertyId, row.file_id);
-        } catch (err) {
-            console.error(`Attach failed for pending photo ${row.id}:`, err);
-            // Release it so it shows up in the manual review box.
-            await supabaseAdmin
-                .from("telegram_pending_photos")
-                .update({ resolved: false })
-                .eq("id", row.id);
-        }
-    }
 }
 
 /**
