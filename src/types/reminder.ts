@@ -15,7 +15,6 @@ export interface Reminder {
     lastSentAt?: string | null;
     createdBy?: string | null;
     createdAt: string;
-    // joined fields (from API response)
     propertyTitle?: string;
     investorName?: string;
     investorEmail?: string;
