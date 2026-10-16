@@ -4,7 +4,9 @@ export const INVESTOR_PROPERTY_SELECT = `
   *,
   investor_property_milestones (*),
   investor_property_updates (*),
-  reminders (id, title, due_date, status, channel, last_sent_at)
+  reminders (id, title, due_date, status, channel, last_sent_at),
+  legal_firms (id, name, contact_person, phone, email),
+  financing_consultants (id, name)
 `;
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -40,6 +42,12 @@ export function mapInvestorProperty(r: any, { investorView = false } = {}): Inve
         expectedCompletion: r.expected_completion,
         // Admin-only fields are hidden from the investor portal.
         notes: investorView ? null : r.notes,
+        legalFirmId: r.legal_firm_id,
+        financingConsultantId: r.financing_consultant_id,
+        legalFirm: r.legal_firms
+            ? { name: r.legal_firms.name, contactPerson: r.legal_firms.contact_person, phone: r.legal_firms.phone, email: r.legal_firms.email }
+            : null,
+        financingConsultant: r.financing_consultants ? { name: r.financing_consultants.name } : null,
         createdAt: r.created_at,
         updatedAt: r.updated_at,
         aiAnalysis:
@@ -89,6 +97,8 @@ const FIELD_MAP: Record<string, string> = {
     highestOffer: "highest_offer",
     expectedCompletion: "expected_completion",
     notes: "notes",
+    legalFirmId: "legal_firm_id",
+    financingConsultantId: "financing_consultant_id",
 };
 
 /** Converts a camelCase input body to DB columns, keeping only known fields. */

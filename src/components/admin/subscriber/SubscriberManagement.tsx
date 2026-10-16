@@ -3,8 +3,11 @@
 import { useEffect, useState, useCallback } from "react";
 import type { SubscriptionRequest, RequestStatus } from "@/types/subscriber";
 import { SubscriberList } from "./SubscriberList";
+import { SubscriptionsTable } from "./SubscriptionsTable";
+import { cn } from "@/lib/utils";
 
 export function SubscriberManagement() {
+    const [view, setView] = useState<"subscriptions" | "requests">("subscriptions");
     const [requests, setRequests] = useState<SubscriptionRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState<string | null>(null);
@@ -68,6 +71,28 @@ export function SubscriberManagement() {
 
     return (
         <div className="space-y-6 p-6">
+            <div className="flex gap-1 rounded-2xl border border-neutral-200 bg-white p-1 w-fit">
+                {([
+                    ["subscriptions", "Subscriptions"],
+                    ["requests", "Manual payment requests"],
+                ] as const).map(([key, label]) => (
+                    <button
+                        key={key}
+                        type="button"
+                        onClick={() => setView(key)}
+                        className={cn(
+                            "rounded-xl px-4 py-2 text-sm font-bold",
+                            view === key ? "bg-black text-brand" : "text-neutral-500 hover:text-black"
+                        )}
+                    >
+                        {label}
+                    </button>
+                ))}
+            </div>
+
+            {view === "subscriptions" && <SubscriptionsTable />}
+
+            {view === "requests" && (
             <SubscriberList
                 requests={requests}
                 loading={loading}
@@ -82,6 +107,7 @@ export function SubscriberManagement() {
                 onAction={handleAction}
                 processingId={processingId}
             />
+            )}
         </div>
     );
 }

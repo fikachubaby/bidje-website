@@ -1,49 +1,104 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { ArrowRight, Clock, CreditCard, Loader2, ShieldCheck, User } from "lucide-react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Building2, CreditCard, FileText, LayoutGrid, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
+import { cn } from "@/lib/utils";
 import { translate as t } from "@/lib/i18n/getTranslation";
 import type { PropertyListing } from "@/types/property";
+import type { OfferHistoryItem } from "@/types/offer";
+import { SubmitOfferModal } from "@/components/property/SubmitOfferModal";
+import { useSubscription } from "@/hooks/useSubscription";
 
 import { FeaturedListings, PropertyModal } from "../properties";
 import { OfferHistoryTable, OfferSubmitForm, useOfferHistory } from "../offers";
-import type { OfferHistoryItem } from "@/types/offer";
 import { useDashboardUser } from "../useDashboardUser";
+import { SubscriptionCard } from "./_components/SubscriptionCard";
+import { buildNextSteps, NextSteps, type DashboardTab } from "./_components/NextSteps";
 
-const subscription = {
-    plan: "Subscriber Pass (Direct Owner Access)",
-    price: "RM 2.00",
-    billingCycle: "Monthly",
-    status: "Active",
-    autoExpiryDate: "2026-03-12",
+const TABS: { key: DashboardTab; label: string; icon: typeof LayoutGrid }[] = [
+    { key: "overview", label: "Overview", icon: LayoutGrid },
+    { key: "deals", label: "Find deals", icon: Building2 },
+    { key: "offers", label: "My offers", icon: FileText },
+    { key: "billing", label: "Billing", icon: CreditCard },
+];
+
+const PAYMENT_MESSAGES: Record<string, [type: "success" | "error" | "info", text: string]> = {
+    success: ["success", "Payment received — your subscription is active."],
+    pending: ["info", "Payment is processing. We'll update your plan as soon as Fiuu confirms."],
+    failed: ["error", "Payment wasn't completed. You can try again anytime."],
+    cancelled: ["info", "Payment cancelled."],
 };
 
-export default function PropertyDashboardPage() {
-    const { loading: userLoading, isMember, userId, userEmail, fullName } = useDashboardUser();
-    const { offerHistory, submitOfferDocuments } = useOfferHistory(userId, isMember);
+function Stat({ label, value }: { label: string; value: number }) {
+    return (
+        <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-neutral-500">{label}</p>
+            <p className="mt-1 text-2xl font-black">{value}</p>
+        </div>
+    );
+}
 
+function DashboardContent() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const { loading: userLoading, isMember, userId, fullName } = useDashboardUser();
+    const { offerHistory, reload: reloadOffers, submitOfferDocuments } = useOfferHistory(userId, isMember);
+    const billing = useSubscription();
+
+    const tab = (searchParams.get("tab") as DashboardTab) || "overview";
     const [activeModalProperty, setActiveModalProperty] = useState<PropertyListing | null>(null);
+    const [offerFor, setOfferFor] = useState<PropertyListing | null>(null);
     const [selectedOfferId, setSelectedOfferId] = useState("");
-    const [selectOfferError, setSelectOfferError] = useState<string | null>(null);
+
+    const setTab = (next: DashboardTab) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("tab", next);
+        params.delete("payment");
+        router.push(`?${params.toString()}`, { scroll: false });
+    };
+
+    // Fiuu sends shoppers back with ?payment=...; show the result once.
+    const paymentResult = searchParams.get("payment");
+    useEffect(() => {
+        const msg = paymentResult && PAYMENT_MESSAGES[paymentResult];
+        if (!msg) return;
+        const [type, text] = msg;
+        if (type === "success") toast.success(text);
+        else if (type === "error") toast.error(text);
+        else toast(text);
+        void billing.refresh();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [paymentResult]);
+
+    const stats = useMemo(() => {
+        const is = (re: RegExp) => offerHistory.filter((o) => re.test(o.status)).length;
+        return {
+            total: offerHistory.length,
+            verifying: is(/verif/i),
+            accepted: is(/accept|approved|success/i),
+        };
+    }, [offerHistory]);
+
+    const steps = buildNextSteps(offerHistory, billing.subscription);
+    const needsDocsId = offerHistory.find((o) => !o.icDocumentUrl)?.id ?? "";
 
     function handleViewOfferDetails(offer: OfferHistoryItem) {
         if (offer.propertyData) setActiveModalProperty(offer.propertyData);
     }
 
-    function handleSelectFeaturedListingForOffer(listing: PropertyListing) {
-        const matchingOffer = offerHistory.find(
-            (o) => o.propertyId === listing.id || o.propertyTitle === listing.title
-        );
-        if (matchingOffer) {
-            setSelectedOfferId(matchingOffer.id);
-            setSelectOfferError(null);
-        } else {
-            setSelectedOfferId("");
-            setSelectOfferError("You don't have a pending offer for this property yet.");
+    // "Select Offer" on a listing opens the real offer form; an existing offer jumps to its documents.
+    function handleSelectListing(listing: PropertyListing) {
+        const existing = offerHistory.find((o) => o.propertyId === listing.id);
+        if (existing) {
+            setSelectedOfferId(existing.id);
+            setTab("offers");
+            toast("You already made an offer on this property — add your documents below.");
+            return;
         }
-        window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+        setOfferFor(listing);
     }
 
     if (userLoading) {
@@ -54,132 +109,119 @@ export default function PropertyDashboardPage() {
         );
     }
 
+    const sub = billing.subscription;
+    const planPill =
+        sub?.status === "active"
+            ? { text: `Subscribed · ${sub.autoRenew ? "renews" : "ends"} ${sub.currentPeriodEnd ? new Date(sub.currentPeriodEnd).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : ""}`, className: "bg-emerald-50 text-emerald-800 border-emerald-200" }
+            : sub?.status === "past_due"
+              ? { text: "Payment issue", className: "bg-amber-50 text-amber-800 border-amber-200" }
+              : { text: "Not subscribed", className: "bg-neutral-100 text-neutral-600 border-neutral-200" };
+
     return (
-        <div className="mx-auto max-w-6xl space-y-8 pb-12">
-            {/* Header / Welcome Area */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="mx-auto max-w-6xl space-y-6 pb-8">
+            {/* Header */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-black">
-                        {t("Subscribers.welcome")} {fullName || "Subscriber"}!
+                    <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
+                        {t("Subscribers.welcome")} {fullName?.split(" ")[0] || "there"} 👋
                     </h1>
                     <p className="mt-1 text-sm text-neutral-500">{t("Subscribers.title1")}</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3.5 py-1.5 text-xs font-semibold text-emerald-800 border border-emerald-200 shadow-sm">
-                        <ShieldCheck className="h-4 w-4" />
-                        {t("Subscribers.title2")}
-                    </span>
-                </div>
+                <button
+                    type="button"
+                    onClick={() => setTab("billing")}
+                    className={cn("self-start rounded-full border px-3.5 py-1.5 text-xs font-bold sm:self-auto", planPill.className)}
+                >
+                    {planPill.text}
+                </button>
             </div>
 
-            {/* Top Grid: Subscription Status & Profile Overview */}
-            <div className="grid gap-6 md:grid-cols-2">
-                <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-8 flex flex-col justify-between">
-                    <div>
-                        <div className="flex items-center justify-between border-b border-neutral-100 pb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="rounded-2xl bg-neutral-100 p-2.5 text-black">
-                                    <CreditCard className="h-5 w-5" />
-                                </div>
-                                <h2 className="text-lg font-bold text-black">{t("Subscribers.title3")}</h2>
-                            </div>
-                            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
-                                {subscription.status}
-                            </span>
-                        </div>
+            {/* Tabs */}
+            <nav className="sticky top-[76px] z-20 -mx-4 flex gap-1 overflow-x-auto border-b border-neutral-200 bg-neutral-50/95 px-4 backdrop-blur sm:mx-0 sm:rounded-2xl sm:border sm:bg-white sm:p-1">
+                {TABS.map(({ key, label, icon: Icon }) => (
+                    <button
+                        key={key}
+                        type="button"
+                        onClick={() => setTab(key)}
+                        className={cn(
+                            "flex shrink-0 items-center gap-2 whitespace-nowrap px-3 py-3 text-sm font-bold transition-colors sm:rounded-xl sm:py-2",
+                            tab === key
+                                ? "border-b-2 border-black text-black sm:border-0 sm:bg-black sm:text-brand"
+                                : "text-neutral-500 hover:text-black"
+                        )}
+                    >
+                        <Icon className="h-4 w-4" />
+                        {label}
+                        {key === "offers" && stats.total > 0 && (
+                            <span className="rounded-full bg-neutral-200 px-1.5 text-[10px] text-black">{stats.total}</span>
+                        )}
+                    </button>
+                ))}
+            </nav>
 
-                        <div className="mt-6 space-y-4">
-                            <div className="flex items-center justify-between rounded-2xl bg-neutral-50 p-4 border border-neutral-100">
-                                <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Active Plan</p>
-                                    <p className="text-sm font-bold text-black mt-0.5">{subscription.plan}</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Fee</p>
-                                    <p className="text-base font-bold text-black">
-                                        {subscription.price} <span className="text-xs font-normal text-neutral-500">/mo</span>
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between px-2 text-sm">
-                                <span className="flex items-center gap-2 text-neutral-600">
-                                    <Clock className="h-4 w-4 text-neutral-400" />
-                                    Auto-Expiry / Next Renewal:
-                                </span>
-                                <span className="font-semibold text-black">{subscription.autoExpiryDate}</span>
-                            </div>
-                        </div>
+            {tab === "overview" && (
+                <div className="space-y-6">
+                    <NextSteps steps={steps} onGo={setTab} />
+                    <div className="grid grid-cols-3 gap-3">
+                        <Stat label="Offers made" value={stats.total} />
+                        <Stat label="Verifying" value={stats.verifying} />
+                        <Stat label="Accepted" value={stats.accepted} />
                     </div>
-
-                    <div className="mt-6 pt-4 border-t border-neutral-100">
-                        <button
-                            onClick={() => alert("Redirecting to secure billing portal for auto-renewal settings.")}
-                            className="w-full rounded-2xl bg-black py-3 text-sm font-bold text-white transition-colors hover:bg-neutral-800 shadow-sm"
-                        >
-                            {t("Subscribers.title4")}
-                        </button>
-                    </div>
+                    <FeaturedListings isMember={isMember} onSelect={handleSelectListing} actionLabel="Make Offer" limit={3} />
                 </div>
+            )}
 
-                <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm sm:p-8 flex flex-col justify-between">
-                    <div>
-                        <div className="flex items-center gap-3 border-b border-neutral-100 pb-4">
-                            <div className="rounded-2xl bg-neutral-100 p-2.5 text-black">
-                                <User className="h-5 w-5" />
-                            </div>
-                            <h2 className="text-lg font-bold text-black">{t("Subscribers.userProfile")}</h2>
-                        </div>
+            {tab === "deals" && <FeaturedListings isMember={isMember} onSelect={handleSelectListing} actionLabel="Make Offer" />}
 
-                        <div className="mt-6 space-y-4">
-                            <div>
-                                <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Full Name</p>
-                                <p className="mt-1 text-base font-medium text-black">{fullName || "Not specified"}</p>
-                            </div>
-                            <div>
-                                <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Email Address</p>
-                                <p className="mt-1 text-base font-medium text-black">{userEmail}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="mt-6 pt-4 border-t border-neutral-100">
-                        <Link
-                            href="/profile"
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-neutral-200 bg-white py-3 text-sm font-bold text-black transition-colors hover:bg-neutral-50"
-                        >
-                            Edit Profile & Security <ArrowRight className="h-4 w-4" />
-                        </Link>
-                    </div>
+            {tab === "offers" && (
+                <div className="space-y-6">
+                    <OfferSubmitForm
+                        userId={userId}
+                        offerHistory={offerHistory}
+                        selectedOfferId={selectedOfferId || needsDocsId}
+                        onSelectedOfferIdChange={setSelectedOfferId}
+                        onSubmit={submitOfferDocuments}
+                    />
+                    <OfferHistoryTable offerHistory={offerHistory} loading={false} onViewDetails={handleViewOfferDetails} />
                 </div>
-            </div>
+            )}
 
-            {/* Offer History Log */}
-            <OfferHistoryTable offerHistory={offerHistory} loading={false} onViewDetails={handleViewOfferDetails} />
+            {tab === "billing" && (
+                <div className="mx-auto max-w-xl">
+                    <SubscriptionCard billing={billing} />
+                </div>
+            )}
 
-            {/* Shared property details popup, used by both the offer table and the featured listings grid */}
+            {/* Shared property details popup, used by both the offer table and the listings grid */}
             <PropertyModal property={activeModalProperty} onClose={() => setActiveModalProperty(null)} />
 
-            {/* Document Upload Form */}
-            <div>
-                {selectOfferError && (
-                    <p className="mb-3 text-xs font-medium text-red-600">{selectOfferError}</p>
-                )}
-                <OfferSubmitForm
-                    userId={userId}
-                    offerHistory={offerHistory}
-                    selectedOfferId={selectedOfferId}
-                    onSelectedOfferIdChange={setSelectedOfferId}
-                    onSubmit={submitOfferDocuments}
-                />
-            </div>
-
-            {/* Featured Property Listings */}
-            <FeaturedListings
-                isMember={isMember}
-                onSelect={handleSelectFeaturedListingForOffer}
-                actionLabel="Select Offer"
+            <SubmitOfferModal
+                open={Boolean(offerFor)}
+                onClose={() => setOfferFor(null)}
+                propertyId={offerFor?.id ?? ""}
+                propertyTitle={offerFor?.title ?? ""}
+                onSubmitted={() => {
+                    setOfferFor(null);
+                    reloadOffers();
+                    setTab("offers");
+                    toast.success("Offer submitted! Add your documents to get it verified faster.");
+                }}
             />
         </div>
+    );
+}
+
+// useSearchParams needs a Suspense boundary so the page can still be pre-rendered.
+export default function PropertyDashboardPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="flex min-h-[50vh] items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-neutral-400" />
+                </div>
+            }
+        >
+            <DashboardContent />
+        </Suspense>
     );
 }

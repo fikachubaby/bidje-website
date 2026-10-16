@@ -4,13 +4,14 @@ import { useState, type FormEvent } from "react";
 import { AlertCircle, CheckCircle2, Loader2, Upload } from "lucide-react";
 import { translate as t } from "@/lib/i18n/getTranslation";
 import type { OfferHistoryItem } from "@/types/offer";
+import type { SubmitOfferDocumentsParams } from "./useOfferHistory";
 
 interface OfferSubmitFormProps {
     userId: string;
     offerHistory: OfferHistoryItem[];
     selectedOfferId: string;
     onSelectedOfferIdChange: (id: string) => void;
-    onSubmit: (params: { offerId: string; userId: string; icFile: File; paymentProofFile: File | null }) => Promise<{ success: true } | { success: false; message: string }>;
+    onSubmit: (params: SubmitOfferDocumentsParams) => Promise<{ success: true } | { success: false; message: string }>;
 }
 
 export function OfferSubmitForm({
@@ -25,11 +26,14 @@ export function OfferSubmitForm({
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+    // The IC from any earlier offer is reused automatically, so subscribers upload it only once.
+    const savedIcPath = offerHistory.find((o) => o.icDocumentUrl)?.icDocumentUrl ?? null;
+
     async function handleSubmit(e: FormEvent) {
         e.preventDefault();
         setMessage(null);
 
-        if (!selectedOfferId || !icFile) {
+        if (!selectedOfferId || (!icFile && !savedIcPath)) {
             setMessage({ type: "error", text: "Please select your offer item and upload your IC document." });
             return;
         }
@@ -39,7 +43,7 @@ export function OfferSubmitForm({
         }
 
         setSubmitting(true);
-        const result = await onSubmit({ offerId: selectedOfferId, userId, icFile, paymentProofFile });
+        const result = await onSubmit({ offerId: selectedOfferId, userId, icFile, reuseIcPath: savedIcPath, paymentProofFile });
         setSubmitting(false);
 
         if (result.success) {
@@ -107,11 +111,17 @@ export function OfferSubmitForm({
                                 className="hidden"
                             />
                             <label htmlFor="ic-upload-input" className="cursor-pointer block">
-                                <p className="text-xs font-semibold text-black">{icFile ? icFile.name : "Click to upload IC file"}</p>
+                                <p className="text-xs font-semibold text-black">
+                                    {icFile ? icFile.name : savedIcPath ? "Using your saved IC — click to replace" : "Click to upload IC file"}
+                                </p>
                                 <p className="text-[10px] text-neutral-400 mt-0.5">{t("Authentication.format")}</p>
                             </label>
                         </div>
-                        {icFile && <p className="mt-1 text-xs font-medium text-emerald-600">✓ IC Attached</p>}
+                        {(icFile || savedIcPath) && (
+                            <p className="mt-1 text-xs font-medium text-emerald-600">
+                                ✓ {icFile ? "IC attached" : "Saved IC will be attached automatically"}
+                            </p>
+                        )}
                     </div>
 
                     <div>

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
-import { buildFiuuCheckoutForm } from "@/lib/payments/fiuu";
+import { buildFiuuCheckoutForm, toOrderId } from "@/lib/payments/fiuu";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     // 3. Build the signed Fiuu checkout form
     const origin = new URL(request.url).origin;
     const checkout = buildFiuuCheckoutForm({
-        orderId: payment.id, // use payment.id as the unique order reference
+        orderId: toOrderId(payment.id), // payment.id without dashes: unique and within Fiuu's 32-char limit
         amount: 500,
         billName: user.user_metadata?.full_name || "Bidje Buyer",
         billEmail: user.email || "",

@@ -68,6 +68,9 @@ ${updates || "none"}
 Open reminders:
 ${reminders || "none"}
 
+Legal firm: ${p.legalFirm?.name ?? "not assigned"}
+Financing consultant: ${p.financingConsultant?.name ?? "not assigned"}
+
 Internal notes: ${p.notes || "none"}`;
 }
 

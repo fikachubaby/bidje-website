@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Check, EyeOff, Loader2, Send, Sparkles, Trash2, XCircle } from "lucide-react";
 import { AiHealthBadge } from "./AiHealthBadge";
 import { DocumentsReview } from "./DocumentsReview";
+import { useOfferPartners } from "@/hooks/useOfferPartners";
 import { Modal } from "@/components/admin/ui/Modal";
 import { FormInput, FormSelect, FormTextarea } from "@/components/admin/ui/FormField";
 import { Button } from "@/components/ui/ButtonProps";
@@ -65,6 +66,8 @@ export function InvestorPropertyModal({
     const [updateMessage, setUpdateMessage] = useState("");
     const [updateVisible, setUpdateVisible] = useState(true);
     const [busyReminder, setBusyReminder] = useState<string | null>(null);
+    // Same registered partners as Admin → Legal / Financial Consultants.
+    const { legalFirms, financingConsultants } = useOfferPartners(Boolean(property));
 
     const runReminder = async (id: string, fn: (id: string) => Promise<void>) => {
         setBusyReminder(id);
@@ -87,6 +90,8 @@ export function InvestorPropertyModal({
             stage: property.stage,
             expectedCompletion: property.expectedCompletion ?? "",
             notes: property.notes ?? "",
+            legalFirmId: property.legalFirmId ?? "",
+            financingConsultantId: property.financingConsultantId ?? "",
             purchasePrice: property.purchasePrice,
             legalCost: property.legalCost,
             renovationCost: property.renovationCost,
@@ -175,6 +180,30 @@ export function InvestorPropertyModal({
                             value={form.expectedCompletion ?? ""}
                             onChange={(e) => set("expectedCompletion", e.target.value)}
                         />
+                        <FormSelect
+                            label="Legal firm (lawyer)"
+                            value={form.legalFirmId ?? ""}
+                            onChange={(e) => set("legalFirmId", e.target.value)}
+                        >
+                            <option value="">Not assigned</option>
+                            {legalFirms.map((f) => (
+                                <option key={f.id} value={f.id}>
+                                    {f.name}
+                                </option>
+                            ))}
+                        </FormSelect>
+                        <FormSelect
+                            label="Financing consultant"
+                            value={form.financingConsultantId ?? ""}
+                            onChange={(e) => set("financingConsultantId", e.target.value)}
+                        >
+                            <option value="">Not assigned</option>
+                            {financingConsultants.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                    {c.name}
+                                </option>
+                            ))}
+                        </FormSelect>
                         {NUMBER_FIELDS.map(({ key, label }) => (
                             <MoneyInput
                                 key={key}

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
 import { requireStaffSession } from "@/lib/auth/requireStaffSession";
+import { signOfferDocument } from "@/lib/storage/offerDocuments";
 
 // GET /api/admin/offers
 export async function GET(request: Request) {
@@ -43,7 +44,7 @@ export async function GET(request: Request) {
 
         const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
 
-        const formatted = (offers || []).map((o) => {
+        const formatted = await Promise.all((offers || []).map(async (o) => {
             const profile = profileMap.get(o.user_id);
             const propertyRaw = Array.isArray(o.properties) ? o.properties[0] : o.properties;
 
@@ -79,11 +80,11 @@ export async function GET(request: Request) {
                 message: "",
                 status: o.status,
                 createdAt: o.submitted_at,
-                icDocumentUrl: o.ic_upload_url || undefined,
-                paymentProofUrl: o.payment_proof_url || undefined,
+                icDocumentUrl: await signOfferDocument(o.ic_upload_url),
+                paymentProofUrl: await signOfferDocument(o.payment_proof_url),
                 verificationRemark: o.verification_remark || null,
             };
-        });
+        }));
 
         let finalOffers = formatted;
         if (search) {

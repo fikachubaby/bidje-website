@@ -5,16 +5,21 @@ import { supabase } from "@/lib/supabase/supabase";
 import { mapOfferRowToHistoryItem } from "./utils";
 import type { OfferHistoryItem, RawOfferRow } from "@/types/offer";
 
+export interface SubmitOfferDocumentsParams {
+    offerId: string;
+    userId: string;
+    icFile: File | null;
+    /** Storage path of an IC already uploaded on a previous offer; used when icFile is null. */
+    reuseIcPath?: string | null;
+    paymentProofFile: File | null;
+}
+
 interface UseOfferHistoryResult {
     offerHistory: OfferHistoryItem[];
     loading: boolean;
+    reload: () => void;
 
-    submitOfferDocuments: (params: {
-        offerId: string;
-        userId: string;
-        icFile: File;
-        paymentProofFile: File | null;
-    }) => Promise<{ success: true } | { success: false; message: string }>;
+    submitOfferDocuments: (params: SubmitOfferDocumentsParams) => Promise<{ success: true } | { success: false; message: string }>;
 }
 
 const OFFERS_SELECT = `
@@ -63,6 +68,8 @@ function describeError(err: unknown): Record<string, unknown> {
 export function useOfferHistory(userId: string, isMember: boolean): UseOfferHistoryResult {
     const [offerHistory, setOfferHistory] = useState<OfferHistoryItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [reloadKey, setReloadKey] = useState(0);
+    const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
     useEffect(() => {
         let cancelled = false;
@@ -113,24 +120,25 @@ export function useOfferHistory(userId: string, isMember: boolean): UseOfferHist
         return () => {
             cancelled = true;
         };
-    }, [userId, isMember]);
+    }, [userId, isMember, reloadKey]);
 
     const submitOfferDocuments = useCallback(
         async ({
             offerId,
             userId: uid,
             icFile,
+            reuseIcPath,
             paymentProofFile,
-        }: {
-            offerId: string;
-            userId: string;
-            icFile: File;
-            paymentProofFile: File | null;
-        }): Promise<{ success: true } | { success: false; message: string }> => {
+        }: SubmitOfferDocumentsParams): Promise<{ success: true } | { success: false; message: string }> => {
             try {
-                const icPath = `offers/${uid}/ic-${Date.now()}-${icFile.name}`;
-                const { error: icUploadError } = await supabase.storage.from("property-documents").upload(icPath, icFile);
-                if (icUploadError) throw icUploadError;
+                // Upload once, reuse after: a new IC file replaces the saved one for this offer.
+                let icPath = reuseIcPath ?? null;
+                if (icFile) {
+                    icPath = `offers/${uid}/ic-${Date.now()}-${icFile.name}`;
+                    const { error: icUploadError } = await supabase.storage.from("property-documents").upload(icPath, icFile);
+                    if (icUploadError) throw icUploadError;
+                }
+                if (!icPath) throw new Error("Please upload your IC.");
 
                 let proofPathValue: string | null = null;
                 if (paymentProofFile) {
@@ -184,5 +192,5 @@ export function useOfferHistory(userId: string, isMember: boolean): UseOfferHist
         []
     );
 
-    return { offerHistory, loading, submitOfferDocuments };
+    return { offerHistory, loading, reload, submitOfferDocuments };
 }

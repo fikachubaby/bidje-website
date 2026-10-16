@@ -54,6 +54,10 @@ export interface InvestorProperty {
     reminders: InvestorPropertyReminder[];
     aiAnalysis?: InvestorAiAnalysis | null;
     aiAnalyzedAt?: string | null;
+    legalFirmId?: string | null;
+    financingConsultantId?: string | null;
+    legalFirm?: { name: string; contactPerson?: string | null; phone?: string | null; email?: string | null } | null;
+    financingConsultant?: { name: string } | null;
 }
 
 /** Shape stored by the AI monitor (see lib/ai/portfolioMonitor.ts). */
@@ -68,7 +72,7 @@ export interface InvestorAiAnalysis {
 }
 
 export type InvestorPropertyInput = Partial<
-    Omit<InvestorProperty, "id" | "createdAt" | "updatedAt" | "milestones" | "updates" | "reminders" | "aiAnalysis" | "aiAnalyzedAt">
+    Omit<InvestorProperty, "id" | "createdAt" | "updatedAt" | "milestones" | "updates" | "reminders" | "aiAnalysis" | "aiAnalyzedAt" | "legalFirm" | "financingConsultant">
 > & { investorId: string; address: string };
 
 export interface InvestorSummary {

@@ -22,6 +22,8 @@ export interface SubmitOfferModalProps {
     minimumPrice?: number;
     prefill?: PendingOfferDraft | null;
     autoSubmit?: boolean;
+    /** Called after a successful submit instead of redirecting to /dashboard. */
+    onSubmitted?: () => void;
 }
 
 export interface BuyerOffer {

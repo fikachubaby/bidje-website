@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
+import { activateOrExtend } from "@/lib/subscriptions/server";
 import { requireStaffSession } from "@/lib/auth/requireStaffSession";
 
 // GET /api/admin/subscribers
@@ -70,23 +71,8 @@ export async function PATCH(request: Request) {
         if (reqError) throw reqError;
 
         if (status === "accepted") {
-            const expiresAt = new Date();
-            expiresAt.setMonth(expiresAt.getMonth() + 1);
-
-            const { error: subError } = await supabaseAdmin.from("subscriptions").insert({
-                user_id: subReq.user_id,
-                status: "active",
-                expires_at: expiresAt.toISOString(),
-            });
-
-            if (subError) throw subError;
-
-            const { error: profileError } = await supabaseAdmin
-                .from("profiles")
-                .update({ role: "subscriber" })
-                .eq("id", subReq.user_id);
-
-            if (profileError) throw profileError;
+            // Same path as a Fiuu payment: starts or extends one month and grants the subscriber role.
+            await activateOrExtend(subReq.user_id);
         }
 
         return NextResponse.json({ success: true, data: subReq });

@@ -30,6 +30,7 @@ export function SubmitOfferModal({
   minimumPrice,
   prefill,
   autoSubmit,
+  onSubmitted,
 }: SubmitOfferModalProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -101,9 +102,10 @@ export function SubmitOfferModal({
     setSubmitted(true);
 
     setTimeout(() => {
-      router.push("/dashboard");
+      if (onSubmitted) onSubmitted();
+      else router.push("/dashboard");
     }, 400);
-  }, [propertyId, user, router]);
+  }, [propertyId, user, router, onSubmitted]);
 
   useEffect(() => {
     if (open && prefill && autoSubmit && user) {

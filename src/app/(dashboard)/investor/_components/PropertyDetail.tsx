@@ -150,6 +150,28 @@ export function PropertyDetail({ property, onClose }: { property: InvestorProper
                             </div>
                         </div>
 
+                        {(property.legalFirm || property.financingConsultant) && (
+                            <div className="rounded-xl border border-neutral-200 p-3 text-sm">
+                                <p className="mb-2 text-[11px] font-bold uppercase text-neutral-500">Your team</p>
+                                {property.legalFirm && (
+                                    <p>
+                                        ⚖️ <b>{property.legalFirm.name}</b>
+                                        <span className="text-neutral-500">
+                                            {" "}· Lawyer
+                                            {property.legalFirm.contactPerson ? ` · ${property.legalFirm.contactPerson}` : ""}
+                                            {property.legalFirm.phone ? ` · ${property.legalFirm.phone}` : ""}
+                                        </span>
+                                    </p>
+                                )}
+                                {property.financingConsultant && (
+                                    <p className="mt-1">
+                                        💰 <b>{property.financingConsultant.name}</b>
+                                        <span className="text-neutral-500"> · Financing consultant</span>
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
                         <div>
                             <h3 className="mb-3 text-sm font-black">Latest activity</h3>
                             <Timeline property={property} limit={3} />
