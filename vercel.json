@@ -15,6 +15,10 @@
         {
             "path": "/api/cron/subscriptions",
             "schedule": "0 1 * * *"
+        },
+        {
+            "path": "/api/cron/bidje-scores",
+            "schedule": "0 */6 * * *"
         }
     ]
 }

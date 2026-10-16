@@ -5,18 +5,15 @@ import Link from "next/link";
 import { Bath, BedDouble, MapPin, ImageOff, Video } from "lucide-react";
 
 import { FavouriteButton } from "@/components/property/FavouriteButton";
+import { ShareButton } from "@/components/property/ShareButton";
 import type { Property } from "@/types/property";
 import { formatArea, formatCategory, formatPrice } from "@/lib/utils";
+import { getRatingLabel } from "@/lib/utils/score";
+import { summariseSentiment } from "@/lib/score/sentiment";
 
 interface PropertyCardProps {
   property: Property;
   searchString?: string; // Accept searchString directly from the server/parent component
-}
-
-function getRatingLabel(score: number): string {
-  if (score >= 80) return "Good Buy";
-  if (score >= 65) return "Fair Value";
-  return "Review Carefully";
 }
 
 // Helper to detect if a media URL is an MP4 video
@@ -43,8 +40,9 @@ export function PropertyCard({ property, searchString = "" }: PropertyCardProps)
     : "/placeholder-property.jpg";
 
   const isVideo = isVideoUrl(mediaUrl);
-  const score = property.bidjeScore ?? 85;
-  const ratingLabel = getRatingLabel(score);
+  const score = property.bidjeScore;
+  const rated = score != null;
+  const sentimentSummary = summariseSentiment(property.sentiment);
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-[0_10px_35px_rgba(0,0,0,0.07)] transition duration-300 hover:-translate-y-1.5 hover:border-[#ffd400] hover:shadow-[0_20px_45px_rgba(0,0,0,0.12)]">
@@ -63,7 +61,7 @@ export function PropertyCard({ property, searchString = "" }: PropertyCardProps)
                     className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
                   />
                   {/* Video Indicator Badge */}
-                  <div className="absolute right-3 top-3 z-10 rounded-lg bg-black/60 p-1.5 text-white backdrop-blur-md">
+                  <div className="absolute bottom-4 right-4 z-10 rounded-lg bg-black/60 p-1.5 text-white backdrop-blur-md">
                     <Video className="h-4 w-4" />
                   </div>
                 </div>
@@ -89,21 +87,28 @@ export function PropertyCard({ property, searchString = "" }: PropertyCardProps)
               {formatCategory(property.category)}
             </span>
 
-            <span className="absolute bottom-4 left-4 rounded-xl border border-white/20 bg-black/70 px-3 py-2 text-white backdrop-blur">
-              <span className="block text-[10px] font-bold uppercase tracking-wide text-white/60">
-                Investment Score
+            {rated && (
+              <span className="absolute bottom-4 left-4 rounded-xl border border-white/20 bg-black/70 px-3 py-2 text-white backdrop-blur">
+                <span className="block text-[10px] font-bold uppercase tracking-wide text-white/60">
+                  Investment Score
+                </span>
+                <span className="text-lg font-black text-[#ffd400]">
+                  {score}/100
+                </span>
               </span>
-              <span className="text-lg font-black text-[#ffd400]">
-                {score}/100
-              </span>
-            </span>
+            )}
           </div>
         </Link>
 
-        <FavouriteButton
-          propertyId={property.id}
-          className="absolute right-4 top-4 z-10 shadow-lg"
-        />
+        <div className="absolute right-4 top-4 z-10 flex flex-col gap-2">
+          <FavouriteButton propertyId={property.id} className="shadow-lg" />
+          <ShareButton
+            title={property.title}
+            text={`${property.title} · ${formatPrice(property.price, property.currency)}`}
+            url={`/properties/${identifier}`}
+            className="shadow-lg"
+          />
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col justify-between p-5">
@@ -148,23 +153,33 @@ export function PropertyCard({ property, searchString = "" }: PropertyCardProps)
                 <p className="text-[10px] font-black uppercase tracking-wide text-neutral-500">
                   Bidje Rating
                 </p>
-                <p className="mt-0.5 text-xs font-black text-green-700">{ratingLabel}</p>
-              </div>
-
-              <div className="text-right">
-                <p className="text-[10px] font-black uppercase tracking-wide text-neutral-500">
-                  Score
+                <p className="mt-0.5 text-xs font-black text-green-700">
+                  {rated ? getRatingLabel(score) : <span className="text-neutral-500">Not rated yet</span>}
                 </p>
-                <p className="mt-0.5 text-base font-black text-black">{score}</p>
               </div>
+
+              {rated && (
+                <div className="text-right">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-neutral-500">
+                    Score
+                  </p>
+                  <p className="mt-0.5 text-base font-black text-black">{score}</p>
+                </div>
+              )}
             </div>
 
-            <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/10">
-              <div
-                className="h-full rounded-full bg-[#ffd400]"
-                style={{ width: `${Math.min(score, 100)}%` }}
-              />
-            </div>
+            {rated && (
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/10">
+                <div
+                  className="h-full rounded-full bg-[#ffd400]"
+                  style={{ width: `${Math.min(score, 100)}%` }}
+                />
+              </div>
+            )}
+
+            {sentimentSummary && (
+              <p className="mt-2 text-[11px] font-bold text-neutral-600">{sentimentSummary}</p>
+            )}
           </div>
         </div>
 

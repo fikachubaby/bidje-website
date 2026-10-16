@@ -7,11 +7,27 @@ import { Navbar } from "@/components/layout/Navbar";
 export default function ContactPage() {
     const [submitted, setSubmitted] = useState(false);
     const [formData, setFormData] = useState({ name: "", email: "", subject: "", message: "" });
+    const [sending, setSending] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
-        // Simulate successful direct dispatch to admin
-        setSubmitted(true);
+        setSending(true);
+        setError(null);
+        try {
+            const res = await fetch("/api/contact", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.error ?? "We couldn't send your message.");
+            setSubmitted(true);
+        } catch (err) {
+            setError((err as Error).message);
+        } finally {
+            setSending(false);
+        }
     }
 
     return (
@@ -158,12 +174,19 @@ export default function ContactPage() {
                                     ></textarea>
                                 </div>
 
+                                {error && (
+                                    <p role="alert" className="rounded-xl border-2 border-red-600 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+                                        {error}
+                                    </p>
+                                )}
+
                                 <button
                                     type="submit"
-                                    className="inline-flex items-center justify-center gap-2 w-full rounded-xl border-2 border-black bg-[#ffd400] px-6 py-4 text-sm font-black text-black shadow-[4px_4px_0_0_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#000] transition-all cursor-pointer"
+                                    disabled={sending}
+                                    className="inline-flex items-center justify-center gap-2 w-full rounded-xl border-2 border-black bg-[#ffd400] px-6 py-4 text-sm font-black text-black shadow-[4px_4px_0_0_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-[2px_2px_0_0_#000] transition-all cursor-pointer disabled:opacity-60 disabled:cursor-wait"
                                 >
                                     <Send className="w-4 h-4" />
-                                    Send Direct Message to Admin
+                                    {sending ? "Sending..." : "Send Direct Message to Admin"}
                                 </button>
 
                                 <div className="flex items-center justify-center gap-1.5 text-xs text-neutral-500 pt-1">

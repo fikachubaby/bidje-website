@@ -6,7 +6,8 @@ import {
 } from "@/lib/utils/property-utils";
 import type { Property, PropertyCategory } from "@/types/property";
 
-const PROPERTY_SELECT = "*, property_images(image_url, is_cover)";
+const PROPERTY_SELECT =
+    "*, property_images(image_url, is_cover), property_sentiment(paid_offer_count, median_offer_ratio, bargain_count, fair_count, too_high_count)";
 
 export interface PropertySearchParams {
     location?: string;

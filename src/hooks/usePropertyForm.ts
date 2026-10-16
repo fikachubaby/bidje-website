@@ -20,6 +20,7 @@ export function usePropertyForm({
     const [form, setForm] = useState<AdminPropertyInput>(emptyPropertyInput);
     const [priceInput, setPriceInput] = useState("");
     const [debtInput, setDebtInput] = useState("");
+    const [rentInput, setRentInput] = useState("");
     const [minPriceInput, setMinPriceInput] = useState("");
     const [error, setError] = useState("");
     const [uploading, setUploading] = useState(false);
@@ -48,11 +49,13 @@ export function usePropertyForm({
 
             setPriceInput(formatWithCommas(p));
             setDebtInput(formatWithCommas(d));
+            setRentInput(formatWithCommas(editingProperty.monthlyRent || 0));
             setMinPriceInput(formatWithCommas(mp));
         } else {
             setForm(emptyPropertyInput);
             setPriceInput("");
             setDebtInput("");
+            setRentInput("");
             setMinPriceInput("");
         }
 
@@ -198,6 +201,8 @@ export function usePropertyForm({
         setPriceInput,
         debtInput,
         setDebtInput,
+        rentInput,
+        setRentInput,
         minPriceInput,
         setMinPriceInput,
         error,

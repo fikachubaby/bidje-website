@@ -123,6 +123,7 @@ export function useAdminProperties(isAuthenticated: boolean) {
                 images: property.images || [],
                 status: "Draft" as PropertyStatus,
                 outstandingDebt: property.outstandingDebt,
+                monthlyRent: property.monthlyRent,
                 minimumPrice: property.minimumPrice,
                 internalNotes: property.internalNotes || "",
                 isAddressHidden: property.isAddressHidden || false,

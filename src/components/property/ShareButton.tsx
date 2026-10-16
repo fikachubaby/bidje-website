@@ -7,13 +7,18 @@ import { RoundIconButton } from "@/components/property/RoundIconButton";
 interface ShareButtonProps {
   title: string;
   text?: string;
+  /** Path or absolute URL to share; defaults to the current page. */
+  url?: string;
   className?: string;
 }
 
 /** Opens the device share sheet, or copies the page link where sharing isn't supported. */
-export function ShareButton({ title, text, className }: ShareButtonProps) {
-  async function handleShare() {
-    const url = window.location.href;
+export function ShareButton({ title, text, url: shareUrl, className }: ShareButtonProps) {
+  async function handleShare(e: React.MouseEvent) {
+    // Cards may wrap the button in a link; don't navigate when sharing.
+    e.preventDefault();
+    e.stopPropagation();
+    const url = shareUrl ? new URL(shareUrl, window.location.origin).href : window.location.href;
 
     if (navigator.share) {
       try {

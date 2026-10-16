@@ -1,3 +1,5 @@
+import type { BidjeScoreBreakdown } from "@/lib/score/bidjeScore";
+
 export type FurnishingType = "Unfurnished" | "Partially Furnished" | "Fully Furnished";
 
 export const AMENITY_TAGS = [
@@ -79,6 +81,7 @@ export interface DBProperty {
   views?: ViewTag[] | null;
   special_features?: FeatureTag[] | null;
   outstanding_debt?: number | null;
+  monthly_rent?: number | null;
   minimum_price?: number | null;
   telegram_code?: string | null;
 }
@@ -90,6 +93,14 @@ export interface DBPropertyImage {
   is_cover: boolean;
   display_order: number;
   created_at: string;
+}
+
+export interface PropertySentiment {
+  paidOfferCount: number;
+  medianOfferRatio: number | null;
+  bargainCount: number;
+  fairCount: number;
+  tooHighCount: number;
 }
 
 export interface Property {
@@ -112,6 +123,8 @@ export interface Property {
   tenure?: TenureType;
   bumiStatus?: BumiStatusType;
   bidjeScore?: number;
+  bidjeScoreBreakdown?: BidjeScoreBreakdown;
+  sentiment?: PropertySentiment;
   verifiedOfferCount?: number;
   marketValue?: number;
   maxLoanApplicable?: number;
@@ -149,6 +162,8 @@ export interface AdminProperty {
   createdAt: string;
   updatedAt: string;
   outstandingDebt?: number;
+  /** Estimated monthly rent (RM); 0 = unknown. Feeds the Bidje Score yield pillar. */
+  monthlyRent?: number;
   minimumPrice?: number;
   internalNotes?: string;
   isAddressHidden?: boolean;

@@ -32,6 +32,8 @@ export function PropertyFormModal(props: PropertyFormModalProps) {
     setPriceInput,
     debtInput,
     setDebtInput,
+    rentInput,
+    setRentInput,
     minPriceInput,
     setMinPriceInput,
     error,
@@ -98,6 +100,25 @@ export function PropertyFormModal(props: PropertyFormModalProps) {
             }}
             onBlur={() => setDebtInput(formatWithCommas(form.outstandingDebt))}
             placeholder="e.g. 20,000"
+          />
+        </FormField>
+
+        <FormField
+          label="Estimated monthly rent (RM)"
+          htmlFor="monthlyRent"
+          hint="Used for the rental yield part of the Bidje Score. Leave blank if unknown."
+        >
+          <FormInput
+            id="monthlyRent"
+            type="text"
+            value={rentInput}
+            onChange={(e) => {
+              const rawVal = e.target.value;
+              setRentInput(rawVal);
+              setForm({ ...form, monthlyRent: parseCommaNumber(rawVal) });
+            }}
+            onBlur={() => setRentInput(form.monthlyRent ? formatWithCommas(form.monthlyRent) : "")}
+            placeholder="e.g. 1,800"
           />
         </FormField>
 

@@ -44,6 +44,7 @@ export async function PUT(
                 google_maps_url: body.mapsUrl || null,
                 status: body.status,
                 outstanding_debt: body.outstandingDebt ?? 0,
+                monthly_rent: body.monthlyRent ? Number(body.monthlyRent) : null,
                 minimum_acceptable_price: body.minimumPrice ?? null,
                 internal_notes: body.internalNotes || null,
                 is_address_hidden: body.isAddressHidden ?? false,
@@ -257,6 +258,7 @@ export async function GET(
             createdAt: p.created_at,
             updatedAt: p.updated_at,
             outstandingDebt: Number(p.outstanding_debt ?? 0),
+            monthlyRent: Number(p.monthly_rent ?? 0),
             minimumPrice:
                 p.minimum_acceptable_price != null ? Number(p.minimum_acceptable_price) : 0,
             internalNotes: p.internal_notes || "",

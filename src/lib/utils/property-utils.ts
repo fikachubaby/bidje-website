@@ -5,7 +5,9 @@ import type {
     PropertyCategory,
     TenureType,
     BumiStatusType,
+    PropertySentiment,
 } from "@/types/property";
+import type { BidjeScoreBreakdown } from "@/lib/score/bidjeScore";
 
 // --- Formatting & Parsing ---
 export function formatWithCommas(value: number | undefined | null): string {
@@ -53,6 +55,7 @@ export const emptyPropertyInput: AdminPropertyInput = {
     status: "Draft",
     images: [],
     outstandingDebt: 0,
+    monthlyRent: 0,
     minimumPrice: 0,
     internalNotes: "",
     isAddressHidden: false,
@@ -81,6 +84,7 @@ export function toPropertyInput(property: AdminProperty): AdminPropertyInput {
         status: property.status || "Draft",
         images: Array.isArray(property.images) ? property.images : [],
         outstandingDebt: property.outstandingDebt || 0,
+        monthlyRent: property.monthlyRent || 0,
         minimumPrice: property.minimumPrice || 0,
         internalNotes: property.internalNotes || "",
         isAddressHidden: property.isAddressHidden || false,
@@ -114,6 +118,7 @@ export interface PropertyRow {
     is_featured: boolean;
     urgent_sale: boolean;
     bidje_score: number | null;
+    bidje_score_breakdown?: BidjeScoreBreakdown | null;
     verified_offer_count: number;
     market_value: number | null;
     max_loan_applicable: number | null;
@@ -124,6 +129,26 @@ export interface PropertyRow {
     google_maps_url?: string | null;
     documents?: string[] | null;
     property_images?: { image_url: string; is_cover: boolean }[];
+    property_sentiment?: SentimentRow | SentimentRow[] | null;
+}
+
+interface SentimentRow {
+    paid_offer_count: number;
+    median_offer_ratio: number | null;
+    bargain_count: number;
+    fair_count: number;
+    too_high_count: number;
+}
+
+export function mapSentimentRow(row: SentimentRow | null | undefined): PropertySentiment | undefined {
+    if (!row) return undefined;
+    return {
+        paidOfferCount: row.paid_offer_count,
+        medianOfferRatio: row.median_offer_ratio != null ? Number(row.median_offer_ratio) : null,
+        bargainCount: row.bargain_count,
+        fairCount: row.fair_count,
+        tooHighCount: row.too_high_count,
+    };
 }
 
 function mapPropertyType(dbType: string, category?: string | null): PropertyCategory {
@@ -166,6 +191,10 @@ export function mapPropertyRowToProperty(row: PropertyRow): Property {
         tenure: (row.tenure as TenureType) || undefined,
         bumiStatus: (row.bumi_status as BumiStatusType) || "Both",
         bidjeScore: row.bidje_score ?? undefined,
+        bidjeScoreBreakdown: row.bidje_score_breakdown ?? undefined,
+        sentiment: mapSentimentRow(
+            Array.isArray(row.property_sentiment) ? row.property_sentiment[0] : row.property_sentiment
+        ),
         verifiedOfferCount: row.verified_offer_count ?? 0,
         marketValue: row.market_value ?? undefined,
         maxLoanApplicable: row.max_loan_applicable ?? undefined,

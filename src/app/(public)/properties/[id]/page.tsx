@@ -103,7 +103,6 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
         : [property.imageUrl && property.imageUrl.trim() !== "" ? property.imageUrl : DEFAULT_PROPERTY_IMAGE];
 
     const images = rawImages.slice(0, 15);
-    const bidjeScore = property.bidjeScore ?? 85;
     const canonicalIdentifier = property.slug || property.id;
 
     const makeOfferRoute = searchString
@@ -255,7 +254,12 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
                                 </Link>
                             </div>
 
-                            <BidjeRatingCard score={bidjeScore} />
+                            <BidjeRatingCard
+                                propertyId={property.id}
+                                score={property.bidjeScore}
+                                breakdown={property.bidjeScoreBreakdown}
+                                sentiment={property.sentiment}
+                            />
 
                             {/* Dynamic Map Component */}
                             <LocationMapCard
