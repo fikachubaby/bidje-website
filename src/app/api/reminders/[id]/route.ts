@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
+import { requireStaffSession } from "@/lib/auth/requireStaffSession";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+    const session = await requireStaffSession();
+    if (session.error) return session.error;
     const { id } = await params;
     const body = await req.json();
 
@@ -24,6 +27,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+    const session = await requireStaffSession();
+    if (session.error) return session.error;
     const { id } = await params;
 
     const { error } = await supabaseAdmin.from("reminders").delete().eq("id", id);

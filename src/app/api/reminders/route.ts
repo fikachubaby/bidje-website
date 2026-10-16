@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
+import { requireStaffSession } from "@/lib/auth/requireStaffSession";
 
 export async function GET() {
+    const session = await requireStaffSession();
+    if (session.error) return session.error;
     const { data, error } = await supabaseAdmin
         .from("reminders")
         .select(`
       *,
       profiles!reminders_investor_id_fkey (full_name, email, phone),
-      properties (title)
+      properties (title),
+      investor_properties (address)
     `)
         .order("due_date", { ascending: true });
 
@@ -18,6 +22,7 @@ export async function GET() {
     const mapped = (data ?? []).map((r) => ({
         id: r.id,
         propertyId: r.property_id,
+        investorPropertyId: r.investor_property_id,
         investorId: r.investor_id,
         offerId: r.offer_id,
         title: r.title,
@@ -28,7 +33,7 @@ export async function GET() {
         status: r.status,
         lastSentAt: r.last_sent_at,
         createdAt: r.created_at,
-        propertyTitle: r.properties?.title,
+        propertyTitle: r.properties?.title ?? r.investor_properties?.address,
         investorName: r.profiles?.full_name,
         investorEmail: r.profiles?.email,
         investorPhone: r.profiles?.phone,
@@ -38,12 +43,15 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+    const session = await requireStaffSession();
+    if (session.error) return session.error;
     const body = await req.json();
 
     const { data, error } = await supabaseAdmin
         .from("reminders")
         .insert({
-            property_id: body.propertyId,
+            property_id: body.propertyId || null,
+            investor_property_id: body.investorPropertyId || null,
             investor_id: body.investorId,
             offer_id: body.offerId || null,
             title: body.title,

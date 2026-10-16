@@ -5,7 +5,7 @@ export async function GET() {
     const { data, error } = await supabaseAdmin
         .from("profiles")
         .select("id, full_name, email, phone")
-        .eq("role", "subscriber")
+        .in("role", ["subscriber", "investor"])
         .order("full_name", { ascending: true });
 
     if (error) {

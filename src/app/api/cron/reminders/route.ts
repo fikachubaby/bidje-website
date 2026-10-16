@@ -14,7 +14,8 @@ export async function GET(req: Request) {
         .select(`
       *,
       profiles!reminders_investor_id_fkey (full_name, email, phone),
-      properties (title)
+      properties (title),
+      investor_properties (address)
     `)
         .eq('status', 'scheduled');
 
@@ -31,7 +32,7 @@ export async function GET(req: Request) {
         if (!rem.remind_days_before.includes(daysLeft)) continue;
 
         const investor = rem.profiles;
-        const property = rem.properties;
+        const property = { title: rem.properties?.title ?? rem.investor_properties?.address ?? 'your property' };
 
         if ((rem.channel === 'whatsapp' || rem.channel === 'both') && investor.phone) {
             try {

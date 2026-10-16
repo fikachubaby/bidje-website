@@ -49,6 +49,10 @@ export const VIEW_META: Record<AdminView, { title: string; subtitle: string }> =
         title: "Financial Consultants",
         subtitle: "Manage financial consultants and update their status",
     },
+    investors: {
+        title: "Investor Portfolios",
+        subtitle: "Track every investor property, its legal, renovation and sales progress, and reminders.",
+    },
     reminders: {
         title: "Reminder Properties",
         subtitle: "Manage legal, renovation, and follow-up deadlines across properties and offers.",

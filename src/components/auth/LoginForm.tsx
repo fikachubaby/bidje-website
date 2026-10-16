@@ -68,7 +68,12 @@ export function VisitorLoginForm() {
         setLoading(false);
 
         const isAdminOrStaff = profile?.role === "admin" || profile?.role === "staff";
-        const redirectPath = isAdminOrStaff ? "/admin" : rawPending ? "/dashboard" : searchParams.get("next") || "/";
+        const isInvestor = profile?.role === "investor";
+        const redirectPath = isAdminOrStaff
+            ? "/admin"
+            : isInvestor
+              ? "/investor"
+              : rawPending ? "/dashboard" : searchParams.get("next") || "/";
 
         window.location.href = redirectPath;
     }

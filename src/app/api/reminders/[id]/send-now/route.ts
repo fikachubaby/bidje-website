@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
+import { requireStaffSession } from "@/lib/auth/requireStaffSession";
 import { sendWhatsApp } from "@/lib/whatsapp";
 import { sendEmail } from "@/lib/email";
 import { normalizePhone, isMalaysianMobile } from "@/lib/phone";
@@ -23,11 +24,13 @@ function errMessage(err: unknown): string {
 }
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+    const session = await requireStaffSession();
+    if (session.error) return session.error;
     const { id } = await params;
 
     const { data: rem, error } = await supabaseAdmin
         .from("reminders")
-        .select(`*, profiles!reminders_investor_id_fkey (full_name, email, phone), properties (title)`)
+        .select(`*, profiles!reminders_investor_id_fkey (full_name, email, phone), properties (title), investor_properties (address)`)
         .eq("id", id)
         .single();
 
@@ -36,7 +39,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     }
 
     const investor = rem.profiles;
-    const property = rem.properties;
+    const property = { title: rem.properties?.title ?? rem.investor_properties?.address ?? 'your property' };
     const results: ChannelResult[] = [];
 
     const wantsWhatsApp = rem.channel === "whatsapp" || rem.channel === "both";

@@ -3,7 +3,8 @@ export type ReminderStatus = "scheduled" | "sent" | "cancelled";
 
 export interface Reminder {
     id: string;
-    propertyId: string;
+    propertyId?: string | null;
+    investorPropertyId?: string | null;
     investorId: string;
     offerId?: string | null;
     title: string;
@@ -22,7 +23,8 @@ export interface Reminder {
 }
 
 export interface ReminderFormInput {
-    propertyId: string;
+    propertyId?: string;
+    investorPropertyId?: string;
     investorId: string;
     offerId?: string;
     title: string;

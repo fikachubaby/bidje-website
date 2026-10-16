@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { LogOut, User, Menu, X, PlusCircle, ShieldCheck, Mail } from "lucide-react";
+import { LogOut, User, Menu, X, PlusCircle, ShieldCheck, Mail, Briefcase } from "lucide-react";
 import { useSession } from "@/lib/auth/useSession";
 import { supabase } from "@/lib/supabase/supabase";
 import { useRouter } from "next/navigation";
@@ -10,7 +10,9 @@ import { translate as t } from "@/lib/i18n/getTranslation";
 import { ListPropertyModal } from "@/components/property/ListPropertyModal";
 
 export function Navbar() {
-  const { user, loading } = useSession();
+  const { user, profile, loading } = useSession();
+  // Investors only manage their own portfolio, so listing/selling links are hidden for them.
+  const isInvestor = profile?.role === "investor";
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isListModalOpen, setIsListModalOpen] = useState(false);
@@ -42,6 +44,19 @@ export function Navbar() {
 
           {/* Desktop Navigation */}
           <nav className="hidden items-center gap-6 text-sm font-bold lg:flex" aria-label="Main Navigation">
+            {isInvestor ? (
+              <>
+                <Link href="/investor" className="flex items-center gap-1.5 hover:text-[#ffd400] transition-colors">
+                  <Briefcase className="h-4 w-4 text-[#ffd400]" />
+                  <span>My Portfolio</span>
+                </Link>
+                <Link href="/contact" className="flex items-center gap-1.5 hover:text-[#ffd400] transition-colors">
+                  <Mail className="h-4 w-4 text-[#ffd400]" />
+                  <span>Contact Us</span>
+                </Link>
+              </>
+            ) : (
+            <>
             <Link href="/properties" className="hover:text-[#ffd400] transition-colors">
               {t("Properties.search.browse")}
             </Link>
@@ -70,6 +85,8 @@ export function Navbar() {
               <PlusCircle className="h-4 w-4" />
               {t("Main.menu.menu3")}
             </button>
+            </>
+            )}
           </nav>
 
           {/* Auth / Right Actions */}
@@ -113,6 +130,27 @@ export function Navbar() {
         {mobileMenuOpen && (
           <div className="border-t border-white/10 bg-black px-6 py-6 lg:hidden">
             <nav className="flex flex-col gap-4 text-base font-bold">
+              {isInvestor ? (
+                <>
+                  <Link
+                    href="/investor"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2 hover:text-[#ffd400]"
+                  >
+                    <Briefcase className="h-4 w-4 text-[#ffd400]" />
+                    My Portfolio
+                  </Link>
+                  <Link
+                    href="/contact"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="pt-2 border-t border-white/10 hover:text-[#ffd400] flex items-center gap-2"
+                  >
+                    <Mail className="h-4 w-4 text-[#ffd400]" />
+                    Contact Us
+                  </Link>
+                </>
+              ) : (
+              <>
               <Link
                 href="/properties"
                 onClick={() => setMobileMenuOpen(false)}
@@ -155,6 +193,8 @@ export function Navbar() {
                 <PlusCircle className="h-4 w-4" />
                 {t("Main.menu.menu3")}
               </button>
+              </>
+              )}
 
               {!loading && user ? (
                 <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4 text-sm font-bold">

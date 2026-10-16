@@ -39,9 +39,38 @@ export async function proxy(request: NextRequest) {
         }
     }
 
+    if (request.nextUrl.pathname.startsWith("/investor")) {
+        if (!user) {
+            return NextResponse.redirect(new URL("/login", request.url));
+        }
+
+        const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+
+        if (!["investor", "admin", "staff"].includes(profile?.role ?? "")) {
+            return NextResponse.redirect(new URL("/dashboard", request.url));
+        }
+    }
+
+    // Investors get their own portfolio dashboard instead of the subscriber one.
+    if (request.nextUrl.pathname.startsWith("/dashboard") && user) {
+        const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+
+        if (profile?.role === "investor") {
+            return NextResponse.redirect(new URL("/investor", request.url));
+        }
+    }
+
     return response;
 }
 
 export const config = {
-    matcher: ["/admin/:path*", "/dashboard/:path*"],
+    matcher: ["/admin/:path*", "/dashboard/:path*", "/investor/:path*"],
 };

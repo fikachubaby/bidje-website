@@ -24,6 +24,8 @@ interface AddReminderModalProps {
     offers?: ReminderOfferOption[];
     defaultPropertyId?: string;
     defaultOfferId?: string;
+    /** When set, the reminder targets this investor property and the property/investor pickers are hidden. */
+    investorProperty?: { id: string; investorId: string; address: string };
     onClose: () => void;
     onSubmit: (input: ReminderFormInput) => Promise<void>;
 }
@@ -33,13 +35,14 @@ export function AddReminderModal({
     offers = [],
     defaultPropertyId,
     defaultOfferId,
+    investorProperty,
     onClose,
     onSubmit,
 }: AddReminderModalProps) {
     const [investors, setInvestors] = useState<Investor[]>([]);
     const [propertyId, setPropertyId] = useState(defaultPropertyId ?? "");
     const [offerId, setOfferId] = useState(defaultOfferId ?? "");
-    const [investorId, setInvestorId] = useState("");
+    const [investorId, setInvestorId] = useState(investorProperty?.investorId ?? "");
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [dueDate, setDueDate] = useState("");
@@ -63,14 +66,15 @@ export function AddReminderModal({
 
     const handleSubmit = async () => {
         setErrorMsg("");
-        if (!propertyId || !investorId || !title || !dueDate) {
+        if ((!propertyId && !investorProperty) || !investorId || !title || !dueDate) {
             setErrorMsg("Please fill in property, investor, title, and due date.");
             return;
         }
         setSubmitting(true);
         try {
             await onSubmit({
-                propertyId,
+                propertyId: investorProperty ? undefined : propertyId,
+                investorPropertyId: investorProperty?.id,
                 investorId,
                 offerId: offerId || undefined,
                 title,
@@ -99,6 +103,13 @@ export function AddReminderModal({
                 </div>
 
                 <div className="space-y-4">
+                    {investorProperty ? (
+                        <div className="rounded-xl bg-neutral-50 px-4 py-3 text-sm">
+                            <span className="block text-xs font-bold text-neutral-500">Investor property</span>
+                            <span className="font-bold text-neutral-900">{investorProperty.address}</span>
+                        </div>
+                    ) : (
+                    <>
                     <FormSelect
                         label="Property"
                         value={propertyId}
@@ -141,6 +152,8 @@ export function AddReminderModal({
                             </option>
                         ))}
                     </FormSelect>
+                    </>
+                    )}
 
                     <FormInput
                         label="Reminder title"
