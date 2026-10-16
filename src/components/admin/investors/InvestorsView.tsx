@@ -8,7 +8,7 @@ import { ConfirmDialog } from "@/components/admin/ui/ConfirmDialog";
 import { Modal } from "@/components/admin/ui/Modal";
 import { Button } from "@/components/ui/ButtonProps";
 import { cn } from "@/lib/utils";
-import { formatDueIn } from "@/lib/reminders";
+import { formatDueIn, toastDeliveryResults } from "@/lib/reminders";
 import {
     categoryProgress,
     formatDate,
@@ -22,6 +22,8 @@ import type { ReminderFormInput } from "@/types/reminder";
 import type { InvestorProperty, InvestorStage } from "@/types/investor";
 import { ImportPropertiesModal } from "./ImportPropertiesModal";
 import { InvestorPropertyModal } from "./InvestorPropertyModal";
+import { AiMonitorPanel } from "./AiMonitorPanel";
+import { AiHealthBadge } from "./AiHealthBadge";
 
 function nextReminder(p: InvestorProperty) {
     return p.reminders.find((r) => r.status === "scheduled");
@@ -56,6 +58,8 @@ export function InvestorsView() {
         deleteProperty,
         toggleMilestone,
         addUpdate,
+        analyseProperty,
+        analyseAll,
         sendReminder,
         cancelReminder,
         deleteReminder,
@@ -138,6 +142,7 @@ export function InvestorsView() {
             throw new Error("Failed to create reminder");
         }
         toast.success("Reminder created");
+        await toastDeliveryResults((await res.json()).results);
         await refresh();
     };
 
@@ -234,6 +239,8 @@ export function InvestorsView() {
                             ))}
                         </div>
 
+                        <AiMonitorPanel properties={properties} onRunAll={analyseAll} onOpen={setOpenPropertyId} />
+
                         <div className="flex flex-col gap-3 md:flex-row">
                             <div className="flex-1">
                                 <FormInput
@@ -313,6 +320,9 @@ export function InvestorsView() {
                                                         <span className={cn("rounded-full px-2.5 py-1 text-[11px] font-black", STAGE_BADGE[p.stage])}>
                                                             {STAGE_LABELS[p.stage]}
                                                         </span>
+                                                        <div className="mt-1">
+                                                            <AiHealthBadge analysis={p.aiAnalysis} />
+                                                        </div>
                                                     </td>
                                                     <td className="space-y-1 px-4 py-3">
                                                         <MiniBar label="L" value={categoryProgress(p.milestones, "legal")} />
@@ -393,6 +403,8 @@ export function InvestorsView() {
                 onToggleMilestone={toggleMilestone}
                 onAddUpdate={addUpdate}
                 onAddReminder={setReminderFor}
+                onAnalyse={analyseProperty}
+                onRefresh={refresh}
                 onSendReminder={sendReminder}
                 onCancelReminder={cancelReminder}
                 onDeleteReminder={deleteReminder}

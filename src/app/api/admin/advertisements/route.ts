@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
+import { requireStaffSession } from "@/lib/auth/requireStaffSession";
 
 // GET all advertisements
 export async function GET() {
+    const session = await requireStaffSession();
+    if (session.error) return session.error;
+
     try {
         const { data, error } = await supabaseAdmin
             .from("advertisements")
@@ -22,6 +26,9 @@ export async function GET() {
 
 // POST create a new advertisement
 export async function POST(req: Request) {
+    const session = await requireStaffSession();
+    if (session.error) return session.error;
+
     try {
         const body = await req.json();
         const { data, error } = await supabaseAdmin

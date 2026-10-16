@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
+import { requireStaffSession } from "@/lib/auth/requireStaffSession";
 
 // PATCH update status/details
 export async function PATCH(
     req: Request,
     { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
+    const session = await requireStaffSession();
+    if (session.error) return session.error;
+
     try {
         const resolvedParams = await params;
         const body = await req.json();
@@ -31,6 +35,9 @@ export async function DELETE(
     req: Request,
     { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
+    const session = await requireStaffSession();
+    if (session.error) return session.error;
+
     try {
         const resolvedParams = await params;
         const { error } = await supabaseAdmin

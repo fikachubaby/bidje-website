@@ -55,6 +55,10 @@ export async function proxy(request: NextRequest) {
         }
     }
 
+    if ((request.nextUrl.pathname.startsWith("/profile") || request.nextUrl.pathname.startsWith("/wishlist")) && !user) {
+        return NextResponse.redirect(new URL(`/login?next=${request.nextUrl.pathname}`, request.url));
+    }
+
     // Investors get their own portfolio dashboard instead of the subscriber one.
     if (request.nextUrl.pathname.startsWith("/dashboard") && user) {
         const { data: profile } = await supabase
@@ -72,5 +76,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ["/admin/:path*", "/dashboard/:path*", "/investor/:path*"],
+    matcher: ["/admin/:path*", "/dashboard/:path*", "/investor/:path*", "/profile/:path*", "/wishlist/:path*"],
 };

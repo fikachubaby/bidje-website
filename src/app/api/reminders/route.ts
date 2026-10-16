@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
 import { requireStaffSession } from "@/lib/auth/requireStaffSession";
+import { deliverReminder } from "@/lib/reminders-server/deliverReminder";
 
 export async function GET() {
     const session = await requireStaffSession();
@@ -68,5 +69,8 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ reminder: data }, { status: 201 });
+    // Optionally notify the investor straight away on the chosen channel(s).
+    const delivery = body.sendNow ? await deliverReminder(data.id) : null;
+
+    return NextResponse.json({ reminder: data, results: delivery?.results ?? [] }, { status: 201 });
 }

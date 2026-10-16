@@ -24,3 +24,16 @@ export interface Advertisement {
     clicks_count: number;
     created_at?: string;
 }
+
+/** Dropdown options for the admin form. Values must match the types above. */
+export const AD_TYPE_OPTIONS: { value: AdType; label: string }[] = [
+    { value: "BANNER", label: "Banner" },
+    { value: "PROMO_CAMPAIGN", label: "Promo campaign" },
+    { value: "FEATURED_LISTING", label: "Featured listing" },
+    { value: "HOMEPAGE_NATIVE", label: "Homepage native" },
+];
+
+/** Only placements the visitor site actually renders; add here when a new slot goes live. */
+export const AD_PLACEMENT_OPTIONS: { value: AdPlacement; label: string }[] = [
+    { value: "HOMEPAGE_HERO", label: "Homepage banner" },
+];

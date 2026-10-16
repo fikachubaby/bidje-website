@@ -52,10 +52,23 @@ export interface InvestorProperty {
     milestones: InvestorMilestone[];
     updates: InvestorUpdate[];
     reminders: InvestorPropertyReminder[];
+    aiAnalysis?: InvestorAiAnalysis | null;
+    aiAnalyzedAt?: string | null;
+}
+
+/** Shape stored by the AI monitor (see lib/ai/portfolioMonitor.ts). */
+export interface InvestorAiAnalysis {
+    health: "on_track" | "at_risk" | "blocked";
+    stuck_area: "legal" | "renovation" | "sales" | "none";
+    blocker: string;
+    waiting_on: string;
+    next_action: string;
+    investor_message: string;
+    days_stalled: number;
 }
 
 export type InvestorPropertyInput = Partial<
-    Omit<InvestorProperty, "id" | "createdAt" | "updatedAt" | "milestones" | "updates" | "reminders">
+    Omit<InvestorProperty, "id" | "createdAt" | "updatedAt" | "milestones" | "updates" | "reminders" | "aiAnalysis" | "aiAnalyzedAt">
 > & { investorId: string; address: string };
 
 export interface InvestorSummary {

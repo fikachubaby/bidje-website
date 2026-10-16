@@ -48,6 +48,7 @@ export function AddReminderModal({
     const [dueDate, setDueDate] = useState("");
     const [channel, setChannel] = useState<ReminderChannel>("both");
     const [selectedDays, setSelectedDays] = useState<number[]>([7, 3, 0]);
+    const [sendNow, setSendNow] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
 
@@ -82,6 +83,7 @@ export function AddReminderModal({
                 dueDate,
                 channel,
                 remindDaysBefore: selectedDays.length ? selectedDays : [0],
+                sendNow,
             });
             onClose();
         } catch (err) {
@@ -204,6 +206,11 @@ export function AddReminderModal({
                             ))}
                         </div>
                     </div>
+
+                    <label className="flex items-center gap-2 text-sm font-semibold text-neutral-800">
+                        <input type="checkbox" checked={sendNow} onChange={(e) => setSendNow(e.target.checked)} />
+                        Send to investor now as well
+                    </label>
 
                     {errorMsg && <p className="text-xs font-semibold text-red-600">{errorMsg}</p>}
 

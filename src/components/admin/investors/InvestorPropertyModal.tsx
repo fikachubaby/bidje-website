@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, EyeOff, Send, Trash2, XCircle } from "lucide-react";
+import { Check, EyeOff, Loader2, Send, Sparkles, Trash2, XCircle } from "lucide-react";
+import { AiHealthBadge } from "./AiHealthBadge";
+import { DocumentsReview } from "./DocumentsReview";
 import { Modal } from "@/components/admin/ui/Modal";
 import { FormInput, FormSelect, FormTextarea } from "@/components/admin/ui/FormField";
 import { Button } from "@/components/ui/ButtonProps";
@@ -17,7 +19,7 @@ import type {
     UpdateCategory,
 } from "@/types/investor";
 
-type Tab = "details" | "checklist" | "updates" | "reminders";
+type Tab = "details" | "checklist" | "updates" | "reminders" | "documents";
 
 interface InvestorPropertyModalProps {
     property: InvestorProperty | null;
@@ -26,6 +28,8 @@ interface InvestorPropertyModalProps {
     onToggleMilestone: (id: string, milestoneId: string, done: boolean) => Promise<void>;
     onAddUpdate: (id: string, category: UpdateCategory, message: string, visible: boolean) => Promise<void>;
     onAddReminder: (property: InvestorProperty) => void;
+    onAnalyse: (id: string) => Promise<void>;
+    onRefresh: () => Promise<void>;
     onSendReminder: (reminderId: string) => Promise<void>;
     onCancelReminder: (reminderId: string) => Promise<void>;
     onDeleteReminder: (reminderId: string) => Promise<void>;
@@ -48,6 +52,8 @@ export function InvestorPropertyModal({
     onToggleMilestone,
     onAddUpdate,
     onAddReminder,
+    onAnalyse,
+    onRefresh,
     onSendReminder,
     onCancelReminder,
     onDeleteReminder,
@@ -119,8 +125,10 @@ export function InvestorPropertyModal({
             title={property.address}
             description={`${property.refNo ? `No. ${property.refNo} · ` : ""}Signed ${property.dateSigned ? formatDate(property.dateSigned) : property.dateSignedNote ?? "—"}`}
         >
+            <AiSummaryCard property={property} onAnalyse={() => onAnalyse(property.id)} />
+
             <div className="mb-5 flex gap-5 overflow-x-auto border-b border-neutral-200">
-                {(["details", "checklist", "updates", "reminders"] as Tab[]).map((t) => (
+                {(["details", "checklist", "updates", "reminders", "documents"] as Tab[]).map((t) => (
                     <button
                         key={t}
                         type="button"
@@ -288,6 +296,8 @@ export function InvestorPropertyModal({
                 </div>
             )}
 
+            {tab === "documents" && <DocumentsReview propertyId={property.id} onReviewed={onRefresh} />}
+
             {tab === "reminders" && (
                 <div className="space-y-3">
                     <div className="flex justify-end">
@@ -345,5 +355,51 @@ export function InvestorPropertyModal({
                 </div>
             )}
         </Modal>
+    );
+}
+
+function AiSummaryCard({ property, onAnalyse }: { property: InvestorProperty; onAnalyse: () => Promise<void> }) {
+    const [running, setRunning] = useState(false);
+    const a = property.aiAnalysis;
+
+    const run = async () => {
+        setRunning(true);
+        try {
+            await onAnalyse();
+        } catch {
+            // toast already shown
+        } finally {
+            setRunning(false);
+        }
+    };
+
+    return (
+        <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50/50 p-4">
+            <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 space-y-1">
+                    <p className="flex items-center gap-2 text-xs font-black uppercase text-amber-700">
+                        <Sparkles className="h-3.5 w-3.5" /> AI check
+                        <AiHealthBadge analysis={a} />
+                    </p>
+                    {a ? (
+                        <>
+                            {a.blocker && <p className="text-sm text-neutral-800">{a.blocker}</p>}
+                            <p className="text-xs text-neutral-600">
+                                <b>Next action:</b> {a.next_action}
+                            </p>
+                            <p className="text-[11px] text-neutral-500">
+                                Investor sees: &ldquo;{a.investor_message}&rdquo; · checked {formatDate(property.aiAnalyzedAt)}
+                            </p>
+                        </>
+                    ) : (
+                        <p className="text-sm text-neutral-600">Not checked yet.</p>
+                    )}
+                </div>
+                <Button variant="secondary" size="sm" onClick={run} disabled={running}>
+                    {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {a ? "Re-check" : "Check now"}
+                </Button>
+            </div>
+        </div>
     );
 }

@@ -10,25 +10,31 @@ import type { Property } from "@/types/property";
 
 export default function WishlistPage() {
     const { ids, ready, user } = useWishlist();
-    const [properties, setProperties] = useState<Property[]>([]);
+    // Keyed by id so overlapping fetches overwrite instead of duplicating.
+    const [propertiesById, setPropertiesById] = useState<Record<string, Property>>({});
     const [loading, setLoading] = useState(true);
     const idKey = [...ids].sort().join(",");
 
     // Fetch only when new ids appear; un-favouriting just hides the card below.
     useEffect(() => {
         if (!ready) return;
-        const missing = idKey.split(",").filter((id) => id && !properties.some((p) => p.id === id));
+        const missing = idKey.split(",").filter((id) => id && !propertiesById[id]);
         if (!missing.length) {
             setLoading(false);
             return;
         }
         getPropertiesByIds(missing)
-            .then((rows) => setProperties((prev) => [...prev, ...rows]))
+            .then((rows) =>
+                setPropertiesById((prev) => ({ ...prev, ...Object.fromEntries(rows.map((p) => [p.id, p])) }))
+            )
             .finally(() => setLoading(false));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ready, idKey]);
 
-    const visible = useMemo(() => properties.filter((p) => ids.has(p.id)), [properties, ids]);
+    const visible = useMemo(
+        () => [...ids].map((id) => propertiesById[id]).filter((p): p is Property => Boolean(p)),
+        [propertiesById, ids]
+    );
 
     if (!ready || loading) {
         return (

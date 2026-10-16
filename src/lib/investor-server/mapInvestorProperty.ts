@@ -38,9 +38,15 @@ export function mapInvestorProperty(r: any, { investorView = false } = {}): Inve
         targetPrice: Number(r.target_price ?? 0),
         highestOffer: Number(r.highest_offer ?? 0),
         expectedCompletion: r.expected_completion,
-        notes: r.notes,
+        // Admin-only fields are hidden from the investor portal.
+        notes: investorView ? null : r.notes,
         createdAt: r.created_at,
         updatedAt: r.updated_at,
+        aiAnalysis:
+            investorView && r.ai_analysis
+                ? { ...r.ai_analysis, blocker: "", next_action: "", waiting_on: "" }
+                : r.ai_analysis,
+        aiAnalyzedAt: r.ai_analyzed_at,
         milestones: (r.investor_property_milestones ?? [])
             .map((m: any) => ({
                 id: m.id,

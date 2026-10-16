@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase/supabase";
 import { useRouter } from "next/navigation";
 import { translate as t } from "@/lib/i18n/getTranslation";
 import { ListPropertyModal } from "@/components/property/ListPropertyModal";
+import { ReminderBell } from "@/components/layout/ReminderBell";
 
 export function Navbar() {
   const { user, profile, loading } = useSession();
@@ -54,6 +55,7 @@ export function Navbar() {
                   <Mail className="h-4 w-4 text-[#ffd400]" />
                   <span>Contact Us</span>
                 </Link>
+                <ReminderBell />
               </>
             ) : (
             <>
@@ -99,10 +101,10 @@ export function Navbar() {
                     Wishlist
                   </Link>
                 )}
-                <span className="flex items-center gap-2">
+                <Link href="/profile" className="flex items-center gap-2 hover:text-[#ffd400] transition-colors">
                   <User className="h-4 w-4 text-[#ffd400]" />
                   {user.email?.split("@")[0]}
-                </span>
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="flex items-center gap-1.5 hover:text-[#ffd400] transition-colors"
@@ -120,6 +122,8 @@ export function Navbar() {
                 {t("Authentication.signIn")}
               </Link>
             )}
+
+            {isInvestor && <ReminderBell className="lg:hidden" />}
 
             {/* Mobile Menu Button */}
             <button
@@ -215,10 +219,14 @@ export function Navbar() {
                   </Link>
                 )}
                 <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4 text-sm font-bold">
-                  <span className="flex items-center gap-2 text-neutral-300">
+                  <Link
+                    href="/profile"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2 text-neutral-300 hover:text-[#ffd400]"
+                  >
                     <User className="h-4 w-4 text-[#ffd400]" />
                     {user.email?.split("@")[0]}
-                  </span>
+                  </Link>
                   <button
                     onClick={handleLogout}
                     className="flex items-center gap-1 text-red-400 hover:text-red-300"

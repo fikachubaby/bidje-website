@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { Reminder, ReminderFormInput } from "@/types/reminder";
+import { toastDeliveryResults } from "@/lib/reminders";
 
 export function useReminders() {
     const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -34,8 +35,10 @@ export function useReminders() {
                 body: JSON.stringify(input),
             });
             if (!res.ok) throw new Error("Failed to create reminder");
+            const data = await res.json();
             await fetchReminders();
             toast.success("Reminder created successfully");
+            await toastDeliveryResults(data.results);
         } catch (err) {
             toast.error(err instanceof Error ? err.message : "Failed to create reminder");
             throw err;
@@ -71,15 +74,10 @@ export function useReminders() {
     const sendNow = async (id: string) => {
         try {
             const res = await fetch(`/api/reminders/${id}/send-now`, { method: "POST" });
-            if (!res.ok) throw new Error("Failed to send reminder");
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
+            if (!data.results) throw new Error(data.error || "Failed to send reminder");
+            await toastDeliveryResults(data.results);
             await fetchReminders();
-            const failed = data.results?.filter((r: { ok: boolean }) => !r.ok) ?? [];
-            if (failed.length > 0) {
-                toast.error(`Sent, but ${failed.length} channel(s) failed`);
-            } else {
-                toast.success("Reminder sent successfully");
-            }
             return data;
         } catch (err) {
             toast.error(err instanceof Error ? err.message : "Failed to send reminder");

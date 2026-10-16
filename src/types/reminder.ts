@@ -32,6 +32,8 @@ export interface ReminderFormInput {
     dueDate: string;
     channel: ReminderChannel;
     remindDaysBefore: number[];
+    /** Also notify the investor immediately on the chosen channel(s). */
+    sendNow?: boolean;
 }
 
 export interface ReminderPropertyOption {

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { ImportRow } from "@/lib/investor";
+import { toastDeliveryResults } from "@/lib/reminders";
 import type {
     InvestorProperty,
     InvestorPropertyInput,
@@ -119,14 +120,24 @@ export function useInvestorProperties(investorId: string | null) {
                     body: JSON.stringify({ done }),
                 })
             ),
+        analyseProperty: (id: string) =>
+            withRefresh(() => request(`/api/admin/investor-properties/${id}/analyse`, { method: "POST" }), "AI check updated"),
+        analyseAll: async () => {
+            if (!investorId) return;
+            try {
+                const data = await request(`/api/admin/investors/${investorId}/analyse`, { method: "POST" });
+                if (data.failed?.length) toast.error(`AI checked ${data.analysed}, ${data.failed.length} failed`);
+                else toast.success(`AI checked ${data.analysed} properties`);
+            } catch (err) {
+                toast.error(err instanceof Error ? err.message : "AI check failed");
+            }
+            await fetchProperties();
+        },
         sendReminder: async (reminderId: string) => {
-            const data = await request(`/api/reminders/${reminderId}/send-now`, { method: "POST" }).catch((err) => {
-                toast.error(err instanceof Error ? err.message : "Failed to send reminder");
-                throw err;
-            });
-            const failed = data.results?.filter((r: { ok: boolean }) => !r.ok) ?? [];
-            if (failed.length) toast.error(`Sent, but ${failed.length} channel(s) failed`);
-            else toast.success("Reminder sent");
+            const res = await fetch(`/api/reminders/${reminderId}/send-now`, { method: "POST" });
+            const data = await res.json().catch(() => ({}));
+            if (data.results) await toastDeliveryResults(data.results);
+            else toast.error(data.error || "Failed to send reminder");
             await fetchProperties();
         },
         cancelReminder: (reminderId: string) =>

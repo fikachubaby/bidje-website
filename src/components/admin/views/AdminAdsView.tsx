@@ -17,7 +17,8 @@ import {
     Edit,
     Power,
 } from "lucide-react";
-import { Advertisement, AdPlacement, AdType } from "@/types/ad";
+import { Advertisement, AdPlacement, AdType, AD_PLACEMENT_OPTIONS, AD_TYPE_OPTIONS } from "@/types/ad";
+import { toast } from "sonner";
 import { PolicyDocument, PolicySlug } from "@/types/legal";
 import { ImageDropzone } from "@/components/admin/property/ImageDropzone";
 
@@ -151,15 +152,15 @@ export function AdminAdsView() {
             target_url: newTargetUrl,
             cta_text: newCta,
             image_url: newImageUrl,
-            is_active: true,
-            start_date: new Date().toISOString(),
+            // Editing keeps the ad's status and schedule; new ads go live immediately.
+            ...(editingAd ? {} : { is_active: true, start_date: new Date().toISOString() }),
         };
 
         try {
             const url = editingAd
                 ? `/api/admin/advertisements/${editingAd.id}`
                 : "/api/admin/advertisements";
-            const method = editingAd ? "PUT" : "POST";
+            const method = editingAd ? "PATCH" : "POST";
 
             const res = await fetch(url, {
                 method,
@@ -176,9 +177,14 @@ export function AdminAdsView() {
                 }
                 setIsModalOpen(false);
                 resetAdForm();
+                toast.success(editingAd ? "Campaign updated" : "Campaign published");
+            } else {
+                const { error } = await res.json().catch(() => ({ error: "" }));
+                toast.error(error || "Failed to save campaign");
             }
         } catch (err) {
             console.error("Failed to save advertisement:", err);
+            toast.error("Failed to save campaign");
         }
 
         setIsSubmitting(false);
@@ -491,9 +497,9 @@ export function AdminAdsView() {
                                                 onChange={(e) => setNewType(e.target.value as AdType)}
                                                 className="w-full rounded-xl border border-neutral-200 p-2.5 text-xs font-semibold outline-none focus:border-neutral-900"
                                             >
-                                                <option value="BANNER">Banner</option>
-                                                <option value="CARD">Card</option>
-                                                <option value="POPUP">Popup</option>
+                                                {AD_TYPE_OPTIONS.map((o) => (
+                                                    <option key={o.value} value={o.value}>{o.label}</option>
+                                                ))}
                                             </select>
                                         </div>
 
@@ -506,9 +512,9 @@ export function AdminAdsView() {
                                                 onChange={(e) => setNewPlacement(e.target.value as AdPlacement)}
                                                 className="w-full rounded-xl border border-neutral-200 p-2.5 text-xs font-semibold outline-none focus:border-neutral-900"
                                             >
-                                                <option value="HOMEPAGE_HERO">Homepage Hero</option>
-                                                <option value="SIDEBAR">Sidebar</option>
-                                                <option value="PROPERTY_LIST">Property List</option>
+                                                {AD_PLACEMENT_OPTIONS.map((o) => (
+                                                    <option key={o.value} value={o.value}>{o.label}</option>
+                                                ))}
                                             </select>
                                         </div>
                                     </div>

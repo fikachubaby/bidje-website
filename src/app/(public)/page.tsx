@@ -7,6 +7,8 @@ import { Navbar } from "@/components/layout/Navbar";
 import { FeaturedListings } from "@/components/home/FeaturedListings";
 import { PropertyBrowseTabs } from "@/components/home/PropertyBrowseTabs";
 import SubscriptionBanner from "@/components/home/SubscriptionBanner";
+import { AdBanner } from "@/components/home/AdBanner";
+import { getActiveAd } from "@/lib/ads";
 import { PROPERTY_TYPES } from "@/types/property";
 
 const PAGE_SIZE_OPTIONS = [9, 18, 27, 54];
@@ -66,7 +68,10 @@ export default async function HomePage({
     query = query.eq("property_type", activeType);
   }
 
-  const { data: browseProperties, count, error } = await query;
+  const [{ data: browseProperties, count, error }, heroAd] = await Promise.all([
+    query,
+    getActiveAd("HOMEPAGE_HERO"),
+  ]);
 
   if (error) {
     console.error("browseProperties error:", error);
@@ -77,7 +82,8 @@ export default async function HomePage({
       <Navbar />
       <HeroSearch />
       <FeaturedListings />
-      <SubscriptionBanner />
+      {/* A published Homepage banner ad replaces the default subscription banner. */}
+      {heroAd ? <AdBanner ad={heroAd} /> : <SubscriptionBanner />}
       <PropertyBrowseTabs
         properties={browseProperties ?? []}
         totalCount={count ?? 0}
