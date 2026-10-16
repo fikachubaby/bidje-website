@@ -72,6 +72,23 @@ export async function getPropertyById(id: string): Promise<Property | undefined>
     return mapPropertyRowToProperty(data as PropertyRow);
 }
 
+export async function getPropertiesByIds(ids: string[]): Promise<Property[]> {
+    if (!ids.length) return [];
+
+    const { data, error } = await supabase
+        .from("properties")
+        .select(PROPERTY_SELECT)
+        .in("id", ids)
+        .eq("status", "Published");
+
+    if (error) {
+        console.error("getPropertiesByIds error:", error.message);
+        return [];
+    }
+
+    return mapPropertyRowsToProperties((data as PropertyRow[]) || []);
+}
+
 export async function searchProperties(
     params: PropertySearchParams
 ): Promise<PaginatedPropertiesResult> {

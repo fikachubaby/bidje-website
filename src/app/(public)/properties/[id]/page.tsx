@@ -14,6 +14,7 @@ import {
 import { Navbar } from "@/components/layout/Navbar";
 import { BidjeRatingCard } from "@/components/property/BidjeRatingCard";
 import { FavouriteButton } from "@/components/property/FavouriteButton";
+import { ShareButton } from "@/components/property/ShareButton";
 import { formatPrice } from "@/lib/utils";
 import { getPropertyByIdOrSlug } from "@/lib/properties/property-service";
 import { translate as t } from "@/lib/i18n/getTranslation";
@@ -160,7 +161,14 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
                                 {formatPrice(property.price, property.currency)}
                             </p>
                         </div>
-                        <FavouriteButton propertyId={property.id} className="border border-neutral-200 shadow-sm" />
+                        <div className="flex items-center gap-2">
+                            <ShareButton
+                                title={property.title}
+                                text={`${property.title} · ${formatPrice(property.price, property.currency)}`}
+                                className="border border-neutral-200 shadow-sm"
+                            />
+                            <FavouriteButton propertyId={property.id} className="border border-neutral-200 shadow-sm" />
+                        </div>
                     </div>
                 </div>
 
