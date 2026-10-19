@@ -71,6 +71,11 @@ export function AddPropertyModal({ open, onClose, onCreated }: AddPropertyModalP
                 body: JSON.stringify(form),
             });
             const data = await res.json();
+            if (res.status === 401) {
+                toast.error("Your session has expired. Please sign in again.");
+                window.location.href = "/login?next=/investor";
+                return;
+            }
             if (!res.ok) throw new Error(data.error || "Failed to add property");
             toast.success("Property added");
             onCreated(data.property);
