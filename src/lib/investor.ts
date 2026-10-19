@@ -1,4 +1,5 @@
 import type {
+    ExpenseCategory,
     InvestorMilestone,
     InvestorProperty,
     InvestorStage,
@@ -28,12 +29,15 @@ export const MILESTONE_TEMPLATES: Record<MilestoneCategory, string[]> = {
         "Final photography",
     ],
     sales: [
-        "Listed on Bidje",
-        "Buyer viewings started",
-        "Offer received",
-        "Offer accepted",
-        "Buyer SPA signed",
-        "Sale completed",
+        "Buyer booked",
+        "SPA signed",
+        "Loan agreement signed",
+        "Consent approval",
+        "First disbursement",
+        "Release title",
+        "Discharge documents",
+        "Transfer / charge perfected",
+        "Second disbursement",
     ],
 };
 
@@ -80,11 +84,39 @@ export function overallProgress(p: InvestorProperty) {
 }
 
 export function totalCost(p: InvestorProperty) {
-    return p.purchasePrice + p.legalCost + p.renovationCost + p.otherCost;
+    return p.purchasePrice + p.agentFee + p.legalCost + p.renovationCost + p.otherCost;
 }
 
 export function projectedProfit(p: InvestorProperty) {
     return p.targetPrice ? p.targetPrice - totalCost(p) - p.sellingCost : 0;
+}
+
+/** Details an investor can also edit later from the property page. */
+export const INVESTOR_DETAIL_FIELDS: string[] = [
+    "contractorName",
+    "contractorPhone",
+    "legalStart",
+    "legalEnd",
+    "renovationStart",
+    "renovationEnd",
+    "salesStart",
+    "salesEnd",
+];
+
+export const EXPENSE_CATEGORIES: { key: ExpenseCategory; label: string }[] = [
+    { key: "legal", label: "Legal" },
+    { key: "agent", label: "Agent" },
+    { key: "renovation", label: "Renovation" },
+];
+
+/** Planned start/end for each phase, keyed like the journey stages. */
+export function phaseTimeframe(p: InvestorProperty, phase: MilestoneCategory) {
+    const t = {
+        legal: [p.legalStart, p.legalEnd],
+        renovation: [p.renovationStart, p.renovationEnd],
+        sales: [p.salesStart, p.salesEnd],
+    }[phase];
+    return { start: t[0] ?? null, end: t[1] ?? null };
 }
 
 export function money(n: number) {

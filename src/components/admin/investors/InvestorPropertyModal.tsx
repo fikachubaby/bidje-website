@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Check, EyeOff, Loader2, Send, Sparkles, Trash2, XCircle } from "lucide-react";
 import { AiHealthBadge } from "./AiHealthBadge";
 import { DocumentsReview } from "./DocumentsReview";
+import { InvestorExpensesList } from "./InvestorExpensesList";
 import { useOfferPartners } from "@/hooks/useOfferPartners";
 import { Modal } from "@/components/admin/ui/Modal";
 import { FormInput, FormSelect, FormTextarea } from "@/components/admin/ui/FormField";
@@ -36,8 +37,18 @@ interface InvestorPropertyModalProps {
     onDeleteReminder: (reminderId: string) => Promise<void>;
 }
 
+const DATE_FIELDS: { key: keyof InvestorPropertyInput; label: string }[] = [
+    { key: "legalStart", label: "Legal start" },
+    { key: "legalEnd", label: "Legal end" },
+    { key: "renovationStart", label: "Renovation start" },
+    { key: "renovationEnd", label: "Renovation end" },
+    { key: "salesStart", label: "Sales start" },
+    { key: "salesEnd", label: "Sales end" },
+];
+
 const NUMBER_FIELDS: { key: keyof InvestorPropertyInput; label: string }[] = [
     { key: "purchasePrice", label: "Purchase price (RM)" },
+    { key: "agentFee", label: "Agent fee (RM)" },
     { key: "legalCost", label: "Legal cost (RM)" },
     { key: "renovationCost", label: "Renovation cost (RM)" },
     { key: "otherCost", label: "Other expenses (RM)" },
@@ -92,7 +103,16 @@ export function InvestorPropertyModal({
             notes: property.notes ?? "",
             legalFirmId: property.legalFirmId ?? "",
             financingConsultantId: property.financingConsultantId ?? "",
+            contractorName: property.contractorName ?? "",
+            contractorPhone: property.contractorPhone ?? "",
+            legalStart: property.legalStart ?? "",
+            legalEnd: property.legalEnd ?? "",
+            renovationStart: property.renovationStart ?? "",
+            renovationEnd: property.renovationEnd ?? "",
+            salesStart: property.salesStart ?? "",
+            salesEnd: property.salesEnd ?? "",
             purchasePrice: property.purchasePrice,
+            agentFee: property.agentFee,
             legalCost: property.legalCost,
             renovationCost: property.renovationCost,
             otherCost: property.otherCost,
@@ -204,6 +224,26 @@ export function InvestorPropertyModal({
                                 </option>
                             ))}
                         </FormSelect>
+                        <FormInput
+                            label="Contractor name"
+                            value={form.contractorName ?? ""}
+                            onChange={(e) => set("contractorName", e.target.value)}
+                        />
+                        <FormInput
+                            label="Contractor phone"
+                            type="tel"
+                            value={form.contractorPhone ?? ""}
+                            onChange={(e) => set("contractorPhone", e.target.value)}
+                        />
+                        {DATE_FIELDS.map(({ key, label }) => (
+                            <FormInput
+                                key={key}
+                                label={label}
+                                type="date"
+                                value={(form[key] as string) ?? ""}
+                                onChange={(e) => set(key, e.target.value as never)}
+                            />
+                        ))}
                         {NUMBER_FIELDS.map(({ key, label }) => (
                             <MoneyInput
                                 key={key}
@@ -325,7 +365,15 @@ export function InvestorPropertyModal({
                 </div>
             )}
 
-            {tab === "documents" && <DocumentsReview propertyId={property.id} onReviewed={onRefresh} />}
+            {tab === "documents" && (
+                <div className="space-y-6">
+                    <InvestorExpensesList key={property.updatedAt} propertyId={property.id} />
+                    <div className="space-y-2">
+                        <h4 className="text-sm font-black">Uploaded documents</h4>
+                        <DocumentsReview propertyId={property.id} onReviewed={onRefresh} />
+                    </div>
+                </div>
+            )}
 
             {tab === "reminders" && (
                 <div className="space-y-3">

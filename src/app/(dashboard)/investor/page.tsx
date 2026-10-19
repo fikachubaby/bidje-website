@@ -254,7 +254,10 @@ export default function InvestorPortalPage() {
 
                 <div id="property-detail" className="min-w-0 scroll-mt-24 lg:sticky lg:top-24 lg:self-start">
                     {selected ? (
-                        <PropertyDetail property={selected} />
+                        <PropertyDetail
+                            property={selected}
+                            onUpdated={(updated) => setProperties((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))}
+                        />
                     ) : (
                         <CenteredCard>
                             <p className="text-sm text-neutral-500">Choose a property to see its details.</p>

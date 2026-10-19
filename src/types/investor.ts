@@ -1,5 +1,6 @@
 export type InvestorStage = "legal" | "renovation" | "for_sale" | "sold" | "completed";
 export type MilestoneCategory = "legal" | "renovation" | "sales";
+export type ExpenseCategory = "legal" | "agent" | "renovation";
 export type UpdateCategory = MilestoneCategory | "finance" | "general";
 
 export interface InvestorMilestone {
@@ -39,6 +40,7 @@ export interface InvestorProperty {
     dateSignedNote?: string | null;
     stage: InvestorStage;
     purchasePrice: number;
+    agentFee: number;
     legalCost: number;
     renovationCost: number;
     otherCost: number;
@@ -46,6 +48,14 @@ export interface InvestorProperty {
     targetPrice: number;
     highestOffer: number;
     expectedCompletion?: string | null;
+    contractorName?: string | null;
+    contractorPhone?: string | null;
+    legalStart?: string | null;
+    legalEnd?: string | null;
+    renovationStart?: string | null;
+    renovationEnd?: string | null;
+    salesStart?: string | null;
+    salesEnd?: string | null;
     notes?: string | null;
     createdAt: string;
     updatedAt: string;
@@ -58,6 +68,16 @@ export interface InvestorProperty {
     financingConsultantId?: string | null;
     legalFirm?: { name: string; contactPerson?: string | null; phone?: string | null; email?: string | null } | null;
     financingConsultant?: { name: string } | null;
+}
+
+export interface InvestorExpense {
+    id: string;
+    category: ExpenseCategory;
+    amount: number;
+    note: string | null;
+    receiptName: string | null;
+    receiptUrl: string | null;
+    createdAt: string;
 }
 
 /** Shape stored by the AI monitor (see lib/ai/portfolioMonitor.ts). */

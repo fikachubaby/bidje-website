@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
 import { requireUserSession } from "@/lib/auth/requireUserSession";
-import { defaultMilestoneRows } from "@/lib/investor";
+import { defaultMilestoneRows, INVESTOR_DETAIL_FIELDS } from "@/lib/investor";
 import {
     INVESTOR_PROPERTY_SELECT,
     mapInvestorProperty,
@@ -35,12 +35,14 @@ const INVESTOR_EDITABLE = [
     "stage",
     "expectedCompletion",
     "purchasePrice",
+    "agentFee",
     "legalCost",
     "renovationCost",
     "otherCost",
     "sellingCost",
     "targetPrice",
     "highestOffer",
+    ...INVESTOR_DETAIL_FIELDS,
 ];
 
 /** Adds a property to the signed-in investor's own portfolio. */

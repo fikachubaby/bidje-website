@@ -7,6 +7,8 @@ import { FormInput, FormSelect } from "@/components/admin/ui/FormField";
 import { MoneyInput } from "@/components/admin/ui/MoneyInput";
 import { Button } from "@/components/ui/ButtonProps";
 import { money, STAGE_LABELS } from "@/lib/investor";
+import { JOURNEY } from "./JourneyProgress";
+import { PHASE_FIELDS } from "./PropertyEditors";
 import type { InvestorProperty, InvestorPropertyInput, InvestorStage } from "@/types/investor";
 
 type Form = Omit<Partial<InvestorPropertyInput>, "investorId">;
@@ -14,12 +16,13 @@ type Form = Omit<Partial<InvestorPropertyInput>, "investorId">;
 // Same money rows as the property detail's Money tab.
 const MONEY_FIELDS: { key: keyof Form; label: string }[] = [
     { key: "purchasePrice", label: "Purchase price (RM)" },
+    { key: "agentFee", label: "Agent fee (RM)" },
     { key: "legalCost", label: "Legal cost (RM)" },
     { key: "renovationCost", label: "Renovation (RM)" },
     { key: "otherCost", label: "Other expenses (RM)" },
     { key: "sellingCost", label: "Estimated selling cost (RM)" },
-    { key: "targetPrice", label: "Target sale price (RM)" },
-    { key: "highestOffer", label: "Highest offer so far (RM)" },
+    { key: "targetPrice", label: "Highest offer so far (RM)" },
+    { key: "highestOffer", label: "Resale Value (RM)" },
 ];
 
 const EMPTY: Form = {
@@ -29,7 +32,10 @@ const EMPTY: Form = {
     dateSigned: "",
     expectedCompletion: "",
     stage: "legal",
+    contractorName: "",
+    contractorPhone: "",
     purchasePrice: 0,
+    agentFee: 0,
     legalCost: 0,
     renovationCost: 0,
     otherCost: 0,
@@ -57,7 +63,7 @@ export function AddPropertyModal({ open, onClose, onCreated }: AddPropertyModalP
     const set = <K extends keyof Form>(key: K, value: Form[K]) => setForm((prev) => ({ ...prev, [key]: value }));
 
     const cost =
-        Number(form.purchasePrice) + Number(form.legalCost) + Number(form.renovationCost) + Number(form.otherCost);
+        Number(form.purchasePrice) + Number(form.agentFee) + Number(form.legalCost) + Number(form.renovationCost) + Number(form.otherCost);
     const profit = form.targetPrice ? Number(form.targetPrice) - cost - Number(form.sellingCost) : 0;
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -119,6 +125,44 @@ export function AddPropertyModal({ open, onClose, onCreated }: AddPropertyModalP
                         value={form.expectedCompletion ?? ""}
                         onChange={(e) => set("expectedCompletion", e.target.value)}
                     />
+                </section>
+
+                <section>
+                    <h3 className="mb-3 text-sm font-black">Phase timeframes</h3>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        {JOURNEY.map((p) => {
+                            const [startKey, endKey] = PHASE_FIELDS[p.key];
+                            return (
+                                <div key={p.key} className="contents">
+                                    <FormInput
+                                        label={`${p.label} start`}
+                                        type="date"
+                                        value={(form[startKey] as string) ?? ""}
+                                        onChange={(e) => set(startKey, e.target.value)}
+                                    />
+                                    <FormInput
+                                        label={`${p.label} end`}
+                                        type="date"
+                                        value={(form[endKey] as string) ?? ""}
+                                        onChange={(e) => set(endKey, e.target.value)}
+                                    />
+                                </div>
+                            );
+                        })}
+                    </div>
+                </section>
+
+                <section>
+                    <h3 className="mb-3 text-sm font-black">Renovation contractor</h3>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <FormInput label="Contractor name" value={form.contractorName ?? ""} onChange={(e) => set("contractorName", e.target.value)} />
+                        <FormInput
+                            label="Contractor phone"
+                            type="tel"
+                            value={form.contractorPhone ?? ""}
+                            onChange={(e) => set("contractorPhone", e.target.value)}
+                        />
+                    </div>
                 </section>
 
                 <section>
