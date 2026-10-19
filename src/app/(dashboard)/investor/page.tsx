@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Bell, Loader2, Search } from "lucide-react";
+import { Bell, Loader2, Plus, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { money, overallProgress, projectedProfit, STAGE_BADGE, STAGE_LABELS, totalCost } from "@/lib/investor";
 import type { InvestorProperty, InvestorStage } from "@/types/investor";
+import { Button } from "@/components/ui/ButtonProps";
+import { AddPropertyModal } from "./_components/AddPropertyModal";
 import { JourneyProgress } from "./_components/JourneyProgress";
 import { PropertyDetail } from "./_components/PropertyDetail";
 import { daysUntil, RemindersSpotlight, type UpcomingReminder } from "./_components/RemindersSpotlight";
@@ -32,6 +34,7 @@ export default function InvestorPortalPage() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [search, setSearch] = useState("");
     const [stage, setStage] = useState<InvestorStage | "all">("all");
+    const [addOpen, setAddOpen] = useState(false);
 
     useEffect(() => {
         fetch("/api/investor/portfolio")
@@ -83,6 +86,16 @@ export default function InvestorPortalPage() {
         }
     };
 
+    const handleCreated = (property: InvestorProperty) => {
+        setProperties((prev) => [...prev, property]);
+        setAddOpen(false);
+        setStage("all");
+        setSearch("");
+        openProperty(property.id);
+    };
+
+    const addModal = <AddPropertyModal open={addOpen} onClose={() => setAddOpen(false)} onCreated={handleCreated} />;
+
     if (loading) {
         return (
             <div className="flex min-h-[50vh] items-center justify-center">
@@ -107,8 +120,12 @@ export default function InvestorPortalPage() {
             <CenteredCard>
                 <h1 className="text-xl font-black">No investment properties yet</h1>
                 <p className="mt-2 text-sm text-neutral-500">
-                    Once the Bidje team adds your properties, you can follow their legal, renovation and sales progress here.
+                    Add your first property, or once the Bidje team adds your properties, you can follow their legal, renovation and sales progress here.
                 </p>
+                <Button className="mt-5" onClick={() => setAddOpen(true)}>
+                    <Plus className="h-4 w-4" /> Add property
+                </Button>
+                {addModal}
             </CenteredCard>
         );
     }
@@ -125,7 +142,11 @@ export default function InvestorPortalPage() {
                         Here&apos;s how your {properties.length} propert{properties.length === 1 ? "y is" : "ies are"} doing.
                     </p>
                 </div>
+                <Button onClick={() => setAddOpen(true)} className="shrink-0">
+                    <Plus className="h-4 w-4" /> Add property
+                </Button>
             </div>
+            {addModal}
 
             {/* Money at a glance */}
             <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
