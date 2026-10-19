@@ -8,14 +8,42 @@ import { money, overallProgress, projectedProfit, STAGE_BADGE, STAGE_LABELS, tot
 import type { InvestorProperty, InvestorStage } from "@/types/investor";
 import { Button } from "@/components/ui/ButtonProps";
 import { AddPropertyModal } from "./_components/AddPropertyModal";
+import { HowItWorksModal, InfoTip, METRIC_HELP } from "./_components/MetricHelp";
 import { JourneyProgress } from "./_components/JourneyProgress";
 import { PropertyDetail } from "./_components/PropertyDetail";
 import { daysUntil, RemindersSpotlight, type UpcomingReminder } from "./_components/RemindersSpotlight";
 
-function Metric({ label, value, hint, highlight }: { label: string; value: string | number; hint?: string; highlight?: boolean }) {
+function Metric({
+    label,
+    value,
+    hint,
+    highlight,
+    info,
+    align,
+}: {
+    label: string;
+    value: string | number;
+    hint?: string;
+    highlight?: boolean;
+    info: string;
+    align?: "left" | "right";
+}) {
     return (
-        <div className={cn("min-w-0 rounded-2xl border p-3.5 shadow-sm sm:p-4", highlight ? "border-black bg-neutral-950 text-white" : "border-neutral-200 bg-white")}>
-            <p className={cn("text-[11px] font-bold uppercase tracking-wide", highlight ? "text-brand" : "text-neutral-500")}>{label}</p>
+        <div
+            className={cn(
+                "relative min-w-0 rounded-2xl border p-3.5 shadow-sm sm:p-4",
+                highlight ? "border-black bg-neutral-950 text-white" : "border-neutral-200 bg-white",
+            )}
+        >
+            <p
+                className={cn(
+                    "flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide",
+                    highlight ? "text-brand" : "text-neutral-500",
+                )}
+            >
+                {label}
+                <InfoTip text={info} label={label.toLowerCase()} dark={highlight} align={align} />
+            </p>
             <p className="mt-1.5 break-words text-lg font-black leading-tight tracking-tight sm:text-2xl">{value}</p>
             {hint && <p className={cn("mt-1 text-xs", highlight ? "text-neutral-400" : "text-neutral-500")}>{hint}</p>}
         </div>
@@ -35,6 +63,7 @@ export default function InvestorPortalPage() {
     const [search, setSearch] = useState("");
     const [stage, setStage] = useState<InvestorStage | "all">("all");
     const [addOpen, setAddOpen] = useState(false);
+    const [helpOpen, setHelpOpen] = useState(false);
 
     useEffect(() => {
         fetch("/api/investor/portfolio")
@@ -52,7 +81,7 @@ export default function InvestorPortalPage() {
     const filtered = useMemo(() => {
         const q = search.toLowerCase();
         return properties.filter(
-            (p) => (stage === "all" || p.stage === stage) && (!q || `${p.address} ${p.state ?? ""}`.toLowerCase().includes(q))
+            (p) => (stage === "all" || p.stage === stage) && (!q || `${p.address} ${p.state ?? ""}`.toLowerCase().includes(q)),
         );
     }, [properties, search, stage]);
 
@@ -63,7 +92,13 @@ export default function InvestorPortalPage() {
         const target = priced.reduce((s, p) => s + p.targetPrice, 0);
         const profit = priced.reduce((s, p) => s + projectedProfit(p), 0);
         const pricedCost = priced.reduce((s, p) => s + totalCost(p), 0);
-        return { invested, target, profit, pricedCount: priced.length, roi: pricedCost ? (profit / pricedCost) * 100 : 0 };
+        return {
+            invested,
+            target,
+            profit,
+            pricedCount: priced.length,
+            roi: pricedCost ? (profit / pricedCost) * 100 : 0,
+        };
     }, [properties]);
 
     const upcoming: UpcomingReminder[] = useMemo(
@@ -71,7 +106,7 @@ export default function InvestorPortalPage() {
             properties
                 .flatMap((p) => p.reminders.filter((r) => r.status === "scheduled").map((r) => ({ ...r, property: p })))
                 .sort((a, b) => a.dueDate.localeCompare(b.dueDate)),
-        [properties]
+        [properties],
     );
     const reminderCount = (id: string) => upcoming.filter((r) => r.property.id === id && daysUntil(r.dueDate) <= 7).length;
 
@@ -120,7 +155,8 @@ export default function InvestorPortalPage() {
             <CenteredCard>
                 <h1 className="text-xl font-black">No investment properties yet</h1>
                 <p className="mt-2 text-sm text-neutral-500">
-                    Add your first property, or once the Bidje team adds your properties, you can follow their legal, renovation and sales progress here.
+                    Add your first property, or once the Bidje team adds your properties, you can follow their legal, renovation and sales
+                    progress here.
                 </p>
                 <Button className="mt-5" onClick={() => setAddOpen(true)}>
                     <Plus className="h-4 w-4" /> Add property
@@ -139,7 +175,8 @@ export default function InvestorPortalPage() {
                         Hi{investorName ? `, ${investorName.split(" ")[0]}` : ""} 👋
                     </h1>
                     <p className="mt-1 text-sm text-neutral-500">
-                        Here&apos;s how your {properties.length} propert{properties.length === 1 ? "y is" : "ies are"} doing.
+                        Here&apos;s how your {properties.length} propert
+                        {properties.length === 1 ? "y is" : "ies are"} doing.
                     </p>
                 </div>
                 <Button onClick={() => setAddOpen(true)} className="shrink-0">
@@ -155,19 +192,39 @@ export default function InvestorPortalPage() {
                     value={totals.pricedCount ? money(totals.profit) : "Pending"}
                     hint={totals.pricedCount ? `ROI ${totals.roi.toFixed(1)}% · before tax` : "Shown once target prices are set"}
                     highlight
+                    info={METRIC_HELP.profit}
                 />
-                <Metric label="Total invested" value={totals.invested ? money(totals.invested) : "Pending"} hint="Purchase, legal, renovation & other" />
+                <Metric
+                    label="Total invested"
+                    value={totals.invested ? money(totals.invested) : "Pending"}
+                    hint="Purchase, agent, legal, renovation & other"
+                    info={METRIC_HELP.invested}
+                    align="right"
+                />
                 <Metric
                     label="Target sale value"
                     value={totals.target ? money(totals.target) : "Pending"}
                     hint={`${totals.pricedCount} of ${properties.length} priced`}
+                    info={METRIC_HELP.target}
                 />
                 <Metric
                     label="Properties"
                     value={properties.length}
                     hint={`${countBy("legal")} legal · ${countBy("renovation")} reno · ${countBy("for_sale")} for sale`}
+                    info={METRIC_HELP.properties}
+                    align="right"
                 />
             </section>
+            <div className="-mt-2 flex justify-end sm:-mt-3">
+                <button
+                    type="button"
+                    onClick={() => setHelpOpen(true)}
+                    className="text-xs font-bold text-neutral-500 underline hover:text-black"
+                >
+                    How do these numbers work?
+                </button>
+            </div>
+            <HowItWorksModal open={helpOpen} onClose={() => setHelpOpen(false)} />
 
             <RemindersSpotlight reminders={upcoming} onOpen={openProperty} />
 
@@ -195,7 +252,7 @@ export default function InvestorPortalPage() {
                                         onClick={() => setStage(s)}
                                         className={cn(
                                             "whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold transition-colors",
-                                            stage === s ? "bg-black text-brand" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                                            stage === s ? "bg-black text-brand" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200",
                                         )}
                                     >
                                         {s === "all" ? "All" : STAGE_LABELS[s]} ({count})
@@ -218,12 +275,17 @@ export default function InvestorPortalPage() {
                                         onKeyDown={(e) => e.key === "Enter" && openProperty(p.id)}
                                         className={cn(
                                             "cursor-pointer rounded-xl border p-3.5 transition hover:shadow-md",
-                                            p.id === selectedId ? "border-black ring-2 ring-brand" : "border-neutral-200"
+                                            p.id === selectedId ? "border-black ring-2 ring-brand" : "border-neutral-200",
                                         )}
                                     >
                                         <div className="flex items-start justify-between gap-2">
                                             <p className="text-sm font-bold leading-snug text-neutral-900">{p.address}</p>
-                                            <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black", STAGE_BADGE[p.stage])}>
+                                            <span
+                                                className={cn(
+                                                    "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black",
+                                                    STAGE_BADGE[p.stage],
+                                                )}
+                                            >
                                                 {STAGE_LABELS[p.stage]}
                                             </span>
                                         </div>
@@ -239,7 +301,12 @@ export default function InvestorPortalPage() {
                                                     </span>
                                                 )}
                                                 {p.targetPrice > 0 && (
-                                                    <span className={cn("font-black", projectedProfit(p) < 0 ? "text-red-600" : "text-emerald-700")}>
+                                                    <span
+                                                        className={cn(
+                                                            "font-black",
+                                                            projectedProfit(p) < 0 ? "text-red-600" : "text-emerald-700",
+                                                        )}
+                                                    >
                                                         {money(projectedProfit(p))}
                                                     </span>
                                                 )}
