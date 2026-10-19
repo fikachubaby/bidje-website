@@ -2,23 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { postToGateway } from "@/lib/payments/postToGateway";
 import type { BillingPayment, SubscriptionView } from "@/lib/subscriptions/plan";
-
-/** Sends the browser to Fiuu's hosted payment page with the signed fields from our API. */
-function postToGateway(actionUrl: string, fields: Record<string, string>) {
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = actionUrl;
-    for (const [name, value] of Object.entries(fields)) {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = name;
-        input.value = value;
-        form.appendChild(input);
-    }
-    document.body.appendChild(form);
-    form.submit();
-}
 
 export function useSubscription() {
     const [subscription, setSubscription] = useState<SubscriptionView | null>(null);

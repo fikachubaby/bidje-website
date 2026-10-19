@@ -11,6 +11,7 @@ import {
     BadgeDollarSign,
     ClipboardList,
     Briefcase,
+    ShieldCheck,
 } from "lucide-react";
 import type { NavItem } from "@/types/admin";
 
@@ -21,6 +22,7 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     { id: "investors", label: "Investor Portfolios", icon: Briefcase },
     { id: "subscribers", label: "Subscribers", icon: UserRoundCheck },
     { id: "offers", label: "Offers", icon: HandCoins },
+    { id: "financing-screenings", label: "Financing Screenings", icon: ShieldCheck },
     { id: "ads", label: "Advertisements", icon: Megaphone },
     { id: "legals", label: "Legal Consultants", icon: Scale },
     { id: "financials", label: "Financial Consultants", icon: BadgeDollarSign },

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback, type FormEvent } from "react";
+import { useEffect, useRef, useState, useCallback, type FormEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, Banknote, Landmark, Handshake, ShieldCheck, ChevronRight, type LucideIcon } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useSession } from "@/lib/auth/useSession";
 import {
@@ -14,6 +15,13 @@ import type { FormData, FormErrors } from "@/lib/offers/pendingOffer";
 import { checkEmailExists } from "@/lib/offers/checkEmail";
 import { supabase } from "@/lib/supabase/supabase";
 import { useOfferPartners } from "@/hooks/useOfferPartners";
+import { useFinancingScreening } from "@/hooks/useFinancingScreening";
+import { FinancingScreeningFlow } from "@/components/property/financing/FinancingScreeningFlow";
+import {
+  SCREENING_STATUS_META,
+  type ApplicantType,
+  type CompanyKind,
+} from "@/constants/financing-screening";
 
 import { SubmitOfferModalProps } from "@/types/offer";
 import { PURCHASE_METHODS, initialForm } from "../../constants/submit-offer";
@@ -21,6 +29,12 @@ import { formatOfferInput, validateForm } from "@/lib/offers/validateOffer";
 import { Field, inputClass } from "@/components/ui/Field";
 import { translate as t } from "@/lib/i18n/getTranslation";
 type TranslationKey = Parameters<typeof t>[0];
+
+const METHOD_ICONS: Record<string, LucideIcon> = {
+  Loan: Landmark,
+  Cash: Banknote,
+  "Joint Venture": Handshake,
+};
 
 export function SubmitOfferModal({
   open,
@@ -42,9 +56,49 @@ export function SubmitOfferModal({
   const [redirecting, setRedirecting] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const { legalFirms, financingConsultants, loading: partnersLoading } = useOfferPartners(open);
+  const [screeningOpen, setScreeningOpen] = useState(false);
+  const [returnedFromGateway, setReturnedFromGateway] = useState(false);
+  const autoHandled = useRef(false);
 
-  // Auto-fill user details if logged in
+  const { legalFirms, financingConsultants, loading: partnersLoading } = useOfferPartners(open);
+  const screeningApi = useFinancingScreening(open && Boolean(user));
+  const screening = screeningApi.screening;
+  const isLoan = form.purchaseMethod === "Loan";
+  const screeningPassed = screening?.status === "eligible";
+
+  // Back from the payment page (?screening=success|pending|failed|cancelled).
+  useEffect(() => {
+    if (!open) return;
+    const result = new URLSearchParams(window.location.search).get("screening");
+    if (!result) return;
+    setReturnedFromGateway(true);
+    if (result === "failed") toast.error("Payment didn't go through. You can try again.");
+    if (result === "cancelled") toast("Payment cancelled. Your documents are saved.");
+  }, [open]);
+
+  // The callback can land a moment after the user is redirected back; poll briefly while we wait.
+  useEffect(() => {
+    if (!returnedFromGateway || screening?.status !== "payment_pending") return;
+    const timer = setInterval(() => void screeningApi.refresh(), 4000);
+    return () => clearInterval(timer);
+  }, [returnedFromGateway, screening?.status, screeningApi]);
+
+  function fromDraft(draft: NonNullable<typeof prefill>): FormData {
+    return {
+      fullName: draft.fullName,
+      phone: draft.phone,
+      email: draft.email,
+      offerAmount: draft.offerAmount,
+      purchaseMethod: draft.purchaseMethod,
+      message: draft.message,
+      confirmed: draft.confirmed,
+      deposit: draft.deposit,
+      financingConsultantId: draft.financingConsultantId,
+      legalFirmId: draft.legalFirmId,
+    };
+  }
+
+  // Auto-fill user details if logged in, keeping any offer draft saved before login.
   useEffect(() => {
     if (!open) return;
 
@@ -56,29 +110,28 @@ export function SubmitOfferModal({
           .eq("id", user?.id)
           .single();
 
-        setForm((prev) => ({
-          ...prev,
+        const contact = {
           fullName: profile?.full_name || user?.user_metadata?.full_name || "",
           phone: profile?.phone || user?.user_metadata?.phone || "",
           email: user?.email || "",
-        }));
+        };
+        const draft = prefill ? fromDraft(prefill) : null;
+        const merged: FormData = { ...(draft ?? initialForm), ...contact };
+        setForm((prev) => (draft ? merged : { ...prev, ...contact }));
+
+        if (!autoHandled.current && prefill && autoSubmit) {
+          autoHandled.current = true;
+          // Loan offers resume the screening; it shows "passed" if they're already eligible.
+          if (merged.purchaseMethod === "Loan") setScreeningOpen(true);
+          else void submitOffer(merged);
+        }
       }
 
       fetchUserProfile();
     } else if (prefill) {
-      setForm({
-        fullName: prefill.fullName,
-        phone: prefill.phone,
-        email: prefill.email,
-        offerAmount: prefill.offerAmount,
-        purchaseMethod: prefill.purchaseMethod,
-        message: prefill.message,
-        confirmed: prefill.confirmed,
-        deposit: prefill.deposit,
-        financingConsultantId: prefill.financingConsultantId,
-        legalFirmId: prefill.legalFirmId,
-      });
+      setForm(fromDraft(prefill));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user, prefill]);
 
   const submitOffer = useCallback(async (data: FormData) => {
@@ -107,12 +160,6 @@ export function SubmitOfferModal({
     }, 400);
   }, [propertyId, user, router, onSubmitted]);
 
-  useEffect(() => {
-    if (open && prefill && autoSubmit && user) {
-      void submitOffer(form);
-    }
-  }, [open, prefill, autoSubmit, user, submitOffer, form]);
-
   if (!open) return null;
 
   function handleClose() {
@@ -122,7 +169,34 @@ export function SubmitOfferModal({
     setSubmitted(false);
     setRedirecting(false);
     setLoading(false);
+    setScreeningOpen(false);
+    setReturnedFromGateway(false);
+    autoHandled.current = false;
     onClose();
+  }
+
+  function selectPurchaseMethod(value: string) {
+    updateField("purchaseMethod", value);
+    if (value === "Loan" && !screeningPassed) setScreeningOpen(true);
+  }
+
+  /** Guests need an account before screening: save the offer and go sign up / log in. */
+  async function requireAccountForScreening(applicantType: ApplicantType, companyKind: CompanyKind | null) {
+    const validationErrors = validateForm(form, minimumPrice);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setScreeningOpen(false);
+      toast("Fill in your offer details first, then we'll set up your account.");
+      return;
+    }
+    setLoading(true);
+    const emailExists = await checkEmailExists(form.email);
+    savePendingOffer({ propertyId, ...form, applicantType, companyKind });
+    setRedirecting(true);
+    setTimeout(() => {
+      const destination = emailExists ? "/login" : "/signup";
+      window.location.href = `${destination}?next=${encodeURIComponent(pathname)}`;
+    }, 600);
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -135,6 +209,11 @@ export function SubmitOfferModal({
     setErrors({});
 
     if (sessionLoading) return;
+
+    if (isLoan && !screeningPassed) {
+      setScreeningOpen(true);
+      return;
+    }
 
     if (user) {
       await submitOffer(form);
@@ -166,9 +245,9 @@ export function SubmitOfferModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4">
       <div
-        className="relative flex max-h-[90vh] w-full max-w-lg flex-col rounded-3xl bg-white p-6 shadow-2xl sm:p-8"
+        className="relative flex max-h-[92dvh] w-full max-w-lg flex-col rounded-t-3xl bg-white p-5 shadow-2xl sm:max-h-[90vh] sm:rounded-3xl sm:p-8"
         role="dialog"
         aria-modal="true"
         aria-labelledby="submit-offer-title"
@@ -176,7 +255,7 @@ export function SubmitOfferModal({
         <div className="flex items-start justify-between gap-4 pb-4 border-b border-neutral-100">
           <div>
             <h2 id="submit-offer-title" className="text-2xl font-bold text-black">
-              {t("SubmitOfferModal.title")}
+              {screeningOpen ? "Loan Financing Screening" : t("SubmitOfferModal.title")}
             </h2>
             <p className="mt-1 text-sm text-neutral-500">{propertyTitle}</p>
             {user && (
@@ -216,6 +295,26 @@ export function SubmitOfferModal({
               </p>
               <p className="mt-2 text-xs text-neutral-500">Redirecting to your dashboard...</p>
             </div>
+          ) : screeningOpen ? (
+            <FinancingScreeningFlow
+              api={screeningApi}
+              isGuest={!user}
+              initialApplicantType={prefill?.applicantType}
+              initialCompanyKind={prefill?.companyKind}
+              returnedFromGateway={returnedFromGateway}
+              returnPath={pathname}
+              onBeforePay={() =>
+                savePendingOffer({
+                  propertyId,
+                  ...form,
+                  applicantType: screening?.applicantType,
+                  companyKind: screening?.companyKind,
+                })
+              }
+              onBackToOffer={() => setScreeningOpen(false)}
+              onPassed={() => setScreeningOpen(false)}
+              onRequireAccount={requireAccountForScreening}
+            />
           ) : (
             <form onSubmit={handleSubmit} id="submit-offer-form" className="space-y-5" noValidate>
 
@@ -298,18 +397,55 @@ export function SubmitOfferModal({
               </Field>
 
               <Field label={t("SubmitOfferModal.fields.purchaseMethod.label")} id="purchaseMethod" error={errors.purchaseMethod} required>
-                <select
-                  id="purchaseMethod"
-                  value={form.purchaseMethod}
-                  onChange={(e) => updateField("purchaseMethod", e.target.value)}
-                  className={inputClass(errors.purchaseMethod)}
-                >
-                  {PURCHASE_METHODS.map((method) => (
-                    <option key={method.value} value={method.value}>
-                      {t(method.labelKey as TranslationKey)}
-                    </option>
-                  ))}
-                </select>
+                <div id="purchaseMethod" role="radiogroup" className="grid grid-cols-3 gap-2">
+                  {PURCHASE_METHODS.filter((m) => m.value).map((method) => {
+                    const Icon = METHOD_ICONS[method.value] ?? Banknote;
+                    const selected = form.purchaseMethod === method.value;
+                    return (
+                      <button
+                        key={method.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() => selectPurchaseMethod(method.value)}
+                        className={cn(
+                          "flex flex-col items-center gap-1.5 rounded-2xl border-2 px-2 py-3 text-xs font-bold transition-all active:scale-[0.97]",
+                          selected
+                            ? "border-brand bg-brand-muted/40 text-black"
+                            : errors.purchaseMethod
+                              ? "border-red-300 text-neutral-600"
+                              : "border-neutral-200 text-neutral-600 hover:border-neutral-300"
+                        )}
+                      >
+                        <Icon className="h-5 w-5" />
+                        {t(method.labelKey as TranslationKey)}
+                      </button>
+                    );
+                  })}
+                </div>
+                {isLoan && (
+                  <button
+                    type="button"
+                    onClick={() => setScreeningOpen(true)}
+                    className={cn(
+                      "mt-2 flex w-full animate-step-in items-center gap-3 rounded-2xl p-3 text-left text-xs",
+                      screeningPassed ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-900"
+                    )}
+                  >
+                    <ShieldCheck className="h-5 w-5 shrink-0" />
+                    <span className="flex-1">
+                      <span className="block font-bold">
+                        {screeningPassed ? "Financing Screening Passed" : "Financing screening required"}
+                      </span>
+                      {screeningPassed
+                        ? "You're eligible to proceed with this offer."
+                        : screening
+                          ? `Status: ${SCREENING_STATUS_META[screening.status].label}`
+                          : "From RM88 · takes a few minutes to start"}
+                    </span>
+                    {!screeningPassed && <ChevronRight className="h-4 w-4 shrink-0" />}
+                  </button>
+                )}
               </Field>
 
               <Field label="Financing Consultant" id="financingConsultant" error={errors.financingConsultantId}>
@@ -383,7 +519,7 @@ export function SubmitOfferModal({
           )}
         </div>
 
-        {!redirecting && !submitted && (
+        {!redirecting && !submitted && !screeningOpen && (
           <div className="flex flex-col-reverse gap-3 pt-4 border-t border-neutral-100 sm:flex-row">
             <button
               type="button"
@@ -400,7 +536,7 @@ export function SubmitOfferModal({
               className="flex items-center justify-center gap-2 flex-1 rounded-2xl bg-brand py-3.5 text-sm font-bold text-black transition-colors hover:bg-brand-dark disabled:opacity-50"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {t("SubmitOfferModal.submitButton")}
+              {isLoan && !screeningPassed ? "Continue to screening" : t("SubmitOfferModal.submitButton")}
             </button>
           </div>
         )}

@@ -11,9 +11,19 @@ async function bounce(req: Request) {
     } catch {
         status = new URL(req.url).searchParams.get("status");
     }
+    const result = status === "00" ? "success" : status === "22" ? "pending" : "failed";
+
+    // Financing screening payments return to the page the purchaser started from.
+    const next = new URL(req.url).searchParams.get("next");
+    if (next && next.startsWith("/") && !next.startsWith("//")) {
+        const url = new URL(next, req.url);
+        url.searchParams.set("screening", result);
+        return NextResponse.redirect(url, 303);
+    }
+
     const url = new URL("/dashboard", req.url);
     url.searchParams.set("tab", "billing");
-    url.searchParams.set("payment", status === "00" ? "success" : status === "22" ? "pending" : "failed");
+    url.searchParams.set("payment", result);
     return NextResponse.redirect(url, 303);
 }
 

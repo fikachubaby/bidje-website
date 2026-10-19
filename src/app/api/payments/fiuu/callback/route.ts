@@ -67,6 +67,17 @@ export async function POST(request: Request) {
         return ack();
     }
 
+    if (payment.type === "financing_screening") {
+        if (isSuccess) {
+            await supabaseAdmin
+                .from("financing_screenings")
+                .update({ status: "under_review", fee_paid_at: payment.paid_at, updated_at: new Date().toISOString() })
+                .eq("id", payment.reference_id)
+                .eq("status", "payment_pending");
+        }
+        return ack();
+    }
+
     // Offer commitment fee
     await supabaseAdmin
         .from("offers")

@@ -33,6 +33,9 @@ export async function submitOfferToSupabase({
         if (error.message.includes("Price offered is lower than loan balance")) {
             return { success: false, error: "Price offered is lower than loan balance" };
         }
+        if (error.message.includes("Financing screening required")) {
+            return { success: false, error: "Complete financing screening before submitting a loan offer." };
+        }
         return { success: false, error: "Failed to submit offer. Please try again." };
     }
 

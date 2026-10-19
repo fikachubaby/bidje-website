@@ -1,3 +1,5 @@
+import type { ApplicantType, CompanyKind } from "@/constants/financing-screening";
+
 const STORAGE_KEY = "bidje:pendingOffer";
 
 export interface FormData {
@@ -27,6 +29,9 @@ export interface FormErrors {
 
 export interface PendingOfferDraft extends FormData {
     propertyId: string;
+    /** Chosen before sign-up when purchasing with a loan, so screening resumes where it left off. */
+    applicantType?: ApplicantType | null;
+    companyKind?: CompanyKind | null;
 }
 
 export function savePendingOffer(draft: PendingOfferDraft) {

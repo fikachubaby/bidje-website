@@ -22,6 +22,7 @@ import { FlaggedPhotosReview } from "@/components/admin/property/FlaggedPhotosRe
 import { PropertyRequestsView } from "@/components/admin/property-requests/PropertyRequestsView";
 import { ReminderList } from "@/components/admin/reminders/ReminderList";
 import { InvestorsView } from "@/components/admin/investors/InvestorsView";
+import { FinancingScreeningsView } from "@/components/admin/financing/FinancingScreeningsView";
 
 import { useSession } from "@/lib/auth/useSession";
 import { useAdminProperties, useAdminOffers } from "@/hooks/useAdminProperties";
@@ -255,6 +256,7 @@ export default function AdminPortal() {
           )}
 
           {activeView === "investors" && <InvestorsView />}
+          {activeView === "financing-screenings" && <FinancingScreeningsView />}
           {activeView === "ads" && <AdminAdsView />}
           {activeView === "subscribers" && <SubscriberManagement />}
           {activeView === "imports" && <TelegramImportView />}
