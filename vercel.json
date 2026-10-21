@@ -23,6 +23,10 @@
         {
             "path": "/api/cron/financing-screening-purge",
             "schedule": "0 3 * * *"
+        },
+        {
+            "path": "/api/cron/auction-alerts",
+            "schedule": "*/10 * * * *"
         }
     ]
 }
