@@ -123,7 +123,7 @@ export async function runAuctionAlerts() {
     const recipients = recipientsFromEnv();
     const templateName = requiredEnv("META_WHATSAPP_AUCTION_TEMPLATE_NAME");
     const languageCode =
-        process.env.META_WHATSAPP_AUCTION_TEMPLATE_LANG?.trim() || "en_US";
+        process.env.META_WHATSAPP_AUCTION_TEMPLATE_LANG?.trim() || "en";
 
     const source = await fetchLelongPropertyMatches();
 
@@ -141,15 +141,23 @@ export async function runAuctionAlerts() {
             }
 
             try {
+                // Existing approved Meta template `auction_property_alert`:
+                // {{1}} Location
+                // {{2}} Property type
+                // {{3}} Reserve price
+                // {{4}} Auction date
+                // {{5}} Address
+                // {{6}} View details URL
                 const result = await sendMetaWhatsAppTemplate({
                     to: recipient,
                     templateName,
                     languageCode,
                     variables: [
-                        listing.title,
-                        listing.address,
+                        listing.state,
+                        listing.propertyType || listing.title,
                         formatPrice(listing.reservePrice),
                         formatDate(listing.auctionDate),
+                        listing.address,
                         listing.sourceUrl,
                     ],
                 });
