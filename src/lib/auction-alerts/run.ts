@@ -87,10 +87,12 @@ async function deliveryAlreadySent(
         .select("status")
         .eq("listing_id", listingId)
         .eq("recipient", recipient)
-        .maybeSingle<DeliveryRow>();
+        .maybeSingle();
 
     if (error) throw new Error(`Failed to read delivery state: ${error.message}`);
-    return data?.status === "sent";
+
+    const row = data as DeliveryRow | null;
+    return row?.status === "sent";
 }
 
 async function saveDelivery(args: {
