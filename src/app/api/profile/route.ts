@@ -36,6 +36,29 @@ export async function PATCH(req: Request) {
         .eq("id", session.user.id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+    // Keep an existing WhatsApp auction-alert subscription pointed at the latest profile number.
+    // If the user removes their phone number, opt them out instead of leaving a stale recipient.
+    if (phone) {
+        await supabaseAdmin
+            .from("auction_alert_subscriptions")
+            .update({ phone, updated_at: new Date().toISOString() })
+            .eq("user_id", session.user.id)
+            .eq("opted_in", true);
+    } else {
+        const now = new Date().toISOString();
+        await supabaseAdmin
+            .from("auction_alert_subscriptions")
+            .update({
+                phone: null,
+                opted_in: false,
+                opted_in_at: null,
+                opted_out_at: now,
+                updated_at: now,
+            })
+            .eq("user_id", session.user.id)
+            .eq("opted_in", true);
+    }
+
     // Keep auth metadata in sync; some screens read the name from there.
     await supabaseAdmin.auth.admin.updateUserById(session.user.id, { user_metadata: { full_name: fullName } });
 
