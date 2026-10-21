@@ -58,14 +58,13 @@ export async function PATCH(req: Request) {
     }
 
     const now = new Date().toISOString();
-    const storedPhone = phone ?? "+60000000000";
 
     const { data, error } = await supabaseAdmin
         .from("auction_alert_subscriptions")
         .upsert(
             {
                 user_id: session.user.id,
-                phone: storedPhone,
+                phone: optedIn ? phone : null,
                 opted_in: optedIn,
                 consent_text_version: CONSENT_VERSION,
                 consent_source: CONSENT_SOURCE,
