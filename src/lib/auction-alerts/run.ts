@@ -8,6 +8,11 @@ type DeliveryRow = {
     status: "sent" | "failed";
 };
 
+type SubscriptionRow = {
+    phone: string | null;
+    opted_in: boolean;
+};
+
 function requiredEnv(name: string): string {
     const value = process.env[name]?.trim();
     if (!value) throw new Error(`${name} is not configured`);
@@ -15,7 +20,7 @@ function requiredEnv(name: string): string {
 }
 
 function recipientsFromEnv(): string[] {
-    const raw = requiredEnv("AUCTION_ALERT_RECIPIENTS");
+    const raw = process.env.AUCTION_ALERT_RECIPIENTS?.trim() || "";
     const unique = new Set<string>();
 
     for (const value of raw.split(",")) {
@@ -23,8 +28,36 @@ function recipientsFromEnv(): string[] {
         if (normalized) unique.add(normalized);
     }
 
+    return [...unique];
+}
+
+async function optedInRecipients(): Promise<string[]> {
+    const { data, error } = await supabaseAdmin
+        .from("auction_alert_subscriptions")
+        .select("phone, opted_in")
+        .eq("opted_in", true)
+        .returns<SubscriptionRow[]>();
+
+    if (error) {
+        throw new Error(`Failed to read auction alert subscriptions: ${error.message}`);
+    }
+
+    const unique = new Set<string>();
+    for (const row of data ?? []) {
+        const normalized = normalizePhone(row.phone);
+        if (normalized) unique.add(normalized);
+    }
+    return [...unique];
+}
+
+async function allRecipients(): Promise<string[]> {
+    const unique = new Set<string>(recipientsFromEnv());
+    for (const phone of await optedInRecipients()) unique.add(phone);
+
     if (!unique.size) {
-        throw new Error("AUCTION_ALERT_RECIPIENTS contains no valid phone numbers");
+        throw new Error(
+            "No auction alert recipients configured. Add AUCTION_ALERT_RECIPIENTS or enable a BIDJE WhatsApp auction-alert subscription."
+        );
     }
 
     return [...unique];
@@ -120,7 +153,7 @@ async function saveDelivery(args: {
 }
 
 export async function runAuctionAlerts() {
-    const recipients = recipientsFromEnv();
+    const recipients = await allRecipients();
     const templateName = requiredEnv("META_WHATSAPP_AUCTION_TEMPLATE_NAME");
     const languageCode =
         process.env.META_WHATSAPP_AUCTION_TEMPLATE_LANG?.trim() || "en";
