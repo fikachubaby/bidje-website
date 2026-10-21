@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Bath, Bed, Heart, MapPin, Square, ImageOff, ExternalLink } from "lucide-react";
 import type { PropertyListing } from "@/types/property";
 import { DEFAULT_PROPERTY_IMAGE } from "./utils";
@@ -16,7 +17,7 @@ export function PropertyCard({ listing, actionLabel = "Select Offer", onAction }
 
     return (
         <div className="group rounded-2xl border border-neutral-200 overflow-hidden bg-white transition-all hover:border-black flex flex-col justify-between">
-            <div>
+            <Link href={`/properties/${listing.slug || listing.id}`} className="block" aria-label={`View details for ${listing.title}`}>
                 <div className="relative h-48 w-full overflow-hidden bg-neutral-100">
                     {hasImage ? (
                         <img
@@ -33,7 +34,7 @@ export function PropertyCard({ listing, actionLabel = "Select Offer", onAction }
                             <span className="text-[10px] font-bold uppercase tracking-wider">No Image</span>
                         </div>
                     )}
-                    <div className="absolute top-3 right-3 z-10 bg-white/90 backdrop-blur-md p-2 rounded-full cursor-pointer hover:bg-white text-black shadow-sm">
+                    <div onClick={(e) => e.preventDefault()} className="absolute top-3 right-3 z-10 bg-white/90 backdrop-blur-md p-2 rounded-full cursor-pointer hover:bg-white text-black shadow-sm">
                         <Heart className="h-4 w-4" />
                     </div>
                     <div className="absolute bottom-3 left-3 z-10 bg-black/70 backdrop-blur-md text-white text-xs font-semibold px-2.5 py-1 rounded-lg">
@@ -65,7 +66,7 @@ export function PropertyCard({ listing, actionLabel = "Select Offer", onAction }
                         </div>
                     </div>
                 </div>
-            </div>
+            </Link>
 
             {onAction && (
                 <div className="p-5 pt-0">
