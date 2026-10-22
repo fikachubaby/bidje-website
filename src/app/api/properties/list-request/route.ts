@@ -1,5 +1,21 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
+import { requireUserSession } from "@/lib/auth/requireUserSession";
+
+/** The signed-in seller's own listing requests, newest first. */
+export async function GET() {
+    const session = await requireUserSession();
+    if (session.error) return session.error;
+
+    const { data, error } = await supabaseAdmin
+        .from("property_requests")
+        .select("id, property_address, expected_price, status, created_at")
+        .eq("user_id", session.user.id)
+        .order("created_at", { ascending: false });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    return NextResponse.json({ requests: data ?? [] });
+}
 
 interface ListPropertyPayload {
     name: string;
@@ -20,11 +36,16 @@ export async function POST(request: Request) {
             );
         }
 
+        // Guests can still submit; signed-in sellers get the request linked to their account.
+        const session = await requireUserSession();
+        const userId = session.error ? null : session.user.id;
+
         if (supabaseAdmin) {
             const { error: dbError } = await supabaseAdmin
                 .from("property_requests")
                 .insert([
                     {
+                        user_id: userId,
                         full_name: name,
                         property_address: address,
                         expected_price: `RM ${expectedPrice}`,

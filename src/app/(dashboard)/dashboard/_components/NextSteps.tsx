@@ -2,7 +2,7 @@ import { ArrowRight, CheckCircle2, FileUp, Search, ShieldAlert } from "lucide-re
 import type { OfferHistoryItem } from "@/types/offer";
 import type { SubscriptionView } from "@/lib/subscriptions/plan";
 
-export type DashboardTab = "overview" | "deals" | "offers" | "billing";
+export type DashboardTab = "overview" | "deals" | "offers" | "listings" | "billing";
 
 interface Step {
     key: string;

@@ -7,9 +7,11 @@ import { useSession } from "@/lib/auth/useSession";
 interface ListPropertyModalProps {
     isOpen: boolean;
     onClose: () => void;
+    /** Called after a request is saved, e.g. to refresh the seller's listings. */
+    onSubmitted?: () => void;
 }
 
-export function ListPropertyModal({ isOpen, onClose }: ListPropertyModalProps) {
+export function ListPropertyModal({ isOpen, onClose, onSubmitted }: ListPropertyModalProps) {
     const { user } = useSession();
 
     const [formData, setFormData] = useState({
@@ -59,6 +61,7 @@ export function ListPropertyModal({ isOpen, onClose }: ListPropertyModalProps) {
 
             if (res.ok) {
                 setSubmitted(true);
+                onSubmitted?.();
             }
         } catch (err) {
             console.error("Submission error:", err);

@@ -55,7 +55,7 @@ export async function proxy(request: NextRequest) {
         }
     }
 
-    if ((request.nextUrl.pathname.startsWith("/profile") || request.nextUrl.pathname.startsWith("/wishlist")) && !user) {
+    if ((request.nextUrl.pathname.startsWith("/profile") || request.nextUrl.pathname.startsWith("/wishlist") || request.nextUrl.pathname.startsWith("/settings")) && !user) {
         return NextResponse.redirect(new URL(`/login?next=${request.nextUrl.pathname}`, request.url));
     }
 
@@ -76,5 +76,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ["/admin/:path*", "/dashboard/:path*", "/investor/:path*", "/profile/:path*", "/wishlist/:path*"],
+    matcher: ["/admin/:path*", "/dashboard/:path*", "/investor/:path*", "/profile/:path*", "/wishlist/:path*", "/settings/:path*"],
 };

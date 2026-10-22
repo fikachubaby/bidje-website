@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { LogOut, User, Menu, X, PlusCircle, ShieldCheck, Mail, Briefcase, Heart } from "lucide-react";
+import { LogOut, Menu, X, PlusCircle, ShieldCheck, Mail, Briefcase, LayoutGrid, Settings } from "lucide-react";
 import { useSession } from "@/lib/auth/useSession";
 import { supabase } from "@/lib/supabase/supabase";
 import { useRouter } from "next/navigation";
@@ -69,7 +69,7 @@ export function Navbar() {
               <span>{t("Main.menu.menu1")}</span>
             </Link>
 
-            <Link href="/#how-it-works" className="hover:text-[#ffd400] transition-colors">
+            <Link href="/how-it-works" className="hover:text-[#ffd400] transition-colors">
               {t("Main.menu.menu2")}
             </Link>
 
@@ -96,14 +96,14 @@ export function Navbar() {
             {!loading && user ? (
               <div className="hidden items-center gap-4 text-sm font-bold md:flex">
                 {!isInvestor && (
-                  <Link href="/wishlist" className="flex items-center gap-1.5 hover:text-[#ffd400] transition-colors">
-                    <Heart className="h-4 w-4 text-[#ffd400]" />
-                    Wishlist
+                  <Link href="/dashboard" className="flex items-center gap-1.5 hover:text-[#ffd400] transition-colors">
+                    <LayoutGrid className="h-4 w-4 text-[#ffd400]" />
+                    Overview
                   </Link>
                 )}
-                <Link href="/profile" className="flex items-center gap-2 hover:text-[#ffd400] transition-colors">
-                  <User className="h-4 w-4 text-[#ffd400]" />
-                  {user.email?.split("@")[0]}
+                <Link href="/settings" className="flex items-center gap-2 hover:text-[#ffd400] transition-colors">
+                  <Settings className="h-4 w-4 text-[#ffd400]" />
+                  Settings
                 </Link>
                 <button
                   onClick={handleLogout}
@@ -179,7 +179,7 @@ export function Navbar() {
               </Link>
 
               <Link
-                href="/#how-it-works"
+                href="/how-it-works"
                 onClick={() => setMobileMenuOpen(false)}
                 className="pt-2 border-t border-white/10 hover:text-[#ffd400]"
               >
@@ -210,22 +210,22 @@ export function Navbar() {
                 <>
                 {!isInvestor && (
                   <Link
-                    href="/wishlist"
+                    href="/dashboard"
                     onClick={() => setMobileMenuOpen(false)}
                     className="pt-2 border-t border-white/10 hover:text-[#ffd400] flex items-center gap-2"
                   >
-                    <Heart className="h-4 w-4 text-[#ffd400]" />
-                    Wishlist
+                    <LayoutGrid className="h-4 w-4 text-[#ffd400]" />
+                    Overview
                   </Link>
                 )}
                 <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4 text-sm font-bold">
                   <Link
-                    href="/profile"
+                    href="/settings"
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center gap-2 text-neutral-300 hover:text-[#ffd400]"
                   >
-                    <User className="h-4 w-4 text-[#ffd400]" />
-                    {user.email?.split("@")[0]}
+                    <Settings className="h-4 w-4 text-[#ffd400]" />
+                    Settings
                   </Link>
                   <button
                     onClick={handleLogout}
