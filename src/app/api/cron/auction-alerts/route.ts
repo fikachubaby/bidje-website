@@ -6,32 +6,12 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function GET(req: Request) {
-    const auctionSecret = process.env.AUCTION_ALERT_CRON_SECRET?.trim();
-    const cronSecret = process.env.CRON_SECRET?.trim();
-    const expected = auctionSecret || cronSecret;
-    const authorization = req.headers.get("authorization") ?? "";
-    const receivedToken = authorization.startsWith("Bearer ")
-        ? authorization.slice("Bearer ".length)
-        : "";
+    const expected =
+        process.env.AUCTION_ALERT_CRON_SECRET?.trim() ||
+        process.env.CRON_SECRET?.trim();
 
-    if (!expected || authorization !== `Bearer ${expected}`) {
-        return NextResponse.json(
-            {
-                error: "Unauthorized",
-                diagnostic: {
-                    secretSource: auctionSecret
-                        ? "AUCTION_ALERT_CRON_SECRET"
-                        : cronSecret
-                          ? "CRON_SECRET"
-                          : "none",
-                    expectedLength: expected?.length ?? 0,
-                    authorizationPresent: authorization.length > 0,
-                    bearerFormat: authorization.startsWith("Bearer "),
-                    receivedTokenLength: receivedToken.length,
-                },
-            },
-            { status: 401 }
-        );
+    if (!expected || req.headers.get("authorization") !== `Bearer ${expected}`) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     try {
