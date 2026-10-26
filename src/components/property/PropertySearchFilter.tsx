@@ -7,6 +7,7 @@ import { PROPERTY_TYPES } from "@/types/property";
 import { MALAYSIAN_STATES, STATE_DISTRICTS } from "@/constants/locations";
 
 interface PropertySearchFilterProps {
+    initialKeyword?: string;
     initialState?: string;
     initialDistrict?: string;
     initialPropertyType?: string;
@@ -14,22 +15,25 @@ interface PropertySearchFilterProps {
 }
 
 export function PropertySearchFilter({
+    initialKeyword = "",
     initialState = "",
     initialDistrict = "",
     initialPropertyType = "",
     initialSort = "newest",
 }: PropertySearchFilterProps) {
+    const [keyword, setKeyword] = useState(initialKeyword);
     const [state, setState] = useState(initialState);
     const [district, setDistrict] = useState(initialDistrict);
     const [propertyType, setPropertyType] = useState(initialPropertyType);
     const [sort, setSort] = useState(initialSort);
 
     useEffect(() => {
+        setKeyword(initialKeyword || "");
         setState(initialState || "");
         setDistrict(initialDistrict || "");
         setPropertyType(initialPropertyType || "");
         setSort(initialSort || "newest");
-    }, [initialState, initialDistrict, initialPropertyType, initialSort]);
+    }, [initialKeyword, initialState, initialDistrict, initialPropertyType, initialSort]);
 
     const districts = useMemo(() => {
         if (!state || !(state in STATE_DISTRICTS)) return [];
@@ -42,6 +46,7 @@ export function PropertySearchFilter({
     };
 
     const handleClear = () => {
+        setKeyword("");
         setState("");
         setDistrict("");
         setPropertyType("");
@@ -51,6 +56,23 @@ export function PropertySearchFilter({
     return (
         <div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50/50 p-4 shadow-sm sm:p-6">
             <form method="GET" action="/properties" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+                {/* Keyword Search */}
+                <div className="relative rounded-xl border border-neutral-200 bg-white p-3 sm:col-span-2 lg:col-span-4">
+                    <label htmlFor="property-keyword" className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase text-neutral-500">
+                        <Search className="h-3.5 w-3.5 text-neutral-400" /> Keyword
+                    </label>
+                    <input
+                        id="property-keyword"
+                        type="search"
+                        name="q"
+                        value={keyword}
+                        onChange={(e) => setKeyword(e.target.value)}
+                        placeholder="Search by property name, area or description"
+                        maxLength={100}
+                        className="w-full bg-transparent text-sm font-bold text-black outline-none placeholder:font-normal placeholder:text-neutral-400"
+                    />
+                </div>
 
                 {/* State Selection */}
                 <div className="relative rounded-xl border border-neutral-200 bg-white p-3">
@@ -143,7 +165,7 @@ export function PropertySearchFilter({
                         >
                             <Search className="h-4 w-4" />
                         </button>
-                        {(state || district || propertyType || sort !== "newest") && (
+                        {(keyword || state || district || propertyType || sort !== "newest") && (
                             <Link
                                 href="/properties"
                                 onClick={handleClear}

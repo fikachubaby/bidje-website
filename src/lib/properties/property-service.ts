@@ -10,6 +10,7 @@ const PROPERTY_SELECT =
     "*, property_images(image_url, is_cover), property_sentiment(paid_offer_count, median_offer_ratio, bargain_count, fair_count, too_high_count)";
 
 export interface PropertySearchParams {
+    keyword?: string;
     location?: string;
     category?: PropertyCategory | string;
     property_type?: string;
@@ -102,6 +103,17 @@ export async function searchProperties(
         .from("properties")
         .select(PROPERTY_SELECT, { count: "exact" })
         .eq("status", "Published");
+
+    // Strip characters that would break PostgREST's or() filter syntax
+    const keyword = params.keyword?.replace(/[,()%*\\]/g, " ").trim();
+    if (keyword) {
+        // full_address is left out so listings with a hidden address can't be found by it
+        builder = builder.or(
+            ["title", "description", "state", "district", "property_type"]
+                .map((column) => `${column}.ilike.%${keyword}%`)
+                .join(",")
+        );
+    }
 
     if (params.location && params.location.trim() !== "") {
         builder = builder.or(

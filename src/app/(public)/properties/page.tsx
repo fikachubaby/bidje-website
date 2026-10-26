@@ -7,6 +7,7 @@ import { translate as t } from "@/lib/i18n/getTranslation";
 
 interface PropertiesPageProps {
     searchParams: Promise<{
+        q?: string;
         state?: string;
         district?: string;
         category?: string;
@@ -33,6 +34,7 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
     ).toString();
 
     const { properties, totalCount, totalPages } = await searchProperties({
+        keyword: params.q,
         location: params.district || params.state,
         property_type: resolvedPropertyType,
         minPrice: params.minPrice ? Number(params.minPrice) : undefined,
@@ -52,6 +54,10 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
 
     if (resolvedPropertyType) {
         listingSubtitle += ` of ${resolvedPropertyType}`;
+    }
+
+    if (params.q?.trim()) {
+        listingSubtitle += ` matching "${params.q.trim()}"`;
     }
 
     return (
@@ -74,6 +80,7 @@ export default async function PropertiesPage({ searchParams }: PropertiesPagePro
                     {/* Reusable Search & Filter Component */}
                     <div className="mt-8">
                         <PropertySearchFilter
+                            initialKeyword={params.q}
                             initialState={params.state}
                             initialDistrict={params.district}
                             initialPropertyType={resolvedPropertyType}
