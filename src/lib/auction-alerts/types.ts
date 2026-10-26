@@ -1,5 +1,14 @@
+export type AuctionSourceName =
+    | "lelongproperty"
+    | "lelongtips"
+    | "elelong"
+    | "seremban-land-office"
+    | "ngchanmau"
+    | "listinglelong"
+    | "ehsanauctioneers";
+
 export type AuctionListing = {
-    source: "lelongproperty";
+    source: AuctionSourceName;
     externalKey: string;
     sourceUrl: string;
     title: string;
@@ -16,4 +25,11 @@ export type AuctionAlertRule = {
     maxReservePrice: number;
     addressMustInclude?: string[];
     addressMustIncludeAny?: string[];
+};
+
+export type AuctionSourceResult = {
+    source: AuctionSourceName;
+    listings: AuctionListing[];
+    pagesFetched: number;
+    errors: string[];
 };
