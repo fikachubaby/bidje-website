@@ -2,7 +2,11 @@ import { normalizePhone } from "@/lib/phone";
 import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
 import { sendMetaWhatsAppTemplate } from "@/lib/meta-whatsapp";
 import { fetchLelongPropertyMatches } from "./lelong-property";
-import type { AuctionListing } from "./types";
+import {
+    dedupeAuctionListings,
+    fetchAdditionalAuctionSources,
+} from "./additional-sources";
+import type { AuctionListing, AuctionSourceResult } from "./types";
 
 type DeliveryRow = {
     status: "sent" | "failed";
@@ -121,19 +125,45 @@ async function saveDelivery(args: {
     if (error) throw new Error(`Failed to save delivery result: ${error.message}`);
 }
 
+async function fetchAllAuctionSources(): Promise<{
+    listings: AuctionListing[];
+    sources: AuctionSourceResult[];
+}> {
+    const [lelongProperty, additional] = await Promise.all([
+        fetchLelongPropertyMatches(),
+        fetchAdditionalAuctionSources(),
+    ]);
+
+    const sources: AuctionSourceResult[] = [
+        {
+            source: "lelongproperty",
+            listings: lelongProperty.listings,
+            pagesFetched: lelongProperty.pagesFetched,
+            errors: lelongProperty.errors,
+        },
+        ...additional,
+    ];
+
+    const listings = dedupeAuctionListings(
+        sources.flatMap((source) => source.listings)
+    );
+
+    return { listings, sources };
+}
+
 export async function runAuctionAlerts() {
     const recipients = recipientsFromEnv();
     const templateName = requiredEnv("META_WHATSAPP_AUCTION_TEMPLATE_NAME");
     const languageCode =
         process.env.META_WHATSAPP_AUCTION_TEMPLATE_LANG?.trim() || "en";
 
-    const source = await fetchLelongPropertyMatches();
+    const scan = await fetchAllAuctionSources();
 
     let sent = 0;
     let skipped = 0;
     let failed = 0;
 
-    for (const listing of source.listings) {
+    for (const listing of scan.listings) {
         const listingId = await upsertListing(listing);
 
         for (const recipient of recipients) {
@@ -187,10 +217,13 @@ export async function runAuctionAlerts() {
     }
 
     return {
-        source: "lelongproperty",
-        pagesFetched: source.pagesFetched,
-        sourceErrors: source.errors,
-        matches: source.listings.length,
+        sources: scan.sources.map((source) => ({
+            source: source.source,
+            pagesFetched: source.pagesFetched,
+            matches: source.listings.length,
+            errors: source.errors,
+        })),
+        matchesAfterDeduplication: scan.listings.length,
         recipients: recipients.length,
         sent,
         skipped,
