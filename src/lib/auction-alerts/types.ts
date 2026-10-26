@@ -15,4 +15,5 @@ export type AuctionAlertRule = {
     label: string;
     maxReservePrice: number;
     addressMustInclude?: string[];
+    addressMustIncludeAny?: string[];
 };
