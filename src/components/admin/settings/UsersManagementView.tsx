@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase/supabase";
 import { Shield, Calendar, User, Phone, Search, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/ButtonProps";
 import { FormInput, FormSelect } from "@/components/admin/ui/FormField";
+import { markUsersSeen } from "@/hooks/useAdminNotifications";
 import type { Profile, Role } from "@/types/user";
 
 const PAGE_SIZE = 10;
@@ -70,6 +71,7 @@ export function UsersManagementView() {
 
     useEffect(() => {
         fetchRoles();
+        markUsersSeen();
     }, []);
 
     useEffect(() => {

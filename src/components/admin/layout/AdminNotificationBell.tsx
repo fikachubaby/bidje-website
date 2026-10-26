@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, ClipboardList, Tag, ArrowRight } from "lucide-react";
+import { Bell, ClipboardList, Tag, ArrowRight, UserPlus } from "lucide-react";
 import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 
 interface AdminNotificationBellProps {
@@ -90,6 +90,29 @@ export function AdminNotificationBell({ onNavigate }: AdminNotificationBellProps
                                         <p className="text-xs font-bold text-neutral-900">Property Offers</p>
                                         <p className="text-[11px] text-neutral-500">
                                             {counts.offers} pending action
+                                        </p>
+                                    </div>
+                                </div>
+                                <ArrowRight className="h-4 w-4 text-neutral-400" />
+                            </button>
+
+                            {/* New Registrations */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setOpen(false);
+                                    onNavigate("users");
+                                }}
+                                className="flex w-full items-center justify-between rounded-xl p-2.5 text-left transition-colors hover:bg-neutral-50"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="rounded-lg bg-emerald-50 p-2 text-emerald-600 border border-emerald-100">
+                                        <UserPlus className="h-4 w-4" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-neutral-900">New Registrations</p>
+                                        <p className="text-[11px] text-neutral-500">
+                                            {counts.newUsers} new user{counts.newUsers === 1 ? "" : "s"} to review
                                         </p>
                                     </div>
                                 </div>
