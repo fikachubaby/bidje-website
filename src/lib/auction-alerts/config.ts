@@ -4,7 +4,7 @@ import type { AuctionAlertRule } from "./types";
  * User's requested auction filters:
  * - Selangor landed only, reserve price up to RM400k
  * - Negeri Sembilan landed only, reserve price up to RM300k
- * - Johor Bahru landed only, reserve price up to RM400k
+ * - Johor Bahru District landed only, reserve price up to RM400k
  */
 export const AUCTION_ALERT_RULES: AuctionAlertRule[] = [
     {
@@ -19,9 +19,43 @@ export const AUCTION_ALERT_RULES: AuctionAlertRule[] = [
     },
     {
         sourceState: "Johor",
-        label: "Johor Bahru",
+        label: "Johor Bahru District",
         maxReservePrice: 400_000,
-        addressMustInclude: ["Johor Bahru"],
+        // LelongProperty does not expose an official district field, so match
+        // common localities within Johor Bahru District instead of requiring
+        // the literal words "Johor Bahru" in the address.
+        addressMustIncludeAny: [
+            "Johor Bahru",
+            "Pasir Gudang",
+            "Masai",
+            "Bandar Seri Alam",
+            "Taman Kota Masai",
+            "Plentong",
+            "Permas Jaya",
+            "Ulu Tiram",
+            "Tebrau",
+            "Mount Austin",
+            "Austin Perdana",
+            "Desa Tebrau",
+            "Taman Molek",
+            "Kempas",
+            "Tampoi",
+            "Larkin",
+            "Danga Bay",
+            "Skudai",
+            "Iskandar Puteri",
+            "Nusajaya",
+            "Gelang Patah",
+            "Bukit Indah",
+            "Nusa Bestari",
+            "Horizon Hills",
+            "Medini",
+            "Puteri Harbour",
+            "Taman Universiti",
+            "Mutiara Rini",
+            "Perling",
+            "Kangkar Pulai",
+        ],
     },
 ];
 
