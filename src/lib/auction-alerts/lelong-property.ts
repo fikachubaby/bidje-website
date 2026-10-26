@@ -122,10 +122,21 @@ function parsePage(
         const reservePrice = parseMoney(reserveLine);
         if (!reservePrice || reservePrice > rule.maxReservePrice) continue;
 
+        const normalizedAddress = address.toLowerCase();
+
         if (
             rule.addressMustInclude?.length &&
             !rule.addressMustInclude.every((needle) =>
-                address.toLowerCase().includes(needle.toLowerCase())
+                normalizedAddress.includes(needle.toLowerCase())
+            )
+        ) {
+            continue;
+        }
+
+        if (
+            rule.addressMustIncludeAny?.length &&
+            !rule.addressMustIncludeAny.some((needle) =>
+                normalizedAddress.includes(needle.toLowerCase())
             )
         ) {
             continue;
