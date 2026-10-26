@@ -7,6 +7,7 @@ import {
     fetchAdditionalAuctionSources,
 } from "./additional-sources";
 import { fetchELelongDirect } from "./elelong-direct";
+import { fetchEhsanDirect } from "./ehsan-direct";
 import type { AuctionListing, AuctionSourceResult } from "./types";
 
 type DeliveryRow = {
@@ -130,21 +131,27 @@ async function fetchAllAuctionSources(): Promise<{
     listings: AuctionListing[];
     sources: AuctionSourceResult[];
 }> {
-    const [eLelong, lelongProperty, additional] = await Promise.all([
+    const [eLelong, ehsan, lelongProperty, additional] = await Promise.all([
         fetchELelongDirect(),
+        fetchEhsanDirect(),
         fetchLelongPropertyMatches(),
         fetchAdditionalAuctionSources(),
     ]);
 
     const sources: AuctionSourceResult[] = [
         eLelong,
+        ehsan,
         {
             source: "lelongproperty",
             listings: lelongProperty.listings,
             pagesFetched: lelongProperty.pagesFetched,
             errors: lelongProperty.errors,
         },
-        ...additional.filter((source) => source.source !== "elelong"),
+        ...additional.filter(
+            (source) =>
+                source.source !== "elelong" &&
+                source.source !== "ehsanauctioneers"
+        ),
     ];
 
     const listings = dedupeAuctionListings(
