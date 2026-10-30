@@ -40,7 +40,7 @@ export function UploadSection({
         <article className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm lg:p-8">
             <h2 className="text-xl font-black text-neutral-900">Upload Telegram Export</h2>
             <p className="mt-2 text-sm text-neutral-500">
-                Upload the complete Telegram export ZIP containing result.json and the photos folder.
+                Upload the Telegram export ZIP (result.json + photos folder), or a CSV file of properties.
             </p>
 
             <div
@@ -64,7 +64,7 @@ export function UploadSection({
             >
                 <FileArchive className="mx-auto h-10 w-10 text-neutral-400" />
                 <p className="mt-3 text-sm font-bold text-neutral-700">
-                    Drag and drop a .zip file here
+                    Drag and drop a .zip or .csv file here
                 </p>
                 <p className="mt-1 text-xs text-neutral-500">or choose a file from your computer</p>
                 <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
@@ -74,7 +74,7 @@ export function UploadSection({
                         disabled={parsing}
                     >
                         <Upload className="h-4 w-4" />
-                        Choose ZIP
+                        Choose file
                     </Button>
                     {file ? (
                         <Button
@@ -91,7 +91,7 @@ export function UploadSection({
                 <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".zip,application/zip"
+                    accept=".zip,application/zip,.csv,text/csv"
                     className="hidden"
                     onChange={(e) => onAcceptFile(e.target.files?.[0] ?? null)}
                 />
@@ -104,7 +104,7 @@ export function UploadSection({
                         <p className="text-xs text-neutral-500">{formatFileSize(file.size)}</p>
                     </div>
                     <Button type="button" onClick={onParse} disabled={parsing}>
-                        {parsing ? "Parsing…" : "Parse Export"}
+                        {parsing ? "Parsing…" : "Parse File"}
                     </Button>
                 </div>
             ) : null}

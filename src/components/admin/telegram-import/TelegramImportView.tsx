@@ -7,6 +7,7 @@ import {
   loadPhotoBlob,
   parseTelegramExportZip,
 } from "@/lib/telegram/telegram-import";
+import { parseTelegramCsv } from "@/lib/telegram/telegram-csv-import";
 import type {
   TelegramListingFilter,
   TelegramParseProgress,
@@ -86,8 +87,9 @@ export function TelegramImportView() {
 
   const acceptFile = useCallback((next: File | null) => {
     if (!next) return;
-    if (!next.name.toLowerCase().endsWith(".zip")) {
-      setError("Please upload a .zip file.");
+    const name = next.name.toLowerCase();
+    if (!name.endsWith(".zip") && !name.endsWith(".csv")) {
+      setError("Please upload a .zip or .csv file.");
       return;
     }
     setError(null);
@@ -115,6 +117,18 @@ export function TelegramImportView() {
     revokeAllObjectUrls();
 
     try {
+      if (file.name.toLowerCase().endsWith(".csv")) {
+        const csvProperties = parseTelegramCsv(await file.text());
+        zipRef.current = null;
+        zipEntryByPhotoPathRef.current = {};
+        setProperties(csvProperties);
+        setMessageCount(csvProperties.length);
+        setParsed(true);
+        setSelected(new Set());
+        setPage(1);
+        return;
+      }
+
       const { zip, result } = await parseTelegramExportZip(file, setProgress);
       zipRef.current = zip;
       zipEntryByPhotoPathRef.current = result.zipEntryByPhotoPath;
@@ -319,16 +333,18 @@ export function TelegramImportView() {
     if (reviewIndex == null || !reviewDraft) return;
     const updated = { ...reviewDraft };
     const location = updated.district.trim() || updated.address.trim();
-    updated.title =
-      updated.propertyType.trim() && location
-        ? `${updated.propertyType.trim()} in ${location}`
-        : `Property ${updated.telegramCode}`;
+    if (updated.source !== "csv" || !updated.title.trim()) {
+      updated.title =
+        updated.propertyType.trim() && location
+          ? `${updated.propertyType.trim()} in ${location}`
+          : `Property ${updated.telegramCode}`;
+    }
     const warnings: string[] = [];
     if (!updated.address) warnings.push("Missing address");
     if (updated.price == null) warnings.push("Missing price");
     if (!updated.propertyType) warnings.push("Missing property type");
     if (!updated.tenure) warnings.push("Missing tenure");
-    if (updated.photoCount === 0) warnings.push("Missing photo");
+    if (updated.photoCount === 0 && updated.source !== "csv") warnings.push("Missing photo");
     if (updated.bedrooms == null) warnings.push("Missing bedrooms");
     if (updated.bathrooms == null) warnings.push("Missing bathrooms");
     updated.warnings = warnings;
@@ -341,7 +357,8 @@ export function TelegramImportView() {
 
   const handleImportSelected = async (selectedListings: TelegramParsedProperty[]) => {
     const zip = zipRef.current;
-    if (!zip) {
+    const isCsv = file?.name.toLowerCase().endsWith(".csv") ?? false;
+    if (!zip && !isCsv) {
       alert("The original ZIP is no longer available — please re-upload and re-parse before importing.");
       return;
     }
@@ -350,10 +367,10 @@ export function TelegramImportView() {
       const formData = new FormData();
       formData.append("listings", JSON.stringify(selectedListings));
 
-      for (const listing of selectedListings) {
+      for (const listing of zip ? selectedListings : []) {
         for (let i = 0; i < listing.photoPaths.length; i++) {
           const path = listing.photoPaths[i];
-          const blob = await loadPhotoBlob(zip, path, zipEntryByPhotoPathRef.current);
+          const blob = await loadPhotoBlob(zip!, path, zipEntryByPhotoPathRef.current);
           if (!blob) continue;
           formData.append(`photo::${listing.telegramCode}::${i}`, blob, `${listing.telegramCode}_${i}.jpg`);
         }
@@ -370,7 +387,17 @@ export function TelegramImportView() {
         throw new Error(data.error || "Failed to import listings");
       }
 
-      alert(`Successfully imported ${data.importedCount} listings to Supabase!`);
+      const lines = [`Successfully imported ${data.importedCount} listing(s).`];
+      if (data.skipped?.length) {
+        lines.push(`Skipped ${data.skipped.length} already in the database: ${data.skipped.join(", ")}`);
+      }
+      if (data.failed?.length) {
+        lines.push(
+          `Failed ${data.failed.length}:`,
+          ...data.failed.map((f: { telegramCode: string; error: string }) => `• ${f.telegramCode}: ${f.error}`)
+        );
+      }
+      alert(lines.join("\n"));
     } catch (error) {
       console.error("Import error:", error);
       alert(error instanceof Error ? error.message : "Failed to import");

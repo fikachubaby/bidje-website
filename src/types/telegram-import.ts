@@ -14,6 +14,11 @@ export interface TelegramParsedProperty {
   price: number | null;
   mapsUrl: string;
   description: string;
+  /** CSV imports only: saved to properties.internal_notes. */
+  internalNotes?: string;
+  /** CSV imports only: saved to properties.status (defaults to Draft for ZIP imports). */
+  status?: string;
+  source?: "zip" | "csv";
   rawText: string;
   photoPaths: string[];
   photoCount: number;
