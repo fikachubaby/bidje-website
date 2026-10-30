@@ -770,3 +770,7 @@ function buildDescription(rawText: string): string {
 
   return parts.join("\n\n").trim();
 }
+/** Stable selection key for a parsed listing; shared by the import view and listing table. */
+export function propertyKey(property: TelegramParsedProperty, index: number): string {
+  return `${property.telegramCode}::${property.messageIds[0] ?? index}`;
+}

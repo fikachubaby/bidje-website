@@ -6,6 +6,7 @@ import {
   getDuplicateCodes,
   loadPhotoBlob,
   parseTelegramExportZip,
+  propertyKey,
 } from "@/lib/telegram/telegram-import";
 import { parseTelegramCsv } from "@/lib/telegram/telegram-csv-import";
 import type {
@@ -19,10 +20,6 @@ import { SummaryCards } from "./SummaryCards";
 import { UploadSection } from "./UploadSection";
 
 const PAGE_SIZE = 20;
-
-function propertyKey(property: TelegramParsedProperty, index: number): string {
-  return `${property.telegramCode}::${property.messageIds[0] ?? index}`;
-}
 
 export function TelegramImportView() {
   const zipRef = useRef<JSZip | null>(null);

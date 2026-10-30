@@ -3,7 +3,7 @@
 import { CheckSquare, Download, Search, Square } from "lucide-react";
 import { Button } from "@/components/ui/ButtonProps";
 import { FormInput, FormSelect } from "@/components/admin/ui/FormField";
-import { downloadParsedJson } from "@/lib/telegram/telegram-import";
+import { downloadParsedJson, propertyKey } from "@/lib/telegram/telegram-import";
 import type {
     TelegramListingFilter,
     TelegramParsedProperty,
@@ -106,15 +106,9 @@ export function ListingTable({
                         type="button"
                         disabled={selected.size === 0}
                         onClick={() => {
-                            const selectedListings = Array.from(selected)
-                                .map((key) => {
-                                    // Extract numeric index whether key is "0", "key-0", or "item-0"
-                                    const match = key.match(/\d+/);
-                                    if (!match) return null;
-                                    const index = parseInt(match[0], 10);
-                                    return properties[index];
-                                })
-                                .filter((item): item is TelegramParsedProperty => Boolean(item));
+                            const selectedListings = properties.filter((property, index) =>
+                                selected.has(propertyKey(property, index))
+                            );
 
                             if (selectedListings.length === 0) {
                                 alert("Please select at least one listing from the checkbox selection.");
