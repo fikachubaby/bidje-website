@@ -19,11 +19,13 @@ export async function fetchOfferPartnerOptions(): Promise<PartnerOptionsResult> 
             supabase
                 .from("legal_firms")
                 .select("id, name")
+                .is("added_by", null)
                 .eq("is_active", true)
                 .order("name", { ascending: true }),
             supabase
                 .from("financing_consultants")
                 .select("id, name")
+                .is("added_by", null)
                 .eq("is_active", true)
                 .order("name", { ascending: true }),
         ]);
@@ -34,6 +36,7 @@ export async function fetchOfferPartnerOptions(): Promise<PartnerOptionsResult> 
             const { data: fallbackLegal } = await supabase
                 .from("legal_firms")
                 .select("id, name")
+                .is("added_by", null)
                 .order("name", { ascending: true });
             if (fallbackLegal) legalFirms = fallbackLegal;
         }
@@ -44,6 +47,7 @@ export async function fetchOfferPartnerOptions(): Promise<PartnerOptionsResult> 
             const { data: fallbackConsultants, error: fallbackError } = await supabase
                 .from("financing_consultants")
                 .select("id, name")
+                .is("added_by", null)
                 .order("name", { ascending: true });
 
             if (fallbackError) {

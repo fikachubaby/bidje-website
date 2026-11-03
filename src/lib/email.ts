@@ -11,13 +11,14 @@ type SendGridError = {
     };
 };
 
-export async function sendEmail(to: string, subject: string, html: string) {
+export async function sendEmail(to: string, subject: string, html: string, replyTo?: string) {
     try {
         return await sgMail.send({
             to,
             from: process.env.SENDGRID_FROM_EMAIL!,
             subject,
             html,
+            ...(replyTo ? { replyTo } : {}),
         });
     } catch (err: unknown) {
         const e = err as SendGridError;

@@ -206,6 +206,10 @@ export function InvestorPropertyModal({
                             onChange={(e) => set("legalFirmId", e.target.value)}
                         >
                             <option value="">Not assigned</option>
+                            {/* Keep a firm the investor added themselves selectable (it isn't in the partner list) */}
+                            {property?.legalFirmId && property.legalFirm && !legalFirms.some((f) => f.id === property.legalFirmId) && (
+                                <option value={property.legalFirmId}>{property.legalFirm.name} (added by investor)</option>
+                            )}
                             {legalFirms.map((f) => (
                                 <option key={f.id} value={f.id}>
                                     {f.name}
@@ -218,6 +222,13 @@ export function InvestorPropertyModal({
                             onChange={(e) => set("financingConsultantId", e.target.value)}
                         >
                             <option value="">Not assigned</option>
+                            {property?.financingConsultantId &&
+                                property.financingConsultant &&
+                                !financingConsultants.some((c) => c.id === property.financingConsultantId) && (
+                                    <option value={property.financingConsultantId}>
+                                        {property.financingConsultant.name} (added by investor)
+                                    </option>
+                                )}
                             {financingConsultants.map((c) => (
                                 <option key={c.id} value={c.id}>
                                     {c.name}

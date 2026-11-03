@@ -9,6 +9,7 @@ import type { PropertyStatus } from "@/types/property";
 import { PaginationDashboard } from "@/components/common/PaginationDashboard";
 import { LegalAddModal } from "./LegalAddModal";
 import { LegalCaseTracker } from "./LegalCaseTracker";
+import { CaseTrackerGuide } from "./CaseTrackerGuide";
 import { useLegalView } from "@/hooks/useLegalView";
 import { ConfirmDialog } from "@/components/admin/ui/ConfirmDialog";
 
@@ -66,7 +67,10 @@ export function LegalView() {
             </div>
 
             {activeTab === "tracker" ? (
-                <LegalCaseTracker />
+                <>
+                    <CaseTrackerGuide />
+                    <LegalCaseTracker />
+                </>
             ) : (
                 <>
                     <div className="flex flex-wrap items-center justify-end gap-3">
@@ -125,7 +129,14 @@ export function LegalView() {
                                         firms.map((firm) => (
                                             <tr key={firm.id} className="admin-table-tr">
                                                 <td className="px-5 py-4">
-                                                    <p className="font-bold text-neutral-900">{firm.name}</p>
+                                                    <p className="font-bold text-neutral-900">
+                                                        {firm.name}
+                                                        {firm.added_by && (
+                                                            <span className="ml-2 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
+                                                                Added by investor
+                                                            </span>
+                                                        )}
+                                                    </p>
                                                     <p className="text-xs text-neutral-500">
                                                         {firm.contact_person || "No contact person"}
                                                     </p>

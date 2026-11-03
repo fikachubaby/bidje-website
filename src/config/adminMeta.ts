@@ -27,7 +27,7 @@ export const VIEW_META: Record<AdminView, { title: string; subtitle: string }> =
     },
     imports: {
         title: "Telegram Import",
-        subtitle: "Upload a Telegram Desktop JSON export and review property listings.",
+        subtitle: "Upload a Telegram export or a CSV of properties, then review the listings.",
     },
     users: {
         title: "Staff & User Roles",
@@ -56,6 +56,10 @@ export const VIEW_META: Record<AdminView, { title: string; subtitle: string }> =
     investors: {
         title: "Investor Portfolios",
         subtitle: "Track every investor property, its legal, renovation and sales progress, and reminders.",
+    },
+    "user-manual": {
+        title: "User Manual",
+        subtitle: "Step-by-step guide to using the Bidje admin portal.",
     },
     reminders: {
         title: "Reminder Properties",

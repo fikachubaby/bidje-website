@@ -169,3 +169,36 @@ export function parseTelegramCsv(text: string): TelegramParsedProperty[] {
     return property;
   });
 }
+
+/** Column headers for the downloadable template — each is the first alias the parser accepts. */
+const TEMPLATE_HEADERS = Object.values(COLUMN_ALIASES).map((aliases) => aliases[0]);
+
+const TEMPLATE_EXAMPLE_ROW = [
+  "BJ-0001",
+  "Double Storey Terrace, Taman Example",
+  "12, Jalan Example 3, Taman Example, 43000 Kajang, Selangor",
+  "Selangor",
+  "Hulu Langat",
+  "https://maps.google.com/?q=2.9935,101.7874",
+  "Double Storey",
+  "Freehold",
+  "Non Bumi",
+  "4",
+  "3",
+  "1,650 sqft",
+  "22 x 70 sqft",
+  "RM 565,000",
+  "Renovated, near school and LRT.",
+  "Owner prefers WhatsApp",
+  "Published",
+];
+
+function toCsvCell(value: string): string {
+  return /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
+
+/** Template CSV (header + one example row) that parseTelegramCsv accepts as-is. */
+export function buildTelegramCsvTemplate(): string {
+  // BOM so Excel opens it as UTF-8
+  return "﻿" + [TEMPLATE_HEADERS, TEMPLATE_EXAMPLE_ROW].map((row) => row.map(toCsvCell).join(",")).join("\r\n") + "\r\n";
+}

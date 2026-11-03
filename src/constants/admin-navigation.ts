@@ -12,6 +12,7 @@ import {
     ClipboardList,
     Briefcase,
     ShieldCheck,
+    BookOpen,
 } from "lucide-react";
 import type { NavItem } from "@/types/admin";
 
@@ -26,10 +27,11 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     { id: "ads", label: "Advertisements", icon: Megaphone },
     { id: "legals", label: "Legal Consultants", icon: Scale },
     { id: "financials", label: "Financial Consultants", icon: BadgeDollarSign },
-    { id: "imports", label: "Telegram Import", icon: Upload },
+    { id: "user-manual", label: "User Manual", icon: BookOpen },
 ];
 
 export const ADMIN_SETTINGS_ITEMS: NavItem[] = [
     { id: "users", label: "Users & Roles", icon: Users },
     { id: "audit-logs", label: "Audit Logs", icon: FileText },
+    { id: "imports", label: "Telegram Import", icon: Upload },
 ];

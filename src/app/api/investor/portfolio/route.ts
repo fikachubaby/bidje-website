@@ -26,7 +26,7 @@ export async function GET() {
     });
 }
 
-/** Fields an investor may fill in themselves; partners and internal notes stay admin-only. */
+/** Fields an investor may fill in themselves; internal notes stay admin-only. Partners are set via PATCH. */
 const INVESTOR_EDITABLE = [
     "refNo",
     "address",

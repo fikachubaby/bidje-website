@@ -11,6 +11,7 @@ import {
     emptyPropertyInput,
 } from "@/lib/utils/property-utils";
 import { validatePropertyForm } from "@/lib/validations/validator";
+import { supabase } from "@/lib/supabase/supabase";
 
 export function usePropertyForm({
     open,
@@ -103,17 +104,28 @@ export function usePropertyForm({
                 throw new Error("Only PDF files are allowed for property documents.");
             }
 
-            const formData = new FormData();
-            formData.append("file", file);
-
+            // Get a signed upload URL, then send the file directly to Supabase Storage
+            // (bypasses Vercel's ~4.5MB function body limit).
             const res = await fetch("/api/admin/upload", {
                 method: "POST",
-                body: formData,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: file.name, type: file.type, size: file.size }),
             });
             const data = await res.json();
 
             if (!res.ok) {
                 throw new Error(data.error || `Failed to upload ${file.name}`);
+            }
+
+            const { error: storageError } = await supabase.storage
+                .from(data.bucket)
+                .uploadToSignedUrl(data.path, data.token, file, {
+                    contentType: file.type,
+                    cacheControl: "3600",
+                });
+
+            if (storageError) {
+                throw new Error(storageError.message || `Failed to upload ${file.name}`);
             }
 
             uploadedUrls.push(data.url);

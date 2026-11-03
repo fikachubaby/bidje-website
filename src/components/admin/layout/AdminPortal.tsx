@@ -14,6 +14,7 @@ import { TelegramImportView } from "@/components/admin/telegram-import/TelegramI
 import { UsersManagementView } from "@/components/admin/settings/UsersManagementView";
 import { AuditLogsView } from "@/components/admin/settings/AuditLogsView";
 import { ProfileView } from "@/components/admin/settings/ProfileView";
+import { UserManualView } from "@/components/admin/settings/UserManualView";
 import { SubscriberManagement } from "@/components/admin/subscriber/SubscriberManagement";
 import { AdminAdsView } from "@/components/admin/views/AdminAdsView";
 import { LegalView } from "@/components/admin/consultant/LegalView"
@@ -41,7 +42,7 @@ import type { OfferStatus } from "@/types/offer";
 export default function AdminPortal() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, loading: sessionLoading } = useSession();
+  const { user, profile, loading: sessionLoading } = useSession();
 
   const {
     properties,
@@ -267,6 +268,7 @@ export default function AdminPortal() {
           {activeView === "users" && <UsersManagementView />}
           {activeView === "audit-logs" && <AuditLogsView />}
           {activeView === "profile" && <ProfileView user={user} />}
+          {activeView === "user-manual" && <UserManualView canUpload={profile?.role === "admin"} />}
         </section>
       </div>
 

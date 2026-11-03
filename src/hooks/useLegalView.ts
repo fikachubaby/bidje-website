@@ -9,6 +9,7 @@ export interface LegalFirm {
     is_active: boolean;
     created_at: string;
     contact_person?: string;
+    added_by?: string | null;
     email?: string;
     phone?: string;
     address?: string;

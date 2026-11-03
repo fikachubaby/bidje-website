@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireStaffSession } from "@/lib/auth/requireStaffSession";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function GET(request: Request) {
+    const { error: authError } = await requireStaffSession();
+    if (authError) return authError;
+
     try {
         const { searchParams } = new URL(request.url);
         const search = searchParams.get("search") || "";
@@ -51,6 +55,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+    const { error: authError } = await requireStaffSession();
+    if (authError) return authError;
+
     try {
         const body = await request.json();
         const { name, contactPerson, email, phone, address, isActive } = body;
@@ -86,6 +93,9 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
+    const { error: authError } = await requireStaffSession();
+    if (authError) return authError;
+
     try {
         const body = await request.json();
         const { id, name, contactPerson, email, phone, address, isActive } = body;
@@ -121,6 +131,9 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+    const { error: authError } = await requireStaffSession();
+    if (authError) return authError;
+
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get("id");

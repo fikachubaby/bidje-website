@@ -1,9 +1,10 @@
 "use client";
 
-import { AlertTriangle, FileArchive, Upload, X } from "lucide-react";
+import { AlertTriangle, Download, FileArchive, Upload, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/ButtonProps";
 import { formatFileSize } from "@/lib/telegram/telegram-import";
+import { buildTelegramCsvTemplate } from "@/lib/telegram/telegram-csv-import";
 import { cn } from "@/lib/utils";
 import type { TelegramParseProgress } from "@/types/telegram-import";
 
@@ -15,6 +16,16 @@ interface UploadSectionProps {
     onAcceptFile: (file: File | null) => void;
     onClearFile: () => void;
     onParse: () => void;
+}
+
+function downloadCsvTemplate() {
+    const blob = new Blob([buildTelegramCsvTemplate()], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "bidje-property-import-template.csv";
+    link.click();
+    URL.revokeObjectURL(url);
 }
 
 export function UploadSection({
@@ -38,9 +49,21 @@ export function UploadSection({
 
     return (
         <article className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm lg:p-8">
-            <h2 className="text-xl font-black text-neutral-900">Upload Telegram Export</h2>
-            <p className="mt-2 text-sm text-neutral-500">
-                Upload the Telegram export ZIP (result.json + photos folder), or a CSV file of properties.
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h2 className="text-xl font-black text-neutral-900">Upload Telegram Export</h2>
+                    <p className="mt-2 text-sm text-neutral-500">
+                        Upload the Telegram export ZIP (result.json + photos folder), or a CSV file of properties.
+                    </p>
+                </div>
+                <Button type="button" variant="secondary" onClick={downloadCsvTemplate}>
+                    <Download className="h-4 w-4" />
+                    Download CSV template
+                </Button>
+            </div>
+            <p className="mt-3 rounded-xl bg-neutral-50 px-4 py-3 text-xs text-neutral-500">
+                Bulk add properties: download the template, replace the example row with your properties (one row each, keep the
+                header row), save as CSV, then upload it here. Each row needs a unique <b>telegram_code</b>.
             </p>
 
             <div

@@ -13,7 +13,7 @@ export function AdminSidebar({
   mobileOpen,
   onCloseMobile,
 }: AdminSidebarProps) {
-  const isSettingsActive = activeView === "users" || activeView === "audit-logs";
+  const isSettingsActive = ADMIN_SETTINGS_ITEMS.some((item) => item.id === activeView);
   const [settingsOpen, setSettingsOpen] = useState(isSettingsActive);
 
   return (
