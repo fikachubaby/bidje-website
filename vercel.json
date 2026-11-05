@@ -1,28 +1,8 @@
 {
-    "crons": [
-        {
-            "path": "/api/cron/telegram-photo-sync",
-            "schedule": "*/1 * * * *"
-        },
-        {
-            "path": "/api/cron/reminders",
-            "schedule": "0 9 * * *"
-        },
-        {
-            "path": "/api/cron/legal-summaries",
-            "schedule": "0 8 * * *"
-        },
-        {
-            "path": "/api/cron/subscriptions",
-            "schedule": "0 1 * * *"
-        },
-        {
-            "path": "/api/cron/bidje-scores",
-            "schedule": "0 */6 * * *"
-        },
-        {
-            "path": "/api/cron/financing-screening-purge",
-            "schedule": "0 3 * * *"
-        }
-    ]
+  "crons": [
+    {
+      "path": "/api/cron/auction-alerts",
+      "schedule": "*/10 * * * *"
+    }
+  ]
 }
