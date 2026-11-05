@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { AUCTION_ALERT_RULES, isClearlyLanded } from "./config";
+import { AUCTION_ALERT_RULES, isClearlyLanded, LELONGPROPERTY_LANDED_TYPE_IDS } from "./config";
 import type {
     AuctionListing,
     AuctionSourceName,
@@ -32,7 +32,7 @@ function htmlToLines(html: string): string[] {
         .filter(Boolean);
 }
 
-async function fetchHtml(url: string): Promise<string> {
+async function fetchHtml(url: string, signal = AbortSignal.timeout(20_000)): Promise<string> {
     const response = await fetch(url, {
         cache: "no-store",
         headers: {
@@ -40,7 +40,7 @@ async function fetchHtml(url: string): Promise<string> {
             Accept: "text/html,application/xhtml+xml",
             "Accept-Language": "en-MY,en;q=0.9,ms-MY;q=0.8",
         },
-        signal: AbortSignal.timeout(20_000),
+        signal,
     });
 
     if (!response.ok) {
@@ -280,23 +280,69 @@ async function fetchLelongTips(): Promise<AuctionSourceResult> {
 
 async function fetchListingLelong(): Promise<AuctionSourceResult> {
     const source = "listinglelong" as const;
-    const urls = [
-        "https://www.listinglelong.my/search?state=Selangor",
-        "https://www.listinglelong.my/search?state=Negeri%20Sembilan",
-        "https://www.listinglelong.my/search?state=Johor",
-    ];
+    const searches = AUCTION_ALERT_RULES.flatMap((rule) =>
+        LELONGPROPERTY_LANDED_TYPE_IDS.map((type) => {
+            const url = new URL("https://www.listinglelong.my/search");
+            url.search = new URLSearchParams({
+                state: rule.sourceState,
+                property_type: String(type),
+                max_price: String(rule.maxReservePrice),
+                sort: "recent",
+            }).toString();
+            return url;
+        })
+    );
     const listings: AuctionListing[] = [];
     const errors: string[] = [];
     let pagesFetched = 0;
 
-    for (const url of urls) {
+    const scanDeadline = AbortSignal.timeout(40_000);
+
+    async function scanPage(search: URL, page: number): Promise<number> {
+        const url = new URL(search);
+        url.searchParams.set("page", String(page));
+
         try {
-            const html = await fetchHtml(url);
+            const html = await fetchHtml(url.toString(), AbortSignal.any([scanDeadline, AbortSignal.timeout(6_000)]));
             pagesFetched++;
-            listings.push(...parseListingStylePage(html, source, url));
+            listings.push(...parseListingStylePage(html, source, url.toString()));
+
+            // The pagination bar includes the last page. The public search is
+            // ordered by auction date, so page one alone misses future listings.
+            const pagination = html.match(/<ul\b[^>]*\bpagination-custom\b[^>]*>([\s\S]*?)<\/ul>/i);
+            const pageNumbers = Array.from(
+                pagination?.[1].matchAll(/[?&]page=(\d+)/g) ?? [],
+                (match) => Number(match[1])
+            );
+            return Math.max(page, ...pageNumbers);
         } catch (error) {
             errors.push(error instanceof Error ? error.message : String(error));
+            return page;
         }
+    }
+
+    const lastPages = await Promise.all(searches.map((search) => scanPage(search, 1)));
+    const pageLimit = 24;
+    const remaining = searches.flatMap((search, index) => {
+        const lastPage = lastPages[index];
+        if (lastPage > pageLimit) {
+            errors.push(`ListingLelong search has ${lastPage} pages. Scanning the first ${pageLimit}: ${search}`);
+        }
+        return Array.from(
+            { length: Math.min(lastPage, pageLimit) - 1 },
+            (_, index) => ({ search, page: index + 2 })
+        );
+    });
+
+    remaining.sort((a, b) => a.page - b.page);
+    for (let index = 0; index < remaining.length; index += 12) {
+        if (scanDeadline.aborted) {
+            errors.push(`ListingLelong scan timed out with ${remaining.length - index} pages still to check`);
+            break;
+        }
+        await Promise.all(
+            remaining.slice(index, index + 12).map(({ search, page }) => scanPage(search, page))
+        );
     }
 
     return { source, listings: futureOnly(uniqueListings(listings)), pagesFetched, errors };
@@ -378,155 +424,6 @@ async function fetchNgChanMau(): Promise<AuctionSourceResult> {
     return { source, listings: futureOnly(uniqueListings(listings)), pagesFetched, errors };
 }
 
-function extractDetailLinks(html: string, baseUrl: string, pattern: RegExp): string[] {
-    const links = new Set<string>();
-    for (const match of html.matchAll(pattern)) {
-        const href = decodeEntities(match[1]);
-        try {
-            links.add(new URL(href, baseUrl).toString());
-        } catch {
-            // ignore malformed links
-        }
-    }
-    return [...links];
-}
-
-function parseDetailPage(
-    html: string,
-    source: AuctionSourceName,
-    sourceUrl: string
-): AuctionListing | null {
-    const lines = htmlToLines(html);
-    const address = lines.find(
-        (line) =>
-            line.length >= 12 &&
-            line.length <= 500 &&
-            /(Selangor|Negeri Sembilan|Johor)/i.test(line)
-    );
-    if (!address) return null;
-
-    const title =
-        lines.find((line) => isClearlyLanded(line)) ||
-        lines.find((line) => /\bhouse\b/i.test(line));
-    if (!title || !isClearlyLanded(title)) return null;
-
-    const priceLine = lines.find((line) => /RM\s*[\d,]+(?:\.\d{1,2})?/i.test(line));
-    const reservePrice = priceLine ? parseMoney(priceLine) : null;
-    if (!reservePrice) return null;
-
-    let auctionDate: string | null = null;
-    const dateIndex = lines.findIndex((line) => /^Auction Date\s*:?/i.test(line));
-    if (dateIndex >= 0) {
-        auctionDate = parseAuctionDate(lines[dateIndex]);
-        if (!auctionDate && lines[dateIndex + 1]) {
-            auctionDate = parseAuctionDate(lines[dateIndex + 1]);
-        }
-    }
-
-    return makeListing({
-        source,
-        sourceUrl,
-        title,
-        address,
-        reservePrice,
-        auctionDate,
-    });
-}
-
-async function fetchEhsanAuctioneers(): Promise<AuctionSourceResult> {
-    const source = "ehsanauctioneers" as const;
-    const indexUrl = "https://www.ehsanauctioneers.com/Project/search";
-    const listings: AuctionListing[] = [];
-    const errors: string[] = [];
-    let pagesFetched = 0;
-
-    try {
-        const html = await fetchHtml(indexUrl);
-        pagesFetched++;
-        const links = extractDetailLinks(
-            html,
-            indexUrl,
-            /href=["']([^"']*\/(?:Page|page)\/projectDetails\/[^"'#?]+)["']/gi
-        );
-        const limit = Math.max(
-            1,
-            Math.min(100, Number(process.env.AUCTION_ALERT_EHSAN_DETAIL_LIMIT || "50") || 50)
-        );
-
-        const settled = await Promise.allSettled(
-            links.slice(0, limit).map(async (url) => {
-                const detail = await fetchHtml(url);
-                return { url, detail };
-            })
-        );
-
-        for (const result of settled) {
-            if (result.status === "fulfilled") {
-                pagesFetched++;
-                const listing = parseDetailPage(result.value.detail, source, result.value.url);
-                if (listing) listings.push(listing);
-            } else {
-                errors.push(result.reason instanceof Error ? result.reason.message : String(result.reason));
-            }
-        }
-
-        if (!links.length) errors.push("Ehsan search page returned no project detail links");
-    } catch (error) {
-        errors.push(error instanceof Error ? error.message : String(error));
-    }
-
-    return { source, listings: futureOnly(uniqueListings(listings)), pagesFetched, errors };
-}
-
-async function fetchELelong(): Promise<AuctionSourceResult> {
-    const source = "elelong" as const;
-    const indexUrl = "https://elelong.kehakiman.gov.my/BidderWeb/Home/Index";
-    const listings: AuctionListing[] = [];
-    const errors: string[] = [];
-    let pagesFetched = 0;
-
-    try {
-        const html = await fetchHtml(indexUrl);
-        pagesFetched++;
-        const links = extractDetailLinks(
-            html,
-            indexUrl,
-            /href=["']([^"']*\/BidderWeb\/Home\/Detail\/\d+)["']/gi
-        );
-        const limit = Math.max(
-            1,
-            Math.min(150, Number(process.env.AUCTION_ALERT_ELELONG_DETAIL_LIMIT || "100") || 100)
-        );
-
-        const settled = await Promise.allSettled(
-            links.slice(0, limit).map(async (url) => {
-                const detail = await fetchHtml(url);
-                return { url, detail };
-            })
-        );
-
-        for (const result of settled) {
-            if (result.status === "fulfilled") {
-                pagesFetched++;
-                const listing = parseDetailPage(result.value.detail, source, result.value.url);
-                if (listing) listings.push(listing);
-            } else {
-                errors.push(result.reason instanceof Error ? result.reason.message : String(result.reason));
-            }
-        }
-
-        if (!links.length) {
-            errors.push(
-                "e-Lelong index returned no static detail links; its auction results appear to be loaded dynamically"
-            );
-        }
-    } catch (error) {
-        errors.push(error instanceof Error ? error.message : String(error));
-    }
-
-    return { source, listings: futureOnly(uniqueListings(listings)), pagesFetched, errors };
-}
-
 async function fetchSerembanLandOffice(): Promise<AuctionSourceResult> {
     const source = "seremban-land-office" as const;
     const urls = [
@@ -563,11 +460,9 @@ async function fetchSerembanLandOffice(): Promise<AuctionSourceResult> {
 export async function fetchAdditionalAuctionSources(): Promise<AuctionSourceResult[]> {
     const collectors = [
         fetchLelongTips,
-        fetchELelong,
         fetchSerembanLandOffice,
         fetchNgChanMau,
         fetchListingLelong,
-        fetchEhsanAuctioneers,
     ];
 
     const settled = await Promise.allSettled(collectors.map((collector) => collector()));
@@ -575,11 +470,9 @@ export async function fetchAdditionalAuctionSources(): Promise<AuctionSourceResu
         if (result.status === "fulfilled") return result.value;
         const names: AuctionSourceName[] = [
             "lelongtips",
-            "elelong",
             "seremban-land-office",
             "ngchanmau",
             "listinglelong",
-            "ehsanauctioneers",
         ];
         return {
             source: names[index],

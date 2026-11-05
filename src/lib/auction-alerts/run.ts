@@ -147,11 +147,7 @@ async function fetchAllAuctionSources(): Promise<{
             pagesFetched: lelongProperty.pagesFetched,
             errors: lelongProperty.errors,
         },
-        ...additional.filter(
-            (source) =>
-                source.source !== "elelong" &&
-                source.source !== "ehsanauctioneers"
-        ),
+        ...additional,
     ];
 
     const listings = dedupeAuctionListings(
