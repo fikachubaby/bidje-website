@@ -5,6 +5,7 @@ import {
     BedDouble,
     Bath,
     Maximize2,
+    LandPlot,
     MapPin,
     ShieldCheck,
     ArrowLeft,
@@ -186,7 +187,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
                 <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
                     {/* Left Column */}
                     <div className="space-y-8 lg:col-span-2">
-                        <div className="grid grid-cols-2 gap-4 rounded-2xl border border-neutral-200 bg-white p-5 sm:grid-cols-4">
+                        <div className="grid grid-cols-2 gap-4 rounded-2xl border border-neutral-200 bg-white p-5 sm:grid-cols-3 lg:grid-cols-5">
                             <div className="flex items-center gap-3">
                                 <div className="rounded-xl bg-neutral-100 p-3">
                                     <BedDouble className="h-5 w-5 text-neutral-700" />
@@ -214,6 +215,16 @@ export default async function PropertyDetailPage({ params, searchParams }: Prope
                                 <div>
                                     <p className="text-xs text-neutral-500">{t("Properties.fields.buildSize")}</p>
                                     <p className="text-base font-bold">{property.areaSqft ? `${property.areaSqft} sqft` : "-"}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <div className="rounded-xl bg-neutral-100 p-3">
+                                    <LandPlot className="h-5 w-5 text-neutral-700" />
+                                </div>
+                                <div>
+                                    <p className="text-xs text-neutral-500">{t("Properties.fields.landSize")}</p>
+                                    <p className="text-base font-bold">{property.landSize || "-"}</p>
                                 </div>
                             </div>
 
