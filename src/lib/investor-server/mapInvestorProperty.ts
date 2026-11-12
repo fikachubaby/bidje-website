@@ -1,3 +1,4 @@
+import { sanitizeTransactionDetails } from "@/lib/investor";
 import type { InvestorProperty } from "@/types/investor";
 
 export const INVESTOR_PROPERTY_SELECT = `
@@ -40,6 +41,8 @@ export function mapInvestorProperty(r: any, { investorView = false } = {}): Inve
         sellingCost: Number(r.selling_cost ?? 0),
         targetPrice: Number(r.target_price ?? 0),
         highestOffer: Number(r.highest_offer ?? 0),
+        sellingPrice: Number(r.selling_price ?? 0),
+        details: sanitizeTransactionDetails(r.details),
         expectedCompletion: r.expected_completion,
         contractorName: r.contractor_name,
         contractorPhone: r.contractor_phone,
@@ -105,6 +108,7 @@ const FIELD_MAP: Record<string, string> = {
     sellingCost: "selling_cost",
     targetPrice: "target_price",
     highestOffer: "highest_offer",
+    sellingPrice: "selling_price",
     expectedCompletion: "expected_completion",
     contractorName: "contractor_name",
     contractorPhone: "contractor_phone",
@@ -125,5 +129,7 @@ export function toInvestorPropertyRow(body: Record<string, unknown>) {
     for (const [key, col] of Object.entries(FIELD_MAP)) {
         if (key in body) row[col] = body[key] === "" ? null : body[key];
     }
+    // Stored as JSON: keep only whitelisted string keys.
+    if ("details" in body) row.details = sanitizeTransactionDetails(body.details);
     return row;
 }

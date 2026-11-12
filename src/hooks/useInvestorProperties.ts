@@ -156,5 +156,10 @@ export function useInvestorProperties(investorId: string | null) {
                     }),
                 "Update posted"
             ),
+        deleteUpdate: (id: string, updateId: string) =>
+            withRefresh(
+                () => request(`/api/admin/investor-properties/${id}/updates?updateId=${updateId}`, { method: "DELETE" }),
+                "Update deleted"
+            ),
     };
 }

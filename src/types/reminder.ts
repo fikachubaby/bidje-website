@@ -1,5 +1,14 @@
 export type ReminderChannel = "whatsapp" | "email" | "both";
 export type ReminderStatus = "scheduled" | "sent" | "cancelled";
+export type ReminderRepeat = "day" | "week" | "month";
+
+/** Someone besides the investor who also gets the reminder. */
+export interface ReminderRecipient {
+    role: string;
+    name: string;
+    phone?: string;
+    email?: string;
+}
 
 export interface Reminder {
     id: string;
@@ -12,6 +21,8 @@ export interface Reminder {
     dueDate: string; // ISO date
     channel: ReminderChannel;
     remindDaysBefore: number[];
+    repeatEvery?: ReminderRepeat | null;
+    recipients?: ReminderRecipient[];
     status: ReminderStatus;
     lastSentAt?: string | null;
     createdBy?: string | null;
@@ -32,6 +43,9 @@ export interface ReminderFormInput {
     dueDate: string;
     channel: ReminderChannel;
     remindDaysBefore: number[];
+    /** Repeat until the due date; omit to use remindDaysBefore only. */
+    repeatEvery?: ReminderRepeat;
+    recipients?: ReminderRecipient[];
     /** Also notify the investor immediately on the chosen channel(s). */
     sendNow?: boolean;
 }

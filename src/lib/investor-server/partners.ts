@@ -43,3 +43,22 @@ export async function canUsePartner(kind: PartnerKind, id: string, investorId: s
     if (!data) return false;
     return data.added_by === null || data.added_by === investorId;
 }
+
+/**
+ * Picks legalFirmId / financingConsultantId from a request body, checking the investor may use them.
+ * "" clears a partner. Returns null when a partner isn't available to this investor.
+ */
+export async function pickPartnerInput(body: Record<string, unknown>, investorId: string): Promise<Record<string, string> | null> {
+    const fields = [
+        ["legalFirmId", "legal"],
+        ["financingConsultantId", "financing"],
+    ] as const;
+    const input: Record<string, string> = {};
+    for (const [key, kind] of fields) {
+        if (!(key in body)) continue;
+        const value = body[key];
+        if (value && (typeof value !== "string" || !(await canUsePartner(kind, value, investorId)))) return null;
+        input[key] = (value as string) || "";
+    }
+    return input;
+}

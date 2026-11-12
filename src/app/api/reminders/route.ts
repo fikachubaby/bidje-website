@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/supabase-admin";
 import { requireStaffSession } from "@/lib/auth/requireStaffSession";
 import { deliverReminder } from "@/lib/reminders-server/deliverReminder";
+import { isReminderRepeat, sanitizeRecipients } from "@/lib/reminders";
 
 export async function GET() {
     const session = await requireStaffSession();
@@ -31,6 +32,8 @@ export async function GET() {
         dueDate: r.due_date,
         channel: r.channel,
         remindDaysBefore: r.remind_days_before,
+        repeatEvery: r.repeat_every ?? null,
+        recipients: r.recipients ?? [],
         status: r.status,
         lastSentAt: r.last_sent_at,
         createdAt: r.created_at,
@@ -60,6 +63,8 @@ export async function POST(req: Request) {
             due_date: body.dueDate,
             channel: body.channel,
             remind_days_before: body.remindDaysBefore,
+            repeat_every: isReminderRepeat(body.repeatEvery) ? body.repeatEvery : null,
+            recipients: sanitizeRecipients(body.recipients),
             created_by: body.createdBy || null,
         })
         .select()

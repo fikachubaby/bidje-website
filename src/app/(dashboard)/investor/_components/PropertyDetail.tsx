@@ -9,11 +9,13 @@ import {
   money,
   phaseTimeframe,
   projectedProfit,
+  salePrice,
   STAGE_BADGE,
   STAGE_LABELS,
   totalCost,
 } from "@/lib/investor";
 import type { InvestorProperty, MilestoneCategory } from "@/types/investor";
+import { TransactionDetailsView } from "@/components/investor/TransactionDetails";
 import { DocumentsTab } from "../DocumentsTab";
 import { JOURNEY, JourneyProgress } from "./JourneyProgress";
 import {
@@ -23,10 +25,11 @@ import {
 } from "./PropertyEditors";
 import { TeamCard } from "./TeamCard";
 
-type Tab = "overview" | "progress" | "expenses" | "documents" | "updates";
+type Tab = "overview" | "details" | "progress" | "expenses" | "documents" | "updates";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "overview", label: "Overview" },
+  { key: "details", label: "Details" },
   { key: "progress", label: "Progress" },
   { key: "expenses", label: "Expenses" },
   { key: "documents", label: "Documents" },
@@ -239,6 +242,8 @@ export function PropertyDetail({
           </div>
         )}
 
+        {tab === "details" && <TransactionDetailsView property={property} />}
+
         {tab === "progress" && (
           <div className="space-y-4">
             <div className="flex gap-2">
@@ -289,6 +294,7 @@ export function PropertyDetail({
                 ["Other expenses", property.otherCost],
                 ["Estimated selling cost", property.sellingCost],
                 ["Target sale price", property.targetPrice],
+                ["Selling price", property.sellingPrice],
                 ["Highest offer so far", property.highestOffer],
               ].map(([label, value]) => (
                 <div
@@ -306,10 +312,10 @@ export function PropertyDetail({
                   ESTIMATED NET PROFIT
                 </span>
                 <span className="text-xl font-black text-brand">
-                  {property.targetPrice ? money(profit) : "Pending"}
+                  {salePrice(property) ? money(profit) : "Pending"}
                 </span>
               </div>
-              {property.targetPrice > 0 && totalCost(property) > 0 && (
+              {salePrice(property) > 0 && totalCost(property) > 0 && (
                 <p className="mt-3 text-neutral-600">
                   Total cost {money(totalCost(property))} · Projected ROI{" "}
                   <b>{((profit / totalCost(property)) * 100).toFixed(1)}%</b>

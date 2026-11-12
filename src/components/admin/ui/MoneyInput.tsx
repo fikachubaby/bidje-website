@@ -10,13 +10,14 @@ export function formatMoney(value: number) {
 }
 
 interface MoneyInputProps {
-    label: string;
+    label?: string;
     value: number;
     onChange: (value: number) => void;
+    className?: string;
 }
 
 /** Ringgit amount field shown as 1,500,000.00; commas are added while typing. */
-export function MoneyInput({ label, value, onChange }: MoneyInputProps) {
+export function MoneyInput({ label, value, onChange, className }: MoneyInputProps) {
     const [text, setText] = useState(formatMoney(value));
     const [focused, setFocused] = useState(false);
 
@@ -38,6 +39,7 @@ export function MoneyInput({ label, value, onChange }: MoneyInputProps) {
     return (
         <FormInput
             label={label}
+            className={className}
             inputMode="decimal"
             value={text}
             placeholder="0.00"

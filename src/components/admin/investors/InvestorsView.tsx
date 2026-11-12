@@ -15,6 +15,7 @@ import {
     guessState,
     STAGE_BADGE,
     STAGE_LABELS,
+    propertyContacts,
 } from "@/lib/investor";
 import { useInvestorProperties, useInvestors } from "@/hooks/useInvestorProperties";
 import { AddReminderModal } from "@/components/admin/reminders/AddReminderModal";
@@ -58,6 +59,7 @@ export function InvestorsView() {
         deleteProperty,
         toggleMilestone,
         addUpdate,
+        deleteUpdate,
         analyseProperty,
         analyseAll,
         sendReminder,
@@ -402,6 +404,7 @@ export function InvestorsView() {
                 onSave={updateProperty}
                 onToggleMilestone={toggleMilestone}
                 onAddUpdate={addUpdate}
+                onDeleteUpdate={deleteUpdate}
                 onAddReminder={setReminderFor}
                 onAnalyse={analyseProperty}
                 onRefresh={refresh}
@@ -417,6 +420,7 @@ export function InvestorsView() {
                         id: reminderFor.id,
                         investorId: reminderFor.investorId,
                         address: reminderFor.address,
+                        contacts: propertyContacts(reminderFor),
                     }}
                     onClose={() => setReminderFor(null)}
                     onSubmit={handleCreateReminder}

@@ -87,8 +87,42 @@ export function totalCost(p: InvestorProperty) {
     return p.purchasePrice + p.agentFee + p.legalCost + p.renovationCost + p.otherCost;
 }
 
+/** The agreed selling price once known, otherwise the target price. */
+export function salePrice(p: InvestorProperty) {
+    return p.sellingPrice || p.targetPrice;
+}
+
 export function projectedProfit(p: InvestorProperty) {
-    return p.targetPrice ? p.targetPrice - totalCost(p) - p.sellingCost : 0;
+    const price = salePrice(p);
+    return price ? price - totalCost(p) - p.sellingCost : 0;
+}
+
+/** Keys allowed in investor_properties.details (free-text transaction info). */
+export const TRANSACTION_DETAIL_KEYS = [
+    "lotNo", "titleNo", "mukim", "daerah",
+    "lawyerPic1Name", "lawyerPic1Phone", "lawyerPic1Email",
+    "lawyerPic2Name", "lawyerPic2Phone", "lawyerPic2Email",
+    "contractorPic", "contractorEmail",
+    "consultantPic1Name", "consultantPic1Phone", "consultantPic1Email",
+    "consultantPic2Name", "consultantPic2Phone", "consultantPic2Email",
+    "purchaserName", "purchaserPhone", "purchaserEmail",
+    "agentName", "agentPhone", "agentEmail",
+    "loanLawFirm", "loanLawyerName", "loanLawyerPhone", "loanLawyerEmail",
+    "loanPicName", "loanPicPhone", "loanPicEmail",
+] as const;
+
+export type TransactionDetailKey = (typeof TRANSACTION_DETAIL_KEYS)[number];
+
+/** Keeps only known, non-empty string keys (trimmed, capped) from an untrusted value. */
+export function sanitizeTransactionDetails(value: unknown): Partial<Record<TransactionDetailKey, string>> {
+    const out: Partial<Record<TransactionDetailKey, string>> = {};
+    if (!value || typeof value !== "object") return out;
+    const src = value as Record<string, unknown>;
+    for (const key of TRANSACTION_DETAIL_KEYS) {
+        const v = src[key];
+        if (typeof v === "string" && v.trim()) out[key] = v.trim().slice(0, 300);
+    }
+    return out;
 }
 
 /** Details an investor can also edit later from the property page. */
@@ -212,4 +246,29 @@ export function parseInvestorSheet(text: string): ImportRow[] {
         });
     }
     return rows;
+}
+
+export interface PropertyContact {
+    role: string;
+    name: string;
+    phone?: string;
+    email?: string;
+}
+
+/** People already saved on a property's transaction details, for picking reminder receivers. */
+export function propertyContacts(p: InvestorProperty): PropertyContact[] {
+    const d = p.details ?? {};
+    const list: PropertyContact[] = [
+        { role: "Lawyer", name: p.legalFirm?.contactPerson || p.legalFirm?.name || "", phone: p.legalFirm?.phone ?? "", email: p.legalFirm?.email ?? "" },
+        { role: "Lawyer PIC 1", name: d.lawyerPic1Name ?? "", phone: d.lawyerPic1Phone, email: d.lawyerPic1Email },
+        { role: "Lawyer PIC 2", name: d.lawyerPic2Name ?? "", phone: d.lawyerPic2Phone, email: d.lawyerPic2Email },
+        { role: "Contractor", name: d.contractorPic || p.contractorName || "", phone: p.contractorPhone ?? "", email: d.contractorEmail },
+        { role: "Consultant PIC 1", name: d.consultantPic1Name ?? "", phone: d.consultantPic1Phone, email: d.consultantPic1Email },
+        { role: "Consultant PIC 2", name: d.consultantPic2Name ?? "", phone: d.consultantPic2Phone, email: d.consultantPic2Email },
+        { role: "Purchaser", name: d.purchaserName ?? "", phone: d.purchaserPhone, email: d.purchaserEmail },
+        { role: "Agent", name: d.agentName ?? "", phone: d.agentPhone, email: d.agentEmail },
+        { role: "Loan lawyer", name: d.loanLawyerName || d.loanLawFirm || "", phone: d.loanLawyerPhone, email: d.loanLawyerEmail },
+        { role: "Loan lawyer PIC", name: d.loanPicName ?? "", phone: d.loanPicPhone, email: d.loanPicEmail },
+    ];
+    return list.filter((c) => c.phone || c.email);
 }

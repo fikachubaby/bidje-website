@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { FileUp, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/investor";
+import { SharedDocuments } from "@/components/investor/SharedDocuments";
 
 interface UploadedDocument {
     id: string;
@@ -54,6 +55,11 @@ export function DocumentsTab({ propertyId }: { propertyId: string }) {
 
     return (
         <div className="space-y-4">
+            <div className="space-y-2">
+                <h3 className="text-sm font-black">From Bidje</h3>
+                <SharedDocuments propertyId={propertyId} />
+            </div>
+            <h3 className="text-sm font-black">Your uploads</h3>
             <label
                 className={cn(
                     "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 p-6 text-center hover:border-neutral-500",

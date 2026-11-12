@@ -69,3 +69,70 @@ export async function ingestDocument(opts: {
     }
     return doc.id as string;
 }
+
+/* ---- Documents Bidje shares with the investor (no AI extraction / review) ---- */
+
+const SHARED_TABLE = "investor_shared_documents";
+
+export interface SharedDocument {
+    id: string;
+    fileName: string;
+    createdAt: string;
+    url: string | null;
+}
+
+/** Shared documents for a property, each with a 10-minute download link. */
+export async function listSharedDocuments(investorPropertyId: string): Promise<SharedDocument[]> {
+    const { data, error } = await supabaseAdmin
+        .from(SHARED_TABLE)
+        .select("id, file_path, file_name, created_at")
+        .eq("investor_property_id", investorPropertyId)
+        .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    if (!data?.length) return [];
+
+    const { data: signed } = await supabaseAdmin.storage.from(DOCUMENT_BUCKET).createSignedUrls(
+        data.map((d) => d.file_path),
+        600
+    );
+    return data.map((d, i) => ({
+        id: d.id,
+        fileName: d.file_name,
+        createdAt: d.created_at,
+        url: signed?.[i]?.signedUrl ?? null,
+    }));
+}
+
+export async function storeSharedDocument(opts: { investorPropertyId: string; uploadedBy: string; file: File }) {
+    const { file } = opts;
+    const path = `${opts.investorPropertyId}/shared/${Date.now()}-${file.name.replace(/[^\w.-]/g, "_")}`;
+    const { error: upErr } = await supabaseAdmin.storage
+        .from(DOCUMENT_BUCKET)
+        .upload(path, Buffer.from(await file.arrayBuffer()), { contentType: file.type });
+    if (upErr) throw new Error(upErr.message);
+
+    const { error } = await supabaseAdmin.from(SHARED_TABLE).insert({
+        investor_property_id: opts.investorPropertyId,
+        uploaded_by: opts.uploadedBy,
+        file_path: path,
+        file_name: file.name,
+        mime_type: file.type,
+    });
+    if (error) {
+        // Don't leave an orphan file behind.
+        await supabaseAdmin.storage.from(DOCUMENT_BUCKET).remove([path]);
+        throw new Error(error.message);
+    }
+}
+
+export async function deleteSharedDocument(investorPropertyId: string, docId: string) {
+    const { data, error } = await supabaseAdmin
+        .from(SHARED_TABLE)
+        .delete()
+        .eq("id", docId)
+        .eq("investor_property_id", investorPropertyId)
+        .select("file_path")
+        .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (data) await supabaseAdmin.storage.from(DOCUMENT_BUCKET).remove([data.file_path]);
+}

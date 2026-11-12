@@ -7,6 +7,7 @@ import {
     mapInvestorProperty,
     toInvestorPropertyRow,
 } from "@/lib/investor-server/mapInvestorProperty";
+import { pickPartnerInput } from "@/lib/investor-server/partners";
 
 /** The signed-in investor's own portfolio. Admin-only updates are filtered out. */
 export async function GET() {
@@ -26,7 +27,7 @@ export async function GET() {
     });
 }
 
-/** Fields an investor may fill in themselves; internal notes stay admin-only. Partners are set via PATCH. */
+/** Fields an investor may fill in themselves; internal notes stay admin-only. Partners are checked separately. */
 const INVESTOR_EDITABLE = [
     "refNo",
     "address",
@@ -42,6 +43,8 @@ const INVESTOR_EDITABLE = [
     "sellingCost",
     "targetPrice",
     "highestOffer",
+    "sellingPrice",
+    "details",
     ...INVESTOR_DETAIL_FIELDS,
 ];
 
@@ -58,6 +61,10 @@ export async function POST(req: Request) {
     const input: Record<string, unknown> = { investorId: session.user.id };
     for (const key of INVESTOR_EDITABLE) if (key in body) input[key] = body[key];
     input.address = body.address.trim();
+
+    const partners = await pickPartnerInput(body, session.user.id);
+    if (!partners) return NextResponse.json({ error: "That legal firm or consultant isn't available" }, { status: 400 });
+    Object.assign(input, partners);
 
     const { data, error } = await supabaseAdmin
         .from("investor_properties")

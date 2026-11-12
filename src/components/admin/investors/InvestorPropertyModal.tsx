@@ -7,16 +7,18 @@ import { DocumentsReview } from "./DocumentsReview";
 import { InvestorExpensesList } from "./InvestorExpensesList";
 import { useOfferPartners } from "@/hooks/useOfferPartners";
 import { Modal } from "@/components/admin/ui/Modal";
-import { FormInput, FormSelect, FormTextarea } from "@/components/admin/ui/FormField";
+import { ConfirmDialog } from "@/components/admin/ui/ConfirmDialog";
+import { FormSelect, FormTextarea } from "@/components/admin/ui/FormField";
 import { Button } from "@/components/ui/ButtonProps";
-import { MoneyInput } from "@/components/admin/ui/MoneyInput";
+import { toast } from "sonner";
+import { SharedDocuments } from "@/components/investor/SharedDocuments";
+import { TransactionDetailsForm, toTransactionForm, type TransactionForm } from "@/components/investor/TransactionDetails";
 import { cn } from "@/lib/utils";
 import { formatDueIn } from "@/lib/reminders";
-import { categoryProgress, formatDate, STAGE_LABELS } from "@/lib/investor";
+import { categoryProgress, formatDate } from "@/lib/investor";
 import type {
     InvestorProperty,
     InvestorPropertyInput,
-    InvestorStage,
     MilestoneCategory,
     UpdateCategory,
 } from "@/types/investor";
@@ -29,6 +31,7 @@ interface InvestorPropertyModalProps {
     onSave: (id: string, input: Partial<InvestorPropertyInput>) => Promise<void>;
     onToggleMilestone: (id: string, milestoneId: string, done: boolean) => Promise<void>;
     onAddUpdate: (id: string, category: UpdateCategory, message: string, visible: boolean) => Promise<void>;
+    onDeleteUpdate: (id: string, updateId: string) => Promise<void>;
     onAddReminder: (property: InvestorProperty) => void;
     onAnalyse: (id: string) => Promise<void>;
     onRefresh: () => Promise<void>;
@@ -37,32 +40,13 @@ interface InvestorPropertyModalProps {
     onDeleteReminder: (reminderId: string) => Promise<void>;
 }
 
-const DATE_FIELDS: { key: keyof InvestorPropertyInput; label: string }[] = [
-    { key: "legalStart", label: "Legal start" },
-    { key: "legalEnd", label: "Legal end" },
-    { key: "renovationStart", label: "Renovation start" },
-    { key: "renovationEnd", label: "Renovation end" },
-    { key: "salesStart", label: "Sales start" },
-    { key: "salesEnd", label: "Sales end" },
-];
-
-const NUMBER_FIELDS: { key: keyof InvestorPropertyInput; label: string }[] = [
-    { key: "purchasePrice", label: "Purchase price (RM)" },
-    { key: "agentFee", label: "Agent fee (RM)" },
-    { key: "legalCost", label: "Legal cost (RM)" },
-    { key: "renovationCost", label: "Renovation cost (RM)" },
-    { key: "otherCost", label: "Other expenses (RM)" },
-    { key: "sellingCost", label: "Est. selling cost (RM)" },
-    { key: "targetPrice", label: "Target sale price (RM)" },
-    { key: "highestOffer", label: "Highest offer (RM)" },
-];
-
 export function InvestorPropertyModal({
     property,
     onClose,
     onSave,
     onToggleMilestone,
     onAddUpdate,
+    onDeleteUpdate,
     onAddReminder,
     onAnalyse,
     onRefresh,
@@ -71,11 +55,13 @@ export function InvestorPropertyModal({
     onDeleteReminder,
 }: InvestorPropertyModalProps) {
     const [tab, setTab] = useState<Tab>("details");
-    const [form, setForm] = useState<Partial<InvestorPropertyInput>>({});
+    const [form, setForm] = useState<TransactionForm>({});
     const [saving, setSaving] = useState(false);
     const [updateCategory, setUpdateCategory] = useState<UpdateCategory>("legal");
     const [updateMessage, setUpdateMessage] = useState("");
     const [updateVisible, setUpdateVisible] = useState(true);
+    const [posting, setPosting] = useState(false);
+    const [deleteUpdateId, setDeleteUpdateId] = useState<string | null>(null);
     const [busyReminder, setBusyReminder] = useState<string | null>(null);
     // Same registered partners as Admin → Legal / Financial Consultants.
     const { legalFirms, financingConsultants } = useOfferPartners(Boolean(property));
@@ -93,41 +79,13 @@ export function InvestorPropertyModal({
 
     useEffect(() => {
         if (!property) return;
-        setForm({
-            refNo: property.refNo ?? "",
-            address: property.address,
-            state: property.state ?? "",
-            dateSigned: property.dateSigned ?? "",
-            stage: property.stage,
-            expectedCompletion: property.expectedCompletion ?? "",
-            notes: property.notes ?? "",
-            legalFirmId: property.legalFirmId ?? "",
-            financingConsultantId: property.financingConsultantId ?? "",
-            contractorName: property.contractorName ?? "",
-            contractorPhone: property.contractorPhone ?? "",
-            legalStart: property.legalStart ?? "",
-            legalEnd: property.legalEnd ?? "",
-            renovationStart: property.renovationStart ?? "",
-            renovationEnd: property.renovationEnd ?? "",
-            salesStart: property.salesStart ?? "",
-            salesEnd: property.salesEnd ?? "",
-            purchasePrice: property.purchasePrice,
-            agentFee: property.agentFee,
-            legalCost: property.legalCost,
-            renovationCost: property.renovationCost,
-            otherCost: property.otherCost,
-            sellingCost: property.sellingCost,
-            targetPrice: property.targetPrice,
-            highestOffer: property.highestOffer,
-        });
+        setForm(toTransactionForm(property));
     }, [property]);
 
     if (!property) return null;
 
-    const set = <K extends keyof InvestorPropertyInput>(key: K, value: InvestorPropertyInput[K]) =>
-        setForm((prev) => ({ ...prev, [key]: value }));
-
     const handleSave = async () => {
+        if (!form.address?.trim()) return toast.error("Address is required");
         setSaving(true);
         try {
             await onSave(property.id, form);
@@ -137,9 +95,20 @@ export function InvestorPropertyModal({
     };
 
     const handlePostUpdate = async () => {
-        if (!updateMessage.trim()) return;
-        await onAddUpdate(property.id, updateCategory, updateMessage, updateVisible);
-        setUpdateMessage("");
+        const message = updateMessage.trim();
+        if (!message || posting) return;
+        // Guard against posting the same update twice by mistake.
+        const duplicate = property.updates.some((u) => u.message.trim() === message);
+        if (duplicate && !confirm("An update with the same message already exists. Post it again?")) return;
+        setPosting(true);
+        try {
+            await onAddUpdate(property.id, updateCategory, message, updateVisible);
+            setUpdateMessage("");
+        } catch {
+            // toast already shown
+        } finally {
+            setPosting(false);
+        }
     };
 
     return (
@@ -171,106 +140,20 @@ export function InvestorPropertyModal({
 
             {tab === "details" && (
                 <div className="space-y-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <FormInput label="Ref no." value={form.refNo ?? ""} onChange={(e) => set("refNo", e.target.value)} />
-                        <FormSelect
-                            label="Current stage"
-                            value={form.stage}
-                            onChange={(e) => set("stage", e.target.value as InvestorStage)}
-                        >
-                            {Object.entries(STAGE_LABELS).map(([value, label]) => (
-                                <option key={value} value={value}>
-                                    {label}
-                                </option>
-                            ))}
-                        </FormSelect>
-                        <div className="sm:col-span-2">
-                            <FormInput label="Address" value={form.address ?? ""} onChange={(e) => set("address", e.target.value)} />
-                        </div>
-                        <FormInput label="State" value={form.state ?? ""} onChange={(e) => set("state", e.target.value)} />
-                        <FormInput
-                            label="Date signed"
-                            type="date"
-                            value={form.dateSigned ?? ""}
-                            onChange={(e) => set("dateSigned", e.target.value)}
-                        />
-                        <FormInput
-                            label="Expected completion"
-                            type="date"
-                            value={form.expectedCompletion ?? ""}
-                            onChange={(e) => set("expectedCompletion", e.target.value)}
-                        />
-                        <FormSelect
-                            label="Legal firm (lawyer)"
-                            value={form.legalFirmId ?? ""}
-                            onChange={(e) => set("legalFirmId", e.target.value)}
-                        >
-                            <option value="">Not assigned</option>
-                            {/* Keep a firm the investor added themselves selectable (it isn't in the partner list) */}
-                            {property?.legalFirmId && property.legalFirm && !legalFirms.some((f) => f.id === property.legalFirmId) && (
-                                <option value={property.legalFirmId}>{property.legalFirm.name} (added by investor)</option>
-                            )}
-                            {legalFirms.map((f) => (
-                                <option key={f.id} value={f.id}>
-                                    {f.name}
-                                </option>
-                            ))}
-                        </FormSelect>
-                        <FormSelect
-                            label="Financing consultant"
-                            value={form.financingConsultantId ?? ""}
-                            onChange={(e) => set("financingConsultantId", e.target.value)}
-                        >
-                            <option value="">Not assigned</option>
-                            {property?.financingConsultantId &&
-                                property.financingConsultant &&
-                                !financingConsultants.some((c) => c.id === property.financingConsultantId) && (
-                                    <option value={property.financingConsultantId}>
-                                        {property.financingConsultant.name} (added by investor)
-                                    </option>
-                                )}
-                            {financingConsultants.map((c) => (
-                                <option key={c.id} value={c.id}>
-                                    {c.name}
-                                </option>
-                            ))}
-                        </FormSelect>
-                        <FormInput
-                            label="Contractor name"
-                            value={form.contractorName ?? ""}
-                            onChange={(e) => set("contractorName", e.target.value)}
-                        />
-                        <FormInput
-                            label="Contractor phone"
-                            type="tel"
-                            value={form.contractorPhone ?? ""}
-                            onChange={(e) => set("contractorPhone", e.target.value)}
-                        />
-                        {DATE_FIELDS.map(({ key, label }) => (
-                            <FormInput
-                                key={key}
-                                label={label}
-                                type="date"
-                                value={(form[key] as string) ?? ""}
-                                onChange={(e) => set(key, e.target.value as never)}
-                            />
-                        ))}
-                        {NUMBER_FIELDS.map(({ key, label }) => (
-                            <MoneyInput
-                                key={key}
-                                label={label}
-                                value={Number(form[key] ?? 0)}
-                                onChange={(v) => set(key, v as never)}
-                            />
-                        ))}
-                    </div>
+                    <TransactionDetailsForm
+                        property={property}
+                        form={form}
+                        onChange={setForm}
+                        legalFirms={legalFirms}
+                        financingConsultants={financingConsultants}
+                    />
                     <FormTextarea
                         label="Internal notes (admin only)"
                         rows={3}
                         value={form.notes ?? ""}
-                        onChange={(e) => set("notes", e.target.value)}
+                        onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))}
                     />
-                    <div className="flex justify-end">
+                    <div className="sticky bottom-0 -mx-1 flex justify-end bg-white/90 px-1 py-3 backdrop-blur">
                         <Button onClick={handleSave} disabled={saving}>
                             {saving ? "Saving..." : "Save details"}
                         </Button>
@@ -352,15 +235,23 @@ export function InvestorPropertyModal({
                             onChange={(e) => setUpdateMessage(e.target.value)}
                         />
                         <div className="flex justify-end">
-                            <Button onClick={handlePostUpdate} disabled={!updateMessage.trim()}>
-                                Post update
+                            <Button onClick={handlePostUpdate} disabled={!updateMessage.trim() || posting}>
+                                {posting ? "Posting..." : "Post update"}
                             </Button>
                         </div>
                     </div>
                     <ol className="space-y-3">
                         {property.updates.length === 0 && <p className="text-sm text-neutral-500">No updates yet.</p>}
                         {property.updates.map((u) => (
-                            <li key={u.id} className="border-l-2 border-brand pl-4">
+                            <li key={u.id} className="group relative border-l-2 border-brand pl-4 pr-10">
+                                <button
+                                    type="button"
+                                    className="admin-action-btn absolute right-0 top-0"
+                                    title="Delete update"
+                                    onClick={() => setDeleteUpdateId(u.id)}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                </button>
                                 <p className="flex items-center gap-2 text-[11px] font-bold uppercase text-neutral-500">
                                     {formatDate(u.createdAt)} · {u.category}
                                     {!u.visibleToInvestor && (
@@ -373,14 +264,31 @@ export function InvestorPropertyModal({
                             </li>
                         ))}
                     </ol>
+                    <ConfirmDialog
+                        open={Boolean(deleteUpdateId)}
+                        title="Delete this update?"
+                        danger
+                        description="It will be removed for admins and the investor. This can't be undone."
+                        confirmLabel="Delete"
+                        onCancel={() => setDeleteUpdateId(null)}
+                        onConfirm={async () => {
+                            const id = deleteUpdateId;
+                            setDeleteUpdateId(null);
+                            if (id) await onDeleteUpdate(property.id, id).catch(() => undefined);
+                        }}
+                    />
                 </div>
             )}
 
             {tab === "documents" && (
                 <div className="space-y-6">
+                    <div className="space-y-2">
+                        <h4 className="text-sm font-black">Documents for investor</h4>
+                        <SharedDocuments propertyId={property.id} manage />
+                    </div>
                     <InvestorExpensesList key={property.updatedAt} propertyId={property.id} />
                     <div className="space-y-2">
-                        <h4 className="text-sm font-black">Uploaded documents</h4>
+                        <h4 className="text-sm font-black">Uploaded by investor</h4>
                         <DocumentsReview propertyId={property.id} onReviewed={onRefresh} />
                     </div>
                 </div>

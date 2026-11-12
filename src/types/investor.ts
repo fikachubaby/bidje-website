@@ -1,3 +1,5 @@
+import type { TransactionDetailKey } from "@/lib/investor";
+
 export type InvestorStage = "legal" | "renovation" | "for_sale" | "sold" | "completed";
 export type MilestoneCategory = "legal" | "renovation" | "sales";
 export type ExpenseCategory = "legal" | "agent" | "renovation";
@@ -29,6 +31,9 @@ export interface InvestorPropertyReminder {
     lastSentAt?: string | null;
 }
 
+/** Free-text transaction details stored in investor_properties.details (keys: TRANSACTION_DETAIL_KEYS). */
+export type InvestorPropertyDetails = Partial<Record<TransactionDetailKey, string>>;
+
 export interface InvestorProperty {
     id: string;
     investorId: string;
@@ -47,6 +52,8 @@ export interface InvestorProperty {
     sellingCost: number;
     targetPrice: number;
     highestOffer: number;
+    sellingPrice: number;
+    details: InvestorPropertyDetails;
     expectedCompletion?: string | null;
     contractorName?: string | null;
     contractorPhone?: string | null;

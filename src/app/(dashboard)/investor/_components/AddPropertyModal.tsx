@@ -3,46 +3,19 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Modal } from "@/components/admin/ui/Modal";
-import { FormInput, FormSelect } from "@/components/admin/ui/FormField";
-import { MoneyInput } from "@/components/admin/ui/MoneyInput";
 import { Button } from "@/components/ui/ButtonProps";
-import { money, STAGE_LABELS } from "@/lib/investor";
-import { JOURNEY } from "./JourneyProgress";
-import { PHASE_FIELDS } from "./PropertyEditors";
-import type { InvestorProperty, InvestorPropertyInput, InvestorStage } from "@/types/investor";
+import {
+    TransactionDetailsForm,
+    toTransactionForm,
+    type TransactionForm,
+} from "@/components/investor/TransactionDetails";
+import { money } from "@/lib/investor";
+import type { InvestorProperty } from "@/types/investor";
 
-type Form = Omit<Partial<InvestorPropertyInput>, "investorId">;
-
-// Same money rows as the property detail's Money tab.
-const MONEY_FIELDS: { key: keyof Form; label: string }[] = [
-    { key: "purchasePrice", label: "Purchase price (RM)" },
-    { key: "agentFee", label: "Agent fee (RM)" },
-    { key: "legalCost", label: "Legal cost (RM)" },
-    { key: "renovationCost", label: "Renovation (RM)" },
-    { key: "otherCost", label: "Other expenses (RM)" },
-    { key: "sellingCost", label: "Estimated selling cost (RM)" },
-    { key: "targetPrice", label: "Highest offer so far (RM)" },
-    { key: "highestOffer", label: "Resale Value (RM)" },
-];
-
-const EMPTY: Form = {
-    refNo: "",
-    address: "",
-    state: "",
-    dateSigned: "",
-    expectedCompletion: "",
-    stage: "legal",
-    contractorName: "",
-    contractorPhone: "",
-    purchasePrice: 0,
-    agentFee: 0,
-    legalCost: 0,
-    renovationCost: 0,
-    otherCost: 0,
-    sellingCost: 0,
-    targetPrice: 0,
-    highestOffer: 0,
-};
+interface PartnerChoice {
+    id: string;
+    name: string;
+}
 
 interface AddPropertyModalProps {
     open: boolean;
@@ -50,31 +23,45 @@ interface AddPropertyModalProps {
     onCreated: (property: InvestorProperty) => void;
 }
 
+/** Investor adds their own property using the same sections as the admin Transaction Details. */
 export function AddPropertyModal({ open, onClose, onCreated }: AddPropertyModalProps) {
-    const [form, setForm] = useState<Form>(EMPTY);
+    const [form, setForm] = useState<TransactionForm>(() => toTransactionForm());
     const [saving, setSaving] = useState(false);
+    const [legalFirms, setLegalFirms] = useState<PartnerChoice[]>([]);
+    const [financingConsultants, setFinancingConsultants] = useState<PartnerChoice[]>([]);
 
     useEffect(() => {
-        if (open) setForm(EMPTY);
+        if (!open) return;
+        setForm(toTransactionForm());
+        // Bidje partners plus the ones this investor added themselves.
+        fetch("/api/investor/partners")
+            .then((res) => res.json())
+            .then((data) => {
+                setLegalFirms(data.legalFirms ?? []);
+                setFinancingConsultants(data.financingConsultants ?? []);
+            })
+            .catch(() => toast.error("Failed to load legal firms and consultants"));
     }, [open]);
 
     if (!open) return null;
 
-    const set = <K extends keyof Form>(key: K, value: Form[K]) => setForm((prev) => ({ ...prev, [key]: value }));
-
-    const cost =
-        Number(form.purchasePrice) + Number(form.agentFee) + Number(form.legalCost) + Number(form.renovationCost) + Number(form.otherCost);
-    const profit = form.targetPrice ? Number(form.targetPrice) - cost - Number(form.sellingCost) : 0;
+    const n = (v: unknown) => Number(v ?? 0);
+    const cost = n(form.purchasePrice) + n(form.agentFee) + n(form.legalCost) + n(form.renovationCost) + n(form.otherCost);
+    const price = n(form.sellingPrice) || n(form.targetPrice);
+    const profit = price ? price - cost - n(form.sellingCost) : 0;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!form.address?.trim()) return toast.error("Please enter the property address");
         setSaving(true);
         try {
+            // Internal notes are admin-only.
+            const { notes: _notes, ...body } = form;
+            void _notes;
             const res = await fetch("/api/investor/portfolio", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(form),
+                body: JSON.stringify(body),
             });
             const data = await res.json();
             if (res.status === 401) {
@@ -94,91 +81,20 @@ export function AddPropertyModal({ open, onClose, onCreated }: AddPropertyModalP
 
     return (
         <Modal open onClose={onClose} wide title="Add property" description="Add an investment property to your portfolio.">
-            <form onSubmit={handleSubmit} className="space-y-6">
-                <section className="grid gap-4 sm:grid-cols-2">
-                    <div className="sm:col-span-2">
-                        <FormInput
-                            label="Address *"
-                            required
-                            value={form.address ?? ""}
-                            onChange={(e) => set("address", e.target.value)}
-                        />
-                    </div>
-                    <FormInput label="State" value={form.state ?? ""} onChange={(e) => set("state", e.target.value)} />
-                    <FormInput label="Ref no." value={form.refNo ?? ""} onChange={(e) => set("refNo", e.target.value)} />
-                    <FormSelect label="Current stage" value={form.stage} onChange={(e) => set("stage", e.target.value as InvestorStage)}>
-                        {Object.entries(STAGE_LABELS).map(([value, label]) => (
-                            <option key={value} value={value}>
-                                {label}
-                            </option>
-                        ))}
-                    </FormSelect>
-                    <FormInput
-                        label="Date signed"
-                        type="date"
-                        value={form.dateSigned ?? ""}
-                        onChange={(e) => set("dateSigned", e.target.value)}
-                    />
-                    <FormInput
-                        label="Expected completion"
-                        type="date"
-                        value={form.expectedCompletion ?? ""}
-                        onChange={(e) => set("expectedCompletion", e.target.value)}
-                    />
-                </section>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <TransactionDetailsForm
+                    form={form}
+                    onChange={setForm}
+                    legalFirms={legalFirms}
+                    financingConsultants={financingConsultants}
+                />
 
-                <section>
-                    <h3 className="mb-3 text-sm font-black">Phase timeframes</h3>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        {JOURNEY.map((p) => {
-                            const [startKey, endKey] = PHASE_FIELDS[p.key];
-                            return (
-                                <div key={p.key} className="contents">
-                                    <FormInput
-                                        label={`${p.label} start`}
-                                        type="date"
-                                        value={(form[startKey] as string) ?? ""}
-                                        onChange={(e) => set(startKey, e.target.value)}
-                                    />
-                                    <FormInput
-                                        label={`${p.label} end`}
-                                        type="date"
-                                        value={(form[endKey] as string) ?? ""}
-                                        onChange={(e) => set(endKey, e.target.value)}
-                                    />
-                                </div>
-                            );
-                        })}
-                    </div>
-                </section>
+                <div className="flex items-center justify-between rounded-xl bg-neutral-950 p-4 text-white">
+                    <span className="text-xs text-neutral-400">ESTIMATED NET PROFIT</span>
+                    <span className="text-xl font-black text-brand">{price ? money(profit) : "Pending"}</span>
+                </div>
 
-                <section>
-                    <h3 className="mb-3 text-sm font-black">Renovation contractor</h3>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <FormInput label="Contractor name" value={form.contractorName ?? ""} onChange={(e) => set("contractorName", e.target.value)} />
-                        <FormInput
-                            label="Contractor phone"
-                            type="tel"
-                            value={form.contractorPhone ?? ""}
-                            onChange={(e) => set("contractorPhone", e.target.value)}
-                        />
-                    </div>
-                </section>
-
-                <section>
-                    <h3 className="mb-3 text-sm font-black">Money</h3>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        {MONEY_FIELDS.map(({ key, label }) => (
-                            <MoneyInput key={key} label={label} value={Number(form[key] ?? 0)} onChange={(v) => set(key, v as never)} />
-                        ))}
-                    </div>
-                    <div className="mt-4 flex items-center justify-between rounded-xl bg-neutral-950 p-4 text-white">
-                        <span className="text-xs text-neutral-400">ESTIMATED NET PROFIT</span>
-                        <span className="text-xl font-black text-brand">{form.targetPrice ? money(profit) : "Pending"}</span>
-                    </div>
-                </section>
-
-                <div className="flex justify-end gap-2">
+                <div className="sticky bottom-0 -mx-1 flex justify-end gap-2 bg-white/90 px-1 py-3 backdrop-blur">
                     <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
                         Cancel
                     </Button>
