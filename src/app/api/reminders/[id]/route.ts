@@ -31,6 +31,10 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     if (session.error) return session.error;
     const { id } = await params;
 
+    // Its send history references it, so remove that first.
+    const { error: logErr } = await supabaseAdmin.from("reminder_logs").delete().eq("reminder_id", id);
+    if (logErr) return NextResponse.json({ error: logErr.message }, { status: 500 });
+
     const { error } = await supabaseAdmin.from("reminders").delete().eq("id", id);
 
     if (error) {

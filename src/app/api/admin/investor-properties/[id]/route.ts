@@ -22,6 +22,14 @@ export async function DELETE(_req: Request, { params }: Params) {
     if (session.error) return session.error;
     const { id } = await params;
 
+    // Reminders are removed with the property, but their send history would block that.
+    const { data: reminders } = await supabaseAdmin.from("reminders").select("id").eq("investor_property_id", id);
+    const reminderIds = (reminders ?? []).map((r) => r.id);
+    if (reminderIds.length) {
+        const { error: logErr } = await supabaseAdmin.from("reminder_logs").delete().in("reminder_id", reminderIds);
+        if (logErr) return NextResponse.json({ error: logErr.message }, { status: 500 });
+    }
+
     const { error } = await supabaseAdmin.from("investor_properties").delete().eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
