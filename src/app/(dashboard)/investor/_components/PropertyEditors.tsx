@@ -1,15 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { FileUp, Loader2, Pencil, Phone } from "lucide-react";
-import { FormInput, FormSelect } from "@/components/admin/ui/FormField";
-import { MoneyInput } from "@/components/admin/ui/MoneyInput";
+import { Pencil, Phone } from "lucide-react";
+import { FormInput } from "@/components/admin/ui/FormField";
 import { Button } from "@/components/ui/ButtonProps";
-import { EXPENSE_CATEGORIES, formatDate, money, phaseTimeframe } from "@/lib/investor";
+import { formatDate, phaseTimeframe } from "@/lib/investor";
 import type {
-    ExpenseCategory,
-    InvestorExpense,
     InvestorProperty,
     InvestorPropertyInput,
     MilestoneCategory,
@@ -182,114 +179,6 @@ export function PhaseTimeframes({ property, onUpdated }: { property: InvestorPro
                             </li>
                         );
                     })}
-                </ul>
-            )}
-        </div>
-    );
-}
-
-/** Investor records a legal / agent / renovation payment with its receipt. */
-export function ExpenseForm({ property, onUpdated }: { property: InvestorProperty; onUpdated: OnUpdated }) {
-    const [category, setCategory] = useState<ExpenseCategory>("legal");
-    const [amount, setAmount] = useState(0);
-    const [note, setNote] = useState("");
-    const [receipt, setReceipt] = useState<File | null>(null);
-    const [saving, setSaving] = useState(false);
-    const [expenses, setExpenses] = useState<InvestorExpense[]>([]);
-
-    const load = useCallback(async () => {
-        const res = await fetch(`/api/investor/expenses?propertyId=${property.id}`);
-        const data = await res.json();
-        setExpenses(data.expenses ?? []);
-    }, [property.id]);
-
-    useEffect(() => {
-        void load();
-    }, [load]);
-
-    const submit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!(amount > 0)) return toast.error("Enter an amount above zero");
-        if (!receipt) return toast.error("Please attach the receipt");
-        setSaving(true);
-        try {
-            const form = new FormData();
-            form.append("investorPropertyId", property.id);
-            form.append("category", category);
-            form.append("amount", String(amount));
-            form.append("note", note);
-            form.append("receipt", receipt);
-            const res = await fetch("/api/investor/expenses", { method: "POST", body: form });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Failed to submit");
-            onUpdated(data.property);
-            toast.success("Expense added");
-            setAmount(0);
-            setNote("");
-            setReceipt(null);
-            await load();
-        } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Failed to submit");
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const label = (c: ExpenseCategory) => EXPENSE_CATEGORIES.find((x) => x.key === c)?.label ?? c;
-
-    return (
-        <div className="space-y-4">
-            <form onSubmit={submit} className="space-y-3 rounded-2xl border border-neutral-200 p-4">
-                <h3 className="text-sm font-black">Add an expense</h3>
-                <div className="grid gap-3 sm:grid-cols-2">
-                    <FormSelect label="Type" value={category} onChange={(e) => setCategory(e.target.value as ExpenseCategory)}>
-                        {EXPENSE_CATEGORIES.map((c) => (
-                            <option key={c.key} value={c.key}>
-                                {c.label}
-                            </option>
-                        ))}
-                    </FormSelect>
-                    <MoneyInput label="Amount (RM)" value={amount} onChange={setAmount} />
-                </div>
-                <FormInput label="Note (optional)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Stamp duty, 2nd progress payment" />
-                <label className="flex cursor-pointer items-center gap-2 rounded-xl border-2 border-dashed border-neutral-300 p-3 text-sm hover:border-neutral-500">
-                    <FileUp className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{receipt ? receipt.name : "Attach receipt (PDF, JPG or PNG, max 10 MB)"}</span>
-                    <input
-                        type="file"
-                        accept="application/pdf,image/jpeg,image/png,image/webp"
-                        className="hidden"
-                        onChange={(e) => setReceipt(e.target.files?.[0] ?? null)}
-                    />
-                </label>
-                <div className="flex justify-end">
-                    <Button type="submit" disabled={saving}>
-                        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                        {saving ? "Submitting..." : "Submit expense"}
-                    </Button>
-                </div>
-            </form>
-
-            {expenses.length > 0 && (
-                <ul className="space-y-2">
-                    {expenses.map((x) => (
-                        <li key={x.id} className="flex items-center justify-between gap-3 rounded-xl border border-neutral-200 p-3">
-                            <div className="min-w-0">
-                                <p className="text-sm font-bold">
-                                    {label(x.category)} · {money(x.amount)}
-                                </p>
-                                <p className="truncate text-xs text-neutral-500">
-                                    {formatDate(x.createdAt)}
-                                    {x.note ? ` · ${x.note}` : ""}
-                                </p>
-                            </div>
-                            {x.receiptUrl && (
-                                <a href={x.receiptUrl} target="_blank" rel="noreferrer" className="shrink-0 text-xs font-bold underline">
-                                    View receipt
-                                </a>
-                            )}
-                        </li>
-                    ))}
                 </ul>
             )}
         </div>

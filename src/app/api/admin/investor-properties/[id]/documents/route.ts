@@ -24,6 +24,7 @@ export async function GET(_req: Request, { params }: Params) {
             return {
                 id: d.id,
                 fileName: d.file_name,
+                remark: d.remark ?? null,
                 status: d.status,
                 aiSummary: d.ai_summary,
                 error: d.error,

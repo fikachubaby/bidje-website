@@ -1,14 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ExternalLink, FileText, FileUp, Loader2, Trash2 } from "lucide-react";
+import { ExternalLink, FileText, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/investor";
+import { RemarkBadge, UploadWithRemark } from "./UploadWithRemark";
 
 interface SharedDocument {
     id: string;
     fileName: string;
+    remark: string | null;
     createdAt: string;
     url: string | null;
 }
@@ -60,9 +61,10 @@ export function SharedDocuments({ propertyId, manage = false }: SharedDocumentsP
         }
     };
 
-    const upload = (file: File) => {
+    const upload = (file: File, remark: string) => {
         const form = new FormData();
         form.append("file", file);
+        form.append("remark", remark);
         return run(() => fetch(baseUrl, { method: "POST", body: form }), "Document uploaded");
     };
 
@@ -73,26 +75,7 @@ export function SharedDocuments({ propertyId, manage = false }: SharedDocumentsP
     return (
         <div className="space-y-3">
             {manage && (
-                <label
-                    className={cn(
-                        "flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-neutral-300 p-4 text-sm font-bold hover:border-neutral-500",
-                        busy && "pointer-events-none opacity-60"
-                    )}
-                >
-                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
-                    {busy ? "Working..." : "Upload document for investor"}
-                    <span className="font-normal text-neutral-500">(PDF, JPG, PNG · max 10 MB)</span>
-                    <input
-                        type="file"
-                        accept="application/pdf,image/jpeg,image/png,image/webp"
-                        className="hidden"
-                        onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            e.target.value = "";
-                            if (f) void upload(f);
-                        }}
-                    />
-                </label>
+                <UploadWithRemark label="Upload document for investor" hint="(PDF, JPG, PNG · max 10 MB)" busy={busy} onUpload={upload} />
             )}
 
             {loading ? (
@@ -106,7 +89,10 @@ export function SharedDocuments({ propertyId, manage = false }: SharedDocumentsP
                             <div className="flex min-w-0 items-center gap-2">
                                 <FileText className="h-4 w-4 shrink-0 text-neutral-500" />
                                 <div className="min-w-0">
-                                    <p className="truncate text-sm font-bold">{d.fileName}</p>
+                                    <p className="flex items-center gap-2 text-sm font-bold">
+                                        <span className="truncate">{d.fileName}</span>
+                                        {d.remark && <RemarkBadge remark={d.remark} />}
+                                    </p>
                                     <p className="text-xs text-neutral-500">{formatDate(d.createdAt)}</p>
                                 </div>
                             </div>

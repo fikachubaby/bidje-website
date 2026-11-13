@@ -82,6 +82,7 @@ export interface InvestorExpense {
     category: ExpenseCategory;
     amount: number;
     note: string | null;
+    expenseDate: string | null;
     receiptName: string | null;
     receiptUrl: string | null;
     createdAt: string;

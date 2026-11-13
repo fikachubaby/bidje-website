@@ -26,7 +26,7 @@ export async function GET(req: Request) {
 
     const { data, error } = await supabaseAdmin
         .from("investor_documents")
-        .select("id, file_name, status, ai_summary, created_at")
+        .select("id, file_name, remark, status, ai_summary, created_at")
         .eq("investor_property_id", propertyId)
         .order("created_at", { ascending: false });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -57,6 +57,7 @@ export async function POST(req: Request) {
             propertyAddress: property.address,
             uploadedBy: session.user.id,
             file,
+            remark: form.get("remark") as string | null,
         });
         return NextResponse.json({ id }, { status: 201 });
     } catch (err) {

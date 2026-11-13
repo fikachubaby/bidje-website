@@ -1,14 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { FileUp, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDate } from "@/lib/investor";
 import { SharedDocuments } from "@/components/investor/SharedDocuments";
+import { RemarkBadge, UploadWithRemark } from "@/components/investor/UploadWithRemark";
 
 interface UploadedDocument {
     id: string;
     file_name: string;
+    remark: string | null;
     status: "processing" | "pending_review" | "approved" | "rejected" | "failed";
     ai_summary: string | null;
     created_at: string;
@@ -38,12 +39,13 @@ export function DocumentsTab({ propertyId }: { propertyId: string }) {
         void load();
     }, [load]);
 
-    const upload = async (file: File) => {
+    const upload = async (file: File, remark: string) => {
         setUploading(true);
         setError(null);
         try {
             const form = new FormData();
             form.append("file", file);
+            form.append("remark", remark);
             form.append("investorPropertyId", propertyId);
             const res = await fetch("/api/investor/documents", { method: "POST", body: form });
             if (!res.ok) setError((await res.json()).error ?? "Upload failed");
@@ -60,38 +62,27 @@ export function DocumentsTab({ propertyId }: { propertyId: string }) {
                 <SharedDocuments propertyId={propertyId} />
             </div>
             <h3 className="text-sm font-black">Your uploads</h3>
-            <label
-                className={cn(
-                    "flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-neutral-300 p-6 text-center hover:border-neutral-500",
-                    uploading && "pointer-events-none opacity-60"
-                )}
-            >
-                {uploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <FileUp className="h-6 w-6" />}
-                <span className="text-sm font-bold">
-                    {uploading ? "Uploading and reading your document..." : "Upload bank statement or receipt"}
-                </span>
-                <span className="text-xs text-neutral-500">
+            <div className="space-y-1">
+                <UploadWithRemark
+                    label={uploading ? "Uploading and reading your document..." : "Upload bank statement or receipt"}
+                    busy={uploading}
+                    onUpload={upload}
+                />
+                <p className="text-xs text-neutral-500">
                     PDF, JPG or PNG up to 10 MB. Payments for this property are picked out automatically and checked by
                     Bidje before they appear in your figures.
-                </span>
-                <input
-                    type="file"
-                    accept="application/pdf,image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        e.target.value = "";
-                        if (f) void upload(f);
-                    }}
-                />
-            </label>
+                </p>
+            </div>
             {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
 
             <ul className="space-y-2">
                 {documents.map((d) => (
                     <li key={d.id} className="flex items-start justify-between gap-3 rounded-xl border border-neutral-200 p-3">
                         <div className="min-w-0">
-                            <p className="truncate text-sm font-bold">{d.file_name}</p>
+                            <p className="flex items-center gap-2 text-sm font-bold">
+                                <span className="truncate">{d.file_name}</span>
+                                {d.remark && <RemarkBadge remark={d.remark} />}
+                            </p>
                             <p className="text-xs text-neutral-500">
                                 {formatDate(d.created_at)}
                                 {d.ai_summary ? ` · ${d.ai_summary}` : ""}

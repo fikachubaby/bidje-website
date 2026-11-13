@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Check, EyeOff, Loader2, Send, Sparkles, Trash2, XCircle } from "lucide-react";
 import { AiHealthBadge } from "./AiHealthBadge";
 import { DocumentsReview } from "./DocumentsReview";
-import { InvestorExpensesList } from "./InvestorExpensesList";
 import { useOfferPartners } from "@/hooks/useOfferPartners";
 import { Modal } from "@/components/admin/ui/Modal";
 import { ConfirmDialog } from "@/components/admin/ui/ConfirmDialog";
@@ -12,6 +11,7 @@ import { FormSelect, FormTextarea } from "@/components/admin/ui/FormField";
 import { Button } from "@/components/ui/ButtonProps";
 import { toast } from "sonner";
 import { SharedDocuments } from "@/components/investor/SharedDocuments";
+import { ExpensesPanel } from "@/components/investor/ExpensesPanel";
 import { TransactionDetailsForm, toTransactionForm, type TransactionForm } from "@/components/investor/TransactionDetails";
 import { cn } from "@/lib/utils";
 import { formatDueIn } from "@/lib/reminders";
@@ -286,7 +286,10 @@ export function InvestorPropertyModal({
                         <h4 className="text-sm font-black">Documents for investor</h4>
                         <SharedDocuments propertyId={property.id} manage />
                     </div>
-                    <InvestorExpensesList key={property.updatedAt} propertyId={property.id} />
+                    <div className="space-y-2">
+                        <h4 className="text-sm font-black">Expenses</h4>
+                        <ExpensesPanel admin propertyId={property.id} onAdded={() => void onRefresh()} />
+                    </div>
                     <div className="space-y-2">
                         <h4 className="text-sm font-black">Uploaded by investor</h4>
                         <DocumentsReview propertyId={property.id} onReviewed={onRefresh} />

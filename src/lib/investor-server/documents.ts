@@ -4,6 +4,11 @@ import { extractStatement, SUPPORTED_DOCUMENT_TYPES, type SupportedDocumentType 
 export const DOCUMENT_BUCKET = "investor-documents";
 export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 
+/** Short free-text label such as "IC", "Owner" or "SPA". */
+export function cleanRemark(value: unknown): string | null {
+    return typeof value === "string" && value.trim() ? value.trim().slice(0, 120) : null;
+}
+
 export function isSupportedDocument(type: string): type is SupportedDocumentType {
     return (SUPPORTED_DOCUMENT_TYPES as readonly string[]).includes(type);
 }
@@ -14,6 +19,7 @@ export async function ingestDocument(opts: {
     propertyAddress: string;
     uploadedBy: string;
     file: File;
+    remark?: string | null;
 }) {
     const { file } = opts;
     const path = `${opts.investorPropertyId}/${Date.now()}-${file.name.replace(/[^\w.-]/g, "_")}`;
@@ -32,6 +38,7 @@ export async function ingestDocument(opts: {
             file_path: path,
             file_name: file.name,
             mime_type: file.type,
+            remark: cleanRemark(opts.remark),
         })
         .select("id")
         .single();
@@ -77,6 +84,7 @@ const SHARED_TABLE = "investor_shared_documents";
 export interface SharedDocument {
     id: string;
     fileName: string;
+    remark: string | null;
     createdAt: string;
     url: string | null;
 }
@@ -85,7 +93,7 @@ export interface SharedDocument {
 export async function listSharedDocuments(investorPropertyId: string): Promise<SharedDocument[]> {
     const { data, error } = await supabaseAdmin
         .from(SHARED_TABLE)
-        .select("id, file_path, file_name, created_at")
+        .select("id, file_path, file_name, remark, created_at")
         .eq("investor_property_id", investorPropertyId)
         .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -98,12 +106,13 @@ export async function listSharedDocuments(investorPropertyId: string): Promise<S
     return data.map((d, i) => ({
         id: d.id,
         fileName: d.file_name,
+        remark: d.remark,
         createdAt: d.created_at,
         url: signed?.[i]?.signedUrl ?? null,
     }));
 }
 
-export async function storeSharedDocument(opts: { investorPropertyId: string; uploadedBy: string; file: File }) {
+export async function storeSharedDocument(opts: { investorPropertyId: string; uploadedBy: string; file: File; remark?: string | null }) {
     const { file } = opts;
     const path = `${opts.investorPropertyId}/shared/${Date.now()}-${file.name.replace(/[^\w.-]/g, "_")}`;
     const { error: upErr } = await supabaseAdmin.storage
@@ -117,6 +126,7 @@ export async function storeSharedDocument(opts: { investorPropertyId: string; up
         file_path: path,
         file_name: file.name,
         mime_type: file.type,
+        remark: cleanRemark(opts.remark),
     });
     if (error) {
         // Don't leave an orphan file behind.

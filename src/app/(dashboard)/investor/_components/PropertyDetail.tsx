@@ -16,11 +16,11 @@ import {
 } from "@/lib/investor";
 import type { InvestorProperty, MilestoneCategory } from "@/types/investor";
 import { TransactionDetailsView } from "@/components/investor/TransactionDetails";
+import { ExpensesPanel } from "@/components/investor/ExpensesPanel";
 import { DocumentsTab } from "../DocumentsTab";
 import { JOURNEY, JourneyProgress } from "./JourneyProgress";
 import {
   ContractorCard,
-  ExpenseForm,
   PhaseTimeframes,
 } from "./PropertyEditors";
 import { TeamCard } from "./TeamCard";
@@ -322,7 +322,7 @@ export function PropertyDetail({
                 </p>
               )}
             </div>
-            <ExpenseForm property={property} onUpdated={onUpdated} />
+            <ExpensesPanel propertyId={property.id} onAdded={(p) => p && onUpdated(p)} />
           </div>
         )}
 

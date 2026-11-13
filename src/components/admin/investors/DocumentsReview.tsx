@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/ButtonProps";
 import { cn } from "@/lib/utils";
 import { formatDate, money } from "@/lib/investor";
+import { RemarkBadge } from "@/components/investor/UploadWithRemark";
 
 interface ExtractedLine {
     id: string;
@@ -20,6 +21,7 @@ interface ExtractedLine {
 interface ReviewDocument {
     id: string;
     fileName: string;
+    remark: string | null;
     status: "processing" | "pending_review" | "approved" | "rejected" | "failed";
     aiSummary: string | null;
     error: string | null;
@@ -94,6 +96,7 @@ export function DocumentsReview({ propertyId, onReviewed }: { propertyId: string
                             <div className="min-w-0">
                                 <p className="flex items-center gap-2 text-sm font-bold">
                                     {d.fileName}
+                                    {d.remark && <RemarkBadge remark={d.remark} />}
                                     {d.url && (
                                         <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-black">
                                             <ExternalLink className="h-3.5 w-3.5" />

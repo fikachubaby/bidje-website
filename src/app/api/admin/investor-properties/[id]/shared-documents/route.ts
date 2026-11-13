@@ -30,7 +30,8 @@ export async function POST(req: Request, { params }: Params) {
     if (session.error) return session.error;
     const { id } = await params;
 
-    const file = (await req.formData()).get("file");
+    const form = await req.formData();
+    const file = form.get("file");
     if (!(file instanceof File)) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     if (!isSupportedDocument(file.type)) {
         return NextResponse.json({ error: "Upload a PDF, JPG, PNG or WEBP file" }, { status: 400 });
@@ -38,7 +39,7 @@ export async function POST(req: Request, { params }: Params) {
     if (file.size > MAX_DOCUMENT_BYTES) return NextResponse.json({ error: "File must be under 10 MB" }, { status: 400 });
 
     try {
-        await storeSharedDocument({ investorPropertyId: id, uploadedBy: session.user.id, file });
+        await storeSharedDocument({ investorPropertyId: id, uploadedBy: session.user.id, file, remark: form.get("remark") as string | null });
         return NextResponse.json({ success: true }, { status: 201 });
     } catch (err) {
         return fail(err, "Upload failed");
