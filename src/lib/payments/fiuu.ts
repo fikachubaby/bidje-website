@@ -1,6 +1,9 @@
 import crypto from "crypto";
 
-const isProd = () => process.env.FIUU_ENV?.trim() === "production";
+/** Env values trimmed and stripped of any trailing "# comment" pasted into the Vercel dashboard. */
+const env = (name: string) => (process.env[name] ?? "").replace(/\s+#.*$/, "").trim();
+
+const isProd = () => env("FIUU_ENV") === "production";
 
 function getPayBaseUrl() {
     return isProd() ? "https://pay.fiuu.com/RMS/pay" : "https://sandbox-payment.fiuu.com/RMS/pay";
@@ -8,7 +11,7 @@ function getPayBaseUrl() {
 
 function getRecurringUrl() {
     return (
-        process.env.FIUU_RECURRING_URL ||
+        env("FIUU_RECURRING_URL") ||
         (isProd()
             ? "https://pay.fiuu.com/RMS/API/Recurring/input_v7.php"
             : "https://sandbox-payment.fiuu.com/RMS/API/Recurring/input_v7.php")
@@ -39,11 +42,15 @@ export interface FiuuCheckoutParams {
 }
 
 export function buildFiuuCheckoutForm(params: FiuuCheckoutParams) {
-    const merchantId = process.env.FIUU_MERCHANT_ID!;
-    const verifyKey = process.env.FIUU_VERIFY_KEY!;
+    const merchantId = env("FIUU_MERCHANT_ID");
+    const verifyKey = env("FIUU_VERIFY_KEY");
     const amountStr = params.amount.toFixed(2);
 
-    const vcode = md5(`${amountStr}${merchantId}${params.orderId}${verifyKey}`);
+    const currency = "MYR";
+    // This merchant has "Extended Verify Payment" on, so the currency is part of the signature:
+    // vcode = md5(amount + merchantID + orderid + verifykey + currency). Set FIUU_EXTENDED_VCODE=false for the basic form.
+    const extended = env("FIUU_EXTENDED_VCODE") !== "false";
+    const vcode = md5(`${amountStr}${merchantId}${params.orderId}${verifyKey}${extended ? currency : ""}`);
 
     const fields: Record<string, string> = {
         amount: amountStr,
@@ -53,7 +60,7 @@ export function buildFiuuCheckoutForm(params: FiuuCheckoutParams) {
         bill_mobile: cleanMobile(params.billMobile),
         bill_desc: cleanText(params.billDesc, 255),
         country: "MY",
-        currency: "MYR",
+        currency,
         returnurl: params.returnUrl,
         callbackurl: params.callbackUrl,
         cancelurl: params.cancelUrl,
@@ -99,7 +106,7 @@ function expectedSkey(p: FiuuCallbackPayload, key: string) {
 }
 
 export function verifyFiuuCallback(payload: FiuuCallbackPayload) {
-    return [process.env.FIUU_SECRET_KEY, process.env.FIUU_VERIFY_KEY]
+    return [env("FIUU_SECRET_KEY"), env("FIUU_VERIFY_KEY")]
         .filter((k): k is string => Boolean(k))
         .some((key) => expectedSkey(payload, key) === payload.skey);
 }
@@ -129,8 +136,8 @@ export interface TokenChargeParams {
 }
 
 export async function chargeFiuuToken(p: TokenChargeParams): Promise<{ accepted: boolean; reason?: string; tranID?: string }> {
-    const merchantId = process.env.FIUU_MERCHANT_ID!;
-    const verifyKey = process.env.FIUU_VERIFY_KEY!;
+    const merchantId = env("FIUU_MERCHANT_ID");
+    const verifyKey = env("FIUU_VERIFY_KEY");
     const recordType = "T";
     const subMerchant = "";
     const currency = "MYR";
