@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, type FormEvent } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { X, Loader2, Banknote, Landmark, Handshake, ShieldCheck, ChevronRight, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -10,7 +10,7 @@ import {
   savePendingOffer,
   clearPendingOffer,
 } from "@/lib/offers/pendingOffer";
-import { submitOfferToSupabase } from "@/lib/offers/submitOffer";
+import { submitOfferWithPayment } from "@/lib/offers/submitOffer";
 import type { FormData, FormErrors } from "@/lib/offers/pendingOffer";
 import { checkEmailExists } from "@/lib/offers/checkEmail";
 import { supabase } from "@/lib/supabase/supabase";
@@ -44,10 +44,8 @@ export function SubmitOfferModal({
   minimumPrice,
   prefill,
   autoSubmit,
-  onSubmitted,
 }: SubmitOfferModalProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const { user, loading: sessionLoading } = useSession();
 
   const [form, setForm] = useState<FormData>(initialForm);
@@ -138,27 +136,17 @@ export function SubmitOfferModal({
     if (!user) return;
 
     setLoading(true);
-    const result = await submitOfferToSupabase({
-      propertyId,
-      userId: user.id,
-      data,
-    });
-
-    setLoading(false);
+    const result = await submitOfferWithPayment({ propertyId, data });
 
     if (!result.success) {
+      setLoading(false);
       setErrors({ offerAmount: result.error });
       return;
     }
 
+    // The browser is now leaving for Fiuu's payment page; keep the loading state until it does.
     clearPendingOffer();
-    setSubmitted(true);
-
-    setTimeout(() => {
-      if (onSubmitted) onSubmitted();
-      else router.push("/dashboard");
-    }, 400);
-  }, [propertyId, user, router, onSubmitted]);
+  }, [propertyId, user]);
 
   if (!open) return null;
 
@@ -282,7 +270,7 @@ export function SubmitOfferModal({
               <p className="mt-4 text-sm font-semibold text-black">
                 {redirecting
                   ? t("SubmitOfferModal.redirectingMessage")
-                  : t("SubmitOfferModal.submittingMessage")}
+                  : "Taking you to Fiuu to pay the RM500 commitment fee..."}
               </p>
               <p className="mt-2 text-sm text-neutral-500">
                 {t("SubmitOfferModal.redirectingSubtext")}
@@ -536,7 +524,7 @@ export function SubmitOfferModal({
               className="flex items-center justify-center gap-2 flex-1 rounded-2xl bg-brand py-3.5 text-sm font-bold text-black transition-colors hover:bg-brand-dark disabled:opacity-50"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              {isLoan && !screeningPassed ? "Continue to screening" : t("SubmitOfferModal.submitButton")}
+              {isLoan && !screeningPassed ? "Continue to screening" : "Pay RM500 & Submit Offer"}
             </button>
           </div>
         )}

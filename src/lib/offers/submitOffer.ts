@@ -1,10 +1,9 @@
-import { supabase } from "@/lib/supabase/supabase";
 import { parseOfferAmount } from "@/lib/offers/validateOffer";
+import { postToGateway } from "@/lib/payments/postToGateway";
 import type { FormData } from "@/lib/offers/pendingOffer";
 
 export interface SubmitOfferParams {
     propertyId: string;
-    userId: string;
     data: FormData;
 }
 
@@ -13,31 +12,31 @@ export interface SubmitOfferResult {
     error?: string;
 }
 
-export async function submitOfferToSupabase({
-    propertyId,
-    userId,
-    data,
-}: SubmitOfferParams): Promise<SubmitOfferResult> {
-    const { error } = await supabase.from("offers").insert({
-        property_id: propertyId,
-        user_id: userId,
-        deposit: data.deposit ? parseOfferAmount(data.deposit) : null,
-        offer_price: parseOfferAmount(data.offerAmount),
-        purchase_method: data.purchaseMethod,
-        financing_consultant_id: data.financingConsultantId || null,
-        legal_firm_id: data.legalFirmId || null,
-        contact_phone: data.phone,
-    });
+/**
+ * Creates the offer on the server and sends the browser to Fiuu for the RM500 commitment fee.
+ * On success the page navigates away; the signed Fiuu callback marks the offer as paid.
+ */
+export async function submitOfferWithPayment({ propertyId, data }: SubmitOfferParams): Promise<SubmitOfferResult> {
+    try {
+        const res = await fetch("/api/payments/fiuu/checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                propertyId,
+                offerPrice: parseOfferAmount(data.offerAmount),
+                deposit: data.deposit ? parseOfferAmount(data.deposit) : null,
+                purchaseMethod: data.purchaseMethod,
+                financingConsultantId: data.financingConsultantId || null,
+                legalFirmId: data.legalFirmId || null,
+                contactPhone: data.phone,
+            }),
+        });
+        const json = await res.json();
+        if (!res.ok) return { success: false, error: json.error || "Failed to submit offer. Please try again." };
 
-    if (error) {
-        if (error.message.includes("Price offered is lower than loan balance")) {
-            return { success: false, error: "Price offered is lower than loan balance" };
-        }
-        if (error.message.includes("Financing screening required")) {
-            return { success: false, error: "Complete financing screening before submitting a loan offer." };
-        }
+        postToGateway(json.checkout.actionUrl, json.checkout.fields);
+        return { success: true };
+    } catch {
         return { success: false, error: "Failed to submit offer. Please try again." };
     }
-
-    return { success: true };
 }

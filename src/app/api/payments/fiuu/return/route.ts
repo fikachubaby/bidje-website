@@ -13,11 +13,13 @@ async function bounce(req: Request) {
     }
     const result = status === "00" ? "success" : status === "22" ? "pending" : "failed";
 
-    // Financing screening payments return to the page the purchaser started from.
-    const next = new URL(req.url).searchParams.get("next");
+    // Screening and offer-fee payments return to a given page, with the result under `key`.
+    const params = new URL(req.url).searchParams;
+    const next = params.get("next");
+    const key = params.get("key") === "offer_payment" ? "offer_payment" : "screening";
     if (next && next.startsWith("/") && !next.startsWith("//")) {
         const url = new URL(next, req.url);
-        url.searchParams.set("screening", result);
+        url.searchParams.set(key, result);
         return NextResponse.redirect(url, 303);
     }
 

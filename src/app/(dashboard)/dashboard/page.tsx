@@ -38,6 +38,13 @@ const PAYMENT_MESSAGES: Record<string, [type: "success" | "error" | "info", text
     cancelled: ["info", "Payment cancelled."],
 };
 
+const OFFER_PAYMENT_MESSAGES: Record<string, [type: "success" | "error" | "info", text: string]> = {
+    success: ["success", "RM500 commitment fee received. Your offer has been submitted."],
+    pending: ["info", "Your payment is processing. We'll update your offer as soon as Fiuu confirms it."],
+    failed: ["error", "The RM500 payment didn't go through. Your offer is saved but unpaid. Please contact us to retry."],
+    cancelled: ["info", "Payment cancelled. Your offer is saved but unpaid."],
+};
+
 const TONE_CLASS = {
     neutral: "text-neutral-700",
     amber: "text-amber-700",
@@ -91,8 +98,24 @@ function DashboardContent() {
         const params = new URLSearchParams(searchParams.toString());
         params.set("tab", next);
         params.delete("payment");
+        params.delete("offer_payment");
         router.push(`?${params.toString()}`, { scroll: false });
     };
+
+    // Offer commitment fee result (?offer_payment=...); the callback may land a moment later, so reload offers.
+    const offerPaymentResult = searchParams.get("offer_payment");
+    useEffect(() => {
+        const msg = offerPaymentResult && OFFER_PAYMENT_MESSAGES[offerPaymentResult];
+        if (!msg) return;
+        const [type, text] = msg;
+        if (type === "success") toast.success(text);
+        else if (type === "error") toast.error(text);
+        else toast(text);
+        void reloadOffers();
+        const timer = setTimeout(() => void reloadOffers(), 5000);
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [offerPaymentResult]);
 
     // Fiuu sends shoppers back with ?payment=...; show the result once.
     const paymentResult = searchParams.get("payment");

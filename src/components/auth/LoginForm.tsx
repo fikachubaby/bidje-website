@@ -5,8 +5,6 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/supabase";
 import { FormField, FormInput } from "@/components/admin/ui/FormField";
-import { submitOfferToSupabase } from "@/lib/offers/submitOffer";
-import { clearPendingOffer } from "@/lib/offers/pendingOffer";
 
 export function VisitorLoginForm() {
     const searchParams = useSearchParams();
@@ -43,21 +41,8 @@ export function VisitorLoginForm() {
             return;
         }
 
+        // A saved offer resumes on its make-offer page (the `next` URL), which takes the RM500 fee.
         const rawPending = sessionStorage.getItem("bidje:pendingOffer");
-        if (rawPending) {
-            try {
-                const pendingData = JSON.parse(rawPending);
-                if (pendingData.propertyId) {
-                    await submitOfferToSupabase({
-                        propertyId: pendingData.propertyId,
-                        userId: authData.user.id,
-                        data: pendingData,
-                    });
-                    clearPendingOffer();
-                }
-            } catch {
-            }
-        }
 
         const { data: profile } = await supabase
             .from("profiles")
@@ -73,7 +58,7 @@ export function VisitorLoginForm() {
             ? "/admin"
             : isInvestor
               ? "/investor"
-              : rawPending ? "/dashboard" : searchParams.get("next") || "/";
+              : searchParams.get("next") || (rawPending ? "/dashboard" : "/");
 
         window.location.href = redirectPath;
     }

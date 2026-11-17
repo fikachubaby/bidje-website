@@ -8,8 +8,6 @@ import { StatCard } from "@/components/admin/ui/StatCard";
 import { StatusBadge } from "@/components/admin/ui/StatusBadge";
 import { ListingBreakdownCard } from "./ListingBreakdownCard";
 import { supabase } from "@/lib/supabase/supabase";
-import { submitOfferToSupabase } from "@/lib/offers/submitOffer";
-import { clearPendingOffer } from "@/lib/offers/pendingOffer";
 import { useReminders } from "@/hooks/useReminders";
 import { formatDueIn } from "@/lib/reminders";
 import { OFFER_STATUSES } from "@/types/offer";
@@ -36,36 +34,6 @@ export function DashboardView({
     draft: null,
     sold: null,
   });
-
-  // Auto-process pending offer stored in session storage
-  useEffect(() => {
-    async function processPendingOffer() {
-      const rawPending = sessionStorage.getItem("bidje:pendingOffer");
-      if (!rawPending) return;
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
-
-      try {
-        const pendingData = JSON.parse(rawPending);
-        if (pendingData.propertyId) {
-          const res = await submitOfferToSupabase({
-            propertyId: pendingData.propertyId,
-            userId: session.user.id,
-            data: pendingData,
-          });
-          if (res.success) {
-            clearPendingOffer();
-            window.location.reload();
-          }
-        }
-      } catch {
-        clearPendingOffer();
-      }
-    }
-
-    void processPendingOffer();
-  }, []);
 
   // Fetch exact status counts directly from Supabase DB
   useEffect(() => {
