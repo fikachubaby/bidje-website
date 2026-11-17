@@ -3,10 +3,8 @@
 import React, { useState } from "react";
 import { useSession } from "@/lib/auth/useSession";
 import { checkEmailExists } from "@/lib/offers/checkEmail";
-import { postToGateway } from "@/lib/payments/postToGateway";
 import { SUBSCRIBER_PLAN } from "@/lib/subscriptions/plan";
-
-const BILLING_NEXT = "/dashboard?tab=billing&subscribe=1";
+import { SUBSCRIBE_NEXT, startSubscriptionCheckout } from "@/lib/subscriptions/startCheckout";
 
 export default function SubscriptionBanner() {
     const { user } = useSession();
@@ -25,16 +23,13 @@ export default function SubscriptionBanner() {
             if (!user) {
                 const exists = await checkEmailExists(email);
                 setStatusMessage(exists ? "Please sign in to continue..." : "Create your account to continue...");
-                const params = new URLSearchParams({ next: BILLING_NEXT, email });
+                const params = new URLSearchParams({ next: SUBSCRIBE_NEXT, email });
                 window.location.href = `${exists ? "/login" : "/signup"}?${params.toString()}`;
                 return;
             }
 
             setStatusMessage("Redirecting to payment...");
-            const res = await fetch("/api/subscription/checkout", { method: "POST" });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Could not start payment");
-            postToGateway(data.checkout.actionUrl, data.checkout.fields);
+            await startSubscriptionCheckout();
         } catch (err) {
             console.error(err);
             setStatusMessage(err instanceof Error ? err.message : "Something went wrong. Please try again.");

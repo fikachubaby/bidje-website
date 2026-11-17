@@ -2,8 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Eye, Lock, MapPin, X } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Eye, Loader2, Lock, MapPin, X } from "lucide-react";
+import { toast } from "sonner";
 import { useSession } from "@/lib/auth/useSession";
+import { SUBSCRIBER_PLAN } from "@/lib/subscriptions/plan";
+import { SUBSCRIBE_NEXT, startSubscriptionCheckout } from "@/lib/subscriptions/startCheckout";
 
 interface AddressGateProps {
     fullAddress?: string;
@@ -18,7 +22,26 @@ export function UnlockAddressModal({
     isOpen: boolean;
     onClose: () => void;
 }) {
+    const { user } = useSession();
+    const pathname = usePathname();
+    const [busy, setBusy] = useState(false);
+
     if (!isOpen) return null;
+
+    // Signed in: straight to Fiuu. Guest: create an account first, then the billing tab opens Fiuu.
+    async function handleSubscribe() {
+        if (!user) {
+            window.location.href = `/signup?next=${encodeURIComponent(SUBSCRIBE_NEXT)}`;
+            return;
+        }
+        setBusy(true);
+        try {
+            await startSubscriptionCheckout();
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Could not start payment");
+            setBusy(false);
+        }
+    }
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
@@ -43,23 +66,28 @@ export function UnlockAddressModal({
                     <div className="mt-5 rounded-2xl bg-[#fffbea] p-4 border border-[#ffe066]">
                         <p className="text-xs font-bold text-neutral-800">
                             Get unlimited access with our <br />
-                            <span className="text-sm font-black text-black">RM 2/month</span> subscription.
+                            <span className="text-sm font-black text-black">RM {SUBSCRIBER_PLAN.price}/month</span> subscription.
                         </p>
                     </div>
 
-                    <Link
-                        href="/subscribe"
-                        className="mt-5 block w-full rounded-xl border-2 border-black bg-[#ffd400] py-3.5 text-center text-sm font-black shadow-[3px_3px_0_0_#000] transition hover:-translate-y-0.5 hover:bg-[#ffe24b]"
+                    <button
+                        type="button"
+                        onClick={handleSubscribe}
+                        disabled={busy}
+                        className="mt-5 flex items-center justify-center gap-2 w-full disabled:opacity-60 rounded-xl border-2 border-black bg-[#ffd400] py-3.5 text-center text-sm font-black shadow-[3px_3px_0_0_#000] transition hover:-translate-y-0.5 hover:bg-[#ffe24b]"
                     >
-                        Subscribe Now
-                    </Link>
+                        {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+                        {busy ? "Redirecting to payment..." : "Subscribe Now"}
+                    </button>
 
-                    <p className="mt-4 text-xs font-semibold text-neutral-500">
-                        Already a subscriber?{" "}
-                        <Link href="/sign-in" className="text-black underline font-bold">
-                            Sign In
-                        </Link>
-                    </p>
+                    {!user && (
+                        <p className="mt-4 text-xs font-semibold text-neutral-500">
+                            Already a subscriber?{" "}
+                            <Link href={`/login?next=${encodeURIComponent(pathname)}`} className="text-black underline font-bold">
+                                Sign In
+                            </Link>
+                        </p>
+                    )}
                 </div>
             </div>
         </div>
