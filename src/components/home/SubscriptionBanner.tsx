@@ -1,26 +1,43 @@
 "use client";
 
 import React, { useState } from "react";
+import { useSession } from "@/lib/auth/useSession";
+import { checkEmailExists } from "@/lib/offers/checkEmail";
+import { postToGateway } from "@/lib/payments/postToGateway";
+import { SUBSCRIBER_PLAN } from "@/lib/subscriptions/plan";
+
+const BILLING_NEXT = "/dashboard?tab=billing&subscribe=1";
 
 export default function SubscriptionBanner() {
+    const { user } = useSession();
     const [email, setEmail] = useState("");
     const [loading, setLoading] = useState(false);
     const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
     const handleSubscribe = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!email) return;
+        if (!email && !user) return;
 
         setLoading(true);
         setStatusMessage(null);
 
         try {
-            console.log("Subscribing email:", email);
-            setStatusMessage("Redirecting to subscription...");
+            if (!user) {
+                const exists = await checkEmailExists(email);
+                setStatusMessage(exists ? "Please sign in to continue..." : "Create your account to continue...");
+                const params = new URLSearchParams({ next: BILLING_NEXT, email });
+                window.location.href = `${exists ? "/login" : "/signup"}?${params.toString()}`;
+                return;
+            }
+
+            setStatusMessage("Redirecting to payment...");
+            const res = await fetch("/api/subscription/checkout", { method: "POST" });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Could not start payment");
+            postToGateway(data.checkout.actionUrl, data.checkout.fields);
         } catch (err) {
             console.error(err);
-            setStatusMessage("Something went wrong. Please try again.");
-        } finally {
+            setStatusMessage(err instanceof Error ? err.message : "Something went wrong. Please try again.");
             setLoading(false);
         }
     };
@@ -42,7 +59,7 @@ export default function SubscriptionBanner() {
                             Never Miss a Below-Market Deal
                         </h2>
                         <p className="text-neutral-300 text-sm sm:text-base font-normal leading-relaxed">
-                            Get instant updates on the latest property listings and market opportunities delivered to you for only <span className="font-extrabold text-[#ffcc00] bg-[#ffcc00]/10 px-2 py-0.5 rounded border border-[#ffcc00]/30">RM2 / month</span>.
+                            Get instant updates on the latest property listings and market opportunities delivered to you for only <span className="font-extrabold text-[#ffcc00] bg-[#ffcc00]/10 px-2 py-0.5 rounded border border-[#ffcc00]/30">RM{SUBSCRIBER_PLAN.price} / month</span>.
                         </p>
                     </div>
 
@@ -52,21 +69,21 @@ export default function SubscriptionBanner() {
                             onSubmit={handleSubscribe}
                             className="flex flex-col sm:flex-row gap-3 w-full max-w-md mx-auto lg:mx-0"
                         >
-                            <input
+                            {!user && <input
                                 type="email"
                                 required
                                 placeholder="Enter your email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="px-4 py-3 rounded-xl text-white bg-neutral-900 border border-neutral-700 focus:outline-none focus:border-[#ffcc00] w-full text-sm placeholder:text-neutral-500 shadow-sm transition-colors"
-                            />
+                            />}
                             <button
                                 type="submit"
                                 disabled={loading}
                                 style={{ backgroundColor: "#ffcc00" }}
                                 className="px-6 py-3 text-black font-bold rounded-xl hover:brightness-110 transition-all duration-200 whitespace-nowrap text-sm disabled:opacity-50 cursor-pointer shadow-md"
                             >
-                                {loading ? "Processing..." : "Subscribe — RM2/mo"}
+                                {loading ? "Processing..." : `Subscribe — RM${SUBSCRIBER_PLAN.price}/mo`}
                             </button>
                         </form>
 

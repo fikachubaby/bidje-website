@@ -1,13 +1,11 @@
 import crypto from "crypto";
 
-// Hosts per Fiuu API Spec v13.97 (github.com/FiuuPayment/Documentation-Fiuu_API_Spec).
 const isProd = () => process.env.FIUU_ENV?.trim() === "production";
 
 function getPayBaseUrl() {
     return isProd() ? "https://pay.fiuu.com/RMS/pay" : "https://sandbox-payment.fiuu.com/RMS/pay";
 }
 
-/** Recurring (token charge) endpoint. Confirm the exact URL with Fiuu support and override via env if needed. */
 function getRecurringUrl() {
     return (
         process.env.FIUU_RECURRING_URL ||
@@ -19,7 +17,6 @@ function getRecurringUrl() {
 
 const md5 = (s: string) => crypto.createHash("md5").update(s).digest("hex");
 
-/** Fiuu order IDs must be alphanumeric and at most 32 chars: a UUID without dashes fits exactly. */
 export function toOrderId(paymentId: string) {
     return paymentId.replace(/-/g, "");
 }
@@ -46,27 +43,42 @@ export function buildFiuuCheckoutForm(params: FiuuCheckoutParams) {
     const verifyKey = process.env.FIUU_VERIFY_KEY!;
     const amountStr = params.amount.toFixed(2);
 
-    // vcode = md5(amount + merchantID + orderid + verifykey)
     const vcode = md5(`${amountStr}${merchantId}${params.orderId}${verifyKey}`);
 
-    return {
-        actionUrl: `${getPayBaseUrl()}/${merchantId}/`,
-        fields: {
-            amount: amountStr,
-            orderid: params.orderId,
-            bill_name: params.billName,
-            bill_email: params.billEmail,
-            // Real billing details are needed: "guest" details hide Fiuu's save-card option.
-            bill_mobile: params.billMobile ?? "",
-            bill_desc: params.billDesc,
-            country: "MY",
-            currency: "MYR",
-            returnurl: params.returnUrl,
-            callbackurl: params.callbackUrl,
-            cancelurl: params.cancelUrl,
-            vcode,
-        },
+    const fields: Record<string, string> = {
+        amount: amountStr,
+        orderid: params.orderId,
+        bill_name: cleanText(params.billName, 128) || "Bidje Customer",
+        bill_email: params.billEmail.trim(),
+        bill_mobile: cleanMobile(params.billMobile),
+        bill_desc: cleanText(params.billDesc, 255),
+        country: "MY",
+        currency: "MYR",
+        returnurl: params.returnUrl,
+        callbackurl: params.callbackUrl,
+        cancelurl: params.cancelUrl,
+        vcode,
     };
+
+    for (const k of Object.keys(fields)) if (!fields[k]) delete fields[k];
+
+    return { actionUrl: `${getPayBaseUrl()}/${merchantId}/`, fields };
+}
+
+/** Letters, digits and basic punctuation only; Fiuu's form check rejects symbols like em dashes or emoji. */
+function cleanText(s: string, max: number) {
+    return s
+        .normalize("NFKD")
+        .replace(/[–—]/g, "-")
+        .replace(/[^A-Za-z0-9 .,()\-'@/&:#]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, max);
+}
+
+function cleanMobile(s: string | undefined) {
+    const digits = (s ?? "").replace(/\D/g, "");
+    return digits.length >= 9 && digits.length <= 15 ? digits : "";
 }
 
 export interface FiuuCallbackPayload {
@@ -86,17 +98,12 @@ function expectedSkey(p: FiuuCallbackPayload, key: string) {
     return md5(`${p.paydate}${p.domain}${key0}${p.appcode}${key}`);
 }
 
-/**
- * Normal payments sign with the secret key; Fiuu's recurring sample signs token-charge
- * callbacks with the verify key, so accept either.
- */
 export function verifyFiuuCallback(payload: FiuuCallbackPayload) {
     return [process.env.FIUU_SECRET_KEY, process.env.FIUU_VERIFY_KEY]
         .filter((k): k is string => Boolean(k))
         .some((key) => expectedSkey(payload, key) === payload.skey);
 }
 
-/** Card token details Fiuu returns in `extraP` once tokenization is enabled on the merchant account. */
 export function parseExtraP(raw: string | undefined) {
     if (!raw) return null;
     try {
@@ -121,10 +128,6 @@ export interface TokenChargeParams {
     description: string;
 }
 
-/**
- * Merchant-initiated charge of a saved card (Fiuu Recurring API v7, RecordType T).
- * "accepted" only means Fiuu received it; the final result arrives on the callback URL.
- */
 export async function chargeFiuuToken(p: TokenChargeParams): Promise<{ accepted: boolean; reason?: string; tranID?: string }> {
     const merchantId = process.env.FIUU_MERCHANT_ID!;
     const verifyKey = process.env.FIUU_VERIFY_KEY!;

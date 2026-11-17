@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BadgeCheck, Building2, CheckCircle2, CreditCard, FileText, Heart, Home, Landmark, LayoutGrid, Loader2, Send } from "lucide-react";
@@ -102,7 +102,6 @@ function DashboardContent() {
         router.push(`?${params.toString()}`, { scroll: false });
     };
 
-    // Offer commitment fee result (?offer_payment=...); the callback may land a moment later, so reload offers.
     const offerPaymentResult = searchParams.get("offer_payment");
     useEffect(() => {
         const msg = offerPaymentResult && OFFER_PAYMENT_MESSAGES[offerPaymentResult];
@@ -117,7 +116,16 @@ function DashboardContent() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [offerPaymentResult]);
 
-    // Fiuu sends shoppers back with ?payment=...; show the result once.
+    const wantsSubscribe = searchParams.get("subscribe") === "1";
+    const subscribeStarted = useRef(false);
+    useEffect(() => {
+        if (!wantsSubscribe || subscribeStarted.current || billing.loading || billing.busy) return;
+        subscribeStarted.current = true;
+        const active = billing.subscription?.status === "active" || billing.subscription?.status === "past_due";
+        if (active) toast("You're already subscribed.");
+        else void billing.checkout();
+    }, [wantsSubscribe, billing]);
+
     const paymentResult = searchParams.get("payment");
     useEffect(() => {
         const msg = paymentResult && PAYMENT_MESSAGES[paymentResult];
@@ -146,7 +154,6 @@ function DashboardContent() {
         if (offer.propertyData) setActiveModalProperty(offer.propertyData);
     }
 
-    // "Select Offer" on a listing opens the real offer form; an existing offer jumps to its documents.
     function handleSelectListing(listing: PropertyListing) {
         const existing = offerHistory.find((o) => o.propertyId === listing.id);
         if (existing) {
@@ -279,7 +286,6 @@ function DashboardContent() {
     );
 }
 
-// useSearchParams needs a Suspense boundary so the page can still be pre-rendered.
 export default function PropertyDashboardPage() {
     return (
         <Suspense
